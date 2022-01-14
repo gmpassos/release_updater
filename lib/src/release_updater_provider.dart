@@ -23,10 +23,19 @@ abstract class ReleaseProvider {
       return listTargetPlatform.last;
     }
 
-    var listAnyPlatform = listName.where((e) => e.platform == null).toList();
-    listAnyPlatform.sort();
+    var listNoPlatform = listName.where((e) => e.platform == null).toList();
 
-    return listAnyPlatform.isNotEmpty ? listAnyPlatform.last : null;
+    if (listNoPlatform.isNotEmpty) {
+      listNoPlatform.sort();
+      return listNoPlatform.last;
+    }
+
+    if (platform == null) {
+      listName.sort();
+      return listName.isNotEmpty ? listName.last : null;
+    }
+
+    return null;
   }
 
   /// Gets a [ReleaseBundle] for the [targetVersion].
