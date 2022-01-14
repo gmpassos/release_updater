@@ -43,7 +43,7 @@ void main() async {
 
 You can implement your own `ReleaseProvider` or use just the built-in [ReleaseProviderHttp][ReleaseProviderHttp_class] class.
 
-[ReleaseProviderHttp_class]: https://pub.dev/documentation/release_updater/latest/release_updater/ReleaseProviderHttp-class.html
+[ReleaseProviderHttp_class]: https://pub.dev/documentation/release_updater/latest/release_updater.io/ReleaseProviderHttp-class.html
 
 ## Source
 
