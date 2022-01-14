@@ -1,6 +1,15 @@
-import 'package:release_updater/release_updater.dart';
+import 'dart:io';
 
-void main() {
-  var awesome = Awesome();
-  print('awesome: ${awesome.isAwesome}');
+import 'package:release_updater/release_updater_io.dart';
+
+void main() async {
+  var storage = ReleaseStorageDirectory('appx', Directory('/install/path'));
+  var provider =
+      ReleaseProviderHttp.baseURL('https://your.domain/appx/releases');
+
+  var releaseUpdater = ReleaseUpdater(storage, provider);
+
+  var version = await releaseUpdater.update();
+
+  print('-- Updated to version: $version');
 }

@@ -2,6 +2,7 @@
 
 [![pub package](https://img.shields.io/pub/v/release_updater.svg?logo=dart&logoColor=00b9fc)](https://pub.dev/packages/release_updater)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
+[![Codecov](https://img.shields.io/codecov/c/github/gmpassos/release_updater)](https://app.codecov.io/gh/gmpassos/release_updater)
 [![CI](https://img.shields.io/github/workflow/status/gmpassos/release_updater/Dart%20CI/master?logo=github-actions&logoColor=white)](https://github.com/gmpassos/release_updater/actions)
 [![GitHub Tag](https://img.shields.io/github/v/tag/gmpassos/release_updater?logo=git&logoColor=white)](https://github.com/gmpassos/release_updater/releases)
 [![New Commits](https://img.shields.io/github/commits-since/gmpassos/release_updater/latest?logo=git&logoColor=white)](https://github.com/gmpassos/release_updater/network)
@@ -9,22 +10,40 @@
 [![Pull Requests](https://img.shields.io/github/issues-pr/gmpassos/release_updater?logo=github&logoColor=white)](https://github.com/gmpassos/release_updater/pulls)
 [![Code size](https://img.shields.io/github/languages/code-size/gmpassos/release_updater?logo=github&logoColor=white)](https://github.com/gmpassos/release_updater)
 [![License](https://img.shields.io/github/license/gmpassos/release_updater?logo=open-source-initiative&logoColor=green)](https://github.com/gmpassos/release_updater/blob/master/LICENSE)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fgmpassos%2Frelease_updater.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fgmpassos%2Frelease_updater?ref=badge_shield)
 
 This package brings a simple way to update release/installation files in a local directory.
+
+## API Documentation
+
+See the [API Documentation][api_doc] for a full list of functions, classes and extension.
+
+[api_doc]: https://pub.dev/documentation/release_updater/latest/
 
 ## Usage
 
 ```dart
-import 'dart:async';
+import 'dart:io';
 
-import 'package:release_updater/release_updater.dart';
+import 'package:release_updater/release_updater_io.dart';
 
 void main() async {
+  var storage = ReleaseStorageDirectory('appx', Directory('/install/path'));
+  var provider =
+  ReleaseProviderHttp.baseURL('https://your.domain/appx/releases');
 
+  var releaseUpdater = ReleaseUpdater(storage, provider);
+
+  var version = await releaseUpdater.update();
+
+  print('-- Updated to version: $version');
 }
-
 ```
+
+## ReleaseProvider
+
+You can implement your own `ReleaseProvider` or use just the built-in [ReleaseProviderHttp][ReleaseProviderHttp_class] class.
+
+[ReleaseProviderHttp_class]: https://pub.dev/documentation/release_updater/latest/release_updater/ReleaseProviderHttp-class.html
 
 ## Source
 

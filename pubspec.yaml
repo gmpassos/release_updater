@@ -6,8 +6,11 @@ homepage: https://github.com/gmpassos/release_updater
 environment:
   sdk: '>=2.14.4 <3.0.0'
 
-# dependencies:
-#   path: ^1.8.0
+dependencies:
+  archive: ^3.1.8
+  mercury_client: ^2.1.2
+  path: ^1.8.1
+  pub_semver: ^2.1.0
 
 dev_dependencies:
   lints: ^1.0.0

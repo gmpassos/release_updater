@@ -1,6 +1,251 @@
-// TODO: Put public facing types in this file.
+import 'dart:async';
+import 'dart:convert' as dart_convert;
+import 'dart:typed_data';
 
-/// Checks if you are awesome. Spoiler: you are.
-class Awesome {
-  bool get isAwesome => true;
+import 'package:pub_semver/pub_semver.dart' as semver;
+
+import 'release_updater_provider.dart';
+import 'release_updater_storage.dart';
+
+/// A [Release] updater from [releaseProvider] to [storage].
+class ReleaseUpdater {
+  /// The [Release] storage.
+  final ReleaseStorage storage;
+
+  /// The [Release] provider.
+  final ReleaseProvider releaseProvider;
+
+  ReleaseUpdater(this.storage, this.releaseProvider);
+
+  String get name => storage.name;
+
+  String? get platform => storage.platform;
+
+  /// Checks if there's a new version to update and returns it, otherwise returns `null`.
+  FutureOr<Release?> checkForUpdate() async {
+    var currentRelease = await storage.currentRelease;
+
+    var lastRelease = await this.lastRelease;
+    if (lastRelease == null) return null;
+
+    return currentRelease == null || lastRelease.compareTo(currentRelease) > 0
+        ? lastRelease
+        : null;
+  }
+
+  FutureOr<Release?> get lastRelease =>
+      releaseProvider.lastRelease(name, platform: platform);
+
+  FutureOr<Release?> update(
+      {Release? targetRelease,
+      Version? targetVersion,
+      String? platform,
+      bool exactPlatform = false}) async {
+    Release? lastRelease;
+
+    if (targetVersion == null) {
+      var release = targetRelease;
+      release ??= lastRelease ??= await this.lastRelease;
+      if (release == null) return null;
+      targetVersion = release.version;
+    }
+
+    platform ??= targetRelease?.platform ?? storage.platform;
+
+    var releaseBundle =
+        await releaseProvider.getReleaseBundle(name, targetVersion, platform);
+
+    if (releaseBundle == null && !exactPlatform) {
+      releaseBundle =
+          await releaseProvider.getReleaseBundle(name, targetVersion);
+    }
+
+    if (releaseBundle == null) return null;
+
+    return storage.updateTo(releaseBundle);
+  }
+}
+
+/// A release an its information.
+class Release implements Comparable<Release> {
+  static String normalizeName(String name) {
+    name = name.trim().replaceAll(RegExp(r'[^\w-.]+'), '_').trim();
+    return name;
+  }
+
+  static String? normalizePlatform(String? platform) {
+    if (platform == null) return null;
+    platform = normalizeName(platform);
+    return platform.isEmpty ? null : platform;
+  }
+
+  /// The name of the release.
+  final String name;
+
+  /// The [Version] of this release.
+  final Version version;
+
+  final String? platform;
+
+  Release(String name, this.version, {String? platform})
+      : name = normalizeName(name),
+        platform = normalizePlatform(platform);
+
+  factory Release.parse(String s) {
+    var parts = s.split('/');
+    var name = parts[0];
+    var ver = parts[1];
+    var platform = parts.length > 2 ? parts[2] : null;
+    return Release(name, SemanticVersioning.parse(ver),
+        platform: platform?.trim());
+  }
+
+  @override
+  int compareTo(Release other) {
+    var cmp = name.compareTo(other.name);
+    if (cmp == 0) {
+      cmp = version.compareTo(other.version);
+    }
+    return cmp;
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Release &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          version == other.version &&
+          platform == other.platform;
+
+  @override
+  int get hashCode =>
+      name.hashCode ^ version.hashCode ^ (platform?.hashCode ?? 0);
+
+  @override
+  String toString() {
+    var platformStr = platform ?? '';
+    if (platformStr.isNotEmpty) {
+      platformStr = '/$platformStr';
+    }
+    return '$name/$version$platformStr';
+  }
+}
+
+/// A version of a [Release].
+abstract class Version implements Comparable<Version> {
+  @override
+  String toString();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Version &&
+          runtimeType == other.runtimeType &&
+          compareTo(other) == 0;
+
+  @override
+  int get hashCode => toString().hashCode;
+}
+
+class SemanticVersioning extends Version {
+  final semver.Version _semver;
+
+  SemanticVersioning._(this._semver);
+
+  SemanticVersioning.parse(String version)
+      : this._(semver.Version.parse(version));
+
+  @override
+  int compareTo(Version other) {
+    if (other is SemanticVersioning) {
+      return _semver.compareTo(other._semver);
+    } else {
+      var otherSemver = semver.Version.parse(other.toString());
+      return _semver.compareTo(otherSemver);
+    }
+  }
+
+  @override
+  String toString() => _semver.toString();
+}
+
+abstract class DataProvider {
+  FutureOr<Uint8List> get();
+
+  FutureOr<int> get length;
+}
+
+class ReleaseFile {
+  static String normalizePath(String path) {
+    path = path.trim();
+
+    while (path.startsWith('./')) {
+      path = path.substring(2);
+    }
+
+    while (path.startsWith('/')) {
+      path = path.substring(1);
+    }
+
+    while (path.startsWith('./')) {
+      path = path.substring(2);
+    }
+
+    return path;
+  }
+
+  final String path;
+
+  final Object? _data;
+
+  final DateTime time;
+
+  final bool executable;
+
+  final bool compressed;
+
+  ReleaseFile(String path, Object data,
+      {DateTime? time, this.executable = false, this.compressed = false})
+      : path = normalizePath(path),
+        _data = toBytes(data),
+        time = time ?? DateTime.now();
+
+  static Object toBytes(Object data) {
+    if (data is DataProvider) return data;
+    if (data is Uint8List) return data;
+
+    if (data is Iterable<int>) return Uint8List.fromList(data.toList());
+
+    var s = data.toString();
+    var encoded = dart_convert.utf8.encode(s);
+    return encoded is Uint8List ? encoded : Uint8List.fromList(encoded);
+  }
+
+  FutureOr<int> get length {
+    var data = _data;
+    if (data is Uint8List) {
+      return data.length;
+    } else if (data is DataProvider) {
+      return data.length;
+    }
+
+    throw StateError('Unknown data type: $data');
+  }
+
+  FutureOr<Uint8List> get data {
+    var data = _data;
+    if (data is Uint8List) {
+      return data;
+    } else if (data is DataProvider) {
+      return data.get();
+    }
+
+    throw StateError('Unknown data type: $data');
+  }
+
+  @override
+  String toString() {
+    return 'ReleaseFile{path: $path, length: $length, time: $time, executable: $executable, compressed: $compressed}';
+  }
 }

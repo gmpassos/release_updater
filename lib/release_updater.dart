@@ -1,8 +1,8 @@
-/// Support for doing something awesome.
-///
-/// More dartdocs go here.
+/// Release Updater Library.
 library release_updater;
 
 export 'src/release_updater_base.dart';
-
-// TODO: Export any libraries intended for clients of this package.
+export 'src/release_updater_provider.dart';
+export 'src/release_updater_provider_http.dart';
+export 'src/release_updater_release_bundle.dart';
+export 'src/release_updater_storage.dart';
