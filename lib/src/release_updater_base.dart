@@ -23,7 +23,7 @@ class ReleaseUpdater {
 
   /// Checks if there's a new version to update and returns it, otherwise returns `null`.
   FutureOr<Release?> checkForUpdate() async {
-    var currentRelease = await storage.currentRelease;
+    var currentRelease = await this.currentRelease;
 
     var lastRelease = await this.lastRelease;
     if (lastRelease == null) return null;
@@ -33,9 +33,22 @@ class ReleaseUpdater {
         : null;
   }
 
+  /// Returns the current [Release].
+  FutureOr<Release?> get currentRelease => storage.currentRelease;
+
+  /// Returns the last [Release] available for [name] and [platform].
   FutureOr<Release?> get lastRelease =>
       releaseProvider.lastRelease(name, platform: platform);
 
+  /// List the releases from [releaseProvider].
+  FutureOr<List<Release>> listReleases() => releaseProvider.listReleases();
+
+  /// Updates the release at [storage].
+  ///
+  /// - [targetRelease] is the desired [Release] to update to.
+  /// - [targetVersion] is the desired [Version] for the release.
+  /// - [platform] is the desired platform of the available [Release].
+  /// - [exactPlatform] when `true` ensures that the update is for the exact [platform] parameter.
   FutureOr<Release?> update(
       {Release? targetRelease,
       Version? targetVersion,

@@ -15,18 +15,24 @@ class ReleaseProviderHttp extends ReleaseProvider {
 
   final String releasesBundleFileFormat;
   static const String defaultReleasesBundleFileFormat =
-      '%NAME%--%VER%--%PLATFORM%.zip';
+      '%NAME%-%VER%%[-]PLATFORM%.zip';
 
   static String formatBundleFile(
       String fileFormat, String name, Version version,
       [String? platform]) {
-    platform ??= '';
-
-    var file = fileFormat
-        .replaceAll('%NAME%', name)
-        .replaceAll('%VER%', version.toString())
-        .replaceAll('%PLATFORM%', platform);
+    var file = _replaceMark(fileFormat, 'NAME', name);
+    file = _replaceMark(file, 'VER', version.toString());
+    file = _replaceMark(file, 'PLATFORM', platform);
     return file;
+  }
+
+  static String _replaceMark(String s, String mark, String? value) {
+    var regExp = RegExp(r'%(?:\[(.*?)\])?(' + mark + r')%');
+
+    return s.replaceAllMapped(regExp, (m) {
+      var prev = m.group(1) ?? '';
+      return value != null ? '$prev$value' : '';
+    });
   }
 
   ReleaseProviderHttp.withClient(this.httpClient,
@@ -73,8 +79,12 @@ class ReleaseProviderHttp extends ReleaseProvider {
     var zipBytes =
         byteArray is Uint8List ? byteArray : Uint8List.fromList(byteArray);
 
-    var releaseBundle =
-        ReleaseBundleZip(Release(name, targetVersion), zipBytes);
+    var rootPath =
+        file.replaceFirst(RegExp(r'\.zip$', caseSensitive: false), '');
+
+    var releaseBundle = ReleaseBundleZip(Release(name, targetVersion), zipBytes,
+        rootPath: rootPath);
+
     return releaseBundle;
   }
 }

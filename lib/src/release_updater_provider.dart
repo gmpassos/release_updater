@@ -5,23 +5,28 @@ import 'release_updater_release_bundle.dart';
 
 /// The [Release] provider.
 abstract class ReleaseProvider {
-  /// Lists all release versions.
+  /// Lists all releases.
   FutureOr<List<Release>> listReleases();
 
   /// Returns the last [Version] available for [name] and optional [platform].
   FutureOr<Release?> lastRelease(String name, {String? platform}) async {
     var list = await listReleases();
 
-    var listWhere = list.where((e) => e.name == name);
+    var listName = list.where((e) => e.name == name).toList();
 
-    if (platform != null) {
-      listWhere = listWhere.where((e) => e.platform == platform);
+    var listTargetPlatform = platform == null
+        ? <Release>[]
+        : listName.where((e) => e.platform == platform).toList();
+
+    if (listTargetPlatform.isNotEmpty) {
+      listTargetPlatform.sort();
+      return listTargetPlatform.last;
     }
 
-    var listFiltered = listWhere.toList();
-    listFiltered.sort();
+    var listAnyPlatform = listName.where((e) => e.platform == null).toList();
+    listAnyPlatform.sort();
 
-    return listFiltered.isNotEmpty ? listFiltered.last : null;
+    return listAnyPlatform.isNotEmpty ? listAnyPlatform.last : null;
   }
 
   /// Gets a [ReleaseBundle] for the [targetVersion].

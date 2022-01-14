@@ -1,3 +1,10 @@
+## 1.0.1
+
+- Added support for `ReleaseBundle` from Zip file.
+- Added executables:
+  - `release_updater`.
+  - `release_updater_server.dart`.
+
 ## 1.0.0
 
 - Initial version.

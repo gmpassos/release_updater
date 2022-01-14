@@ -49,11 +49,11 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   }
 
   Directory _releaseDirectoryImpl(Release release) {
-    String dirName = releasePath(release);
+    String dirName = releasePathName(release);
     return Directory(pack_path.join(directory.path, dirName));
   }
 
-  String releasePath(Release release) =>
+  String releasePathName(Release release) =>
       release.name + '--' + normalizeFileName(release.version.toString());
 
   @override
@@ -77,7 +77,8 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   FutureOr<String?> get currentReleasePath {
     var currentRelease = this.currentRelease;
     if (currentRelease == null) return null;
-    return releasePath(currentRelease);
+    var pathName = releasePathName(currentRelease);
+    return pack_path.join(directory.path, pathName);
   }
 
   @override
