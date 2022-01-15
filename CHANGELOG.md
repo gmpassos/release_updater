@@ -3,6 +3,7 @@
 - `ReleaseBundleZip` now can generate the `zipBytes`.
 - Added `ReleasePacker`.
   - Added executable `release_packer`.
+- `ReleasePlatform`: ensure that `x86_64` is treated as `x64`.
 - Improved tests.
 - yaml: ^3.1.0
 

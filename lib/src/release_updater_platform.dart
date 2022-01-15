@@ -61,9 +61,15 @@ class ReleasePlatform {
 
   static String? _runUnameM() {
     if (!Platform.isLinux && !Platform.isMacOS) return null;
-    return _runProcess(['/usr/bin/uname', '/bin/uname'], ['-m'], 0)
+    var arch = _runProcess(['/usr/bin/uname', '/bin/uname'], ['-m'], 0)
         .toLowerCase()
         .trim();
+
+    if (arch == 'x86_64') {
+      return 'x64';
+    }
+
+    return arch;
   }
 
   static String _runProcess(
