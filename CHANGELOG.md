@@ -1,3 +1,11 @@
+## 1.0.3
+
+- `ReleaseBundleZip` now can generate the `zipBytes`.
+- Added `ReleasePacker`.
+  - Added executable `release_packer`.
+- Improved tests.
+- yaml: ^3.1.0
+
 ## 1.0.2
 
 - Added `currentReleaseFilePath` and `currentReleaseFile`.

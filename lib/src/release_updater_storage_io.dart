@@ -3,9 +3,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:path/path.dart' as pack_path;
-import 'package:release_updater/src/release_updater_platform.dart';
 
 import 'release_updater_base.dart';
+import 'release_updater_platform.dart';
 import 'release_updater_storage.dart';
 
 class ReleaseStorageDirectory extends ReleaseStorage {

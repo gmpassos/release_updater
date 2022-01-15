@@ -4,7 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:path/path.dart' as pack_path;
 
 import 'release_updater_base.dart';
-import 'release_updater_release_bundle.dart';
+import 'release_updater_bundle.dart';
 
 /// A [Release] storage.
 abstract class ReleaseStorage {

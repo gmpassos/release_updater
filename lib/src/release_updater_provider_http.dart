@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:mercury_client/mercury_client.dart';
-import 'package:release_updater/src/release_updater_base.dart';
 
+import 'release_updater_base.dart';
+import 'release_updater_bundle.dart';
 import 'release_updater_provider.dart';
-import 'release_updater_release_bundle.dart';
 
 class ReleaseProviderHttp extends ReleaseProvider {
   final HttpClient httpClient;
@@ -83,7 +83,8 @@ class ReleaseProviderHttp extends ReleaseProvider {
         file.replaceFirst(RegExp(r'\.zip$', caseSensitive: false), '');
 
     var release = Release(name, targetVersion, platform: platform);
-    var releaseBundle = ReleaseBundleZip(release, zipBytes, rootPath: rootPath);
+    var releaseBundle =
+        ReleaseBundleZip(release, zipBytes: zipBytes, rootPath: rootPath);
 
     return releaseBundle;
   }

@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'release_updater_base.dart';
-import 'release_updater_release_bundle.dart';
+import 'release_updater_bundle.dart';
 
 /// The [Release] provider.
 abstract class ReleaseProvider {

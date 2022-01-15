@@ -9,6 +9,9 @@ import 'release_updater_storage.dart';
 
 /// A [Release] updater from [releaseProvider] to [storage].
 class ReleaseUpdater {
+  // ignore: constant_identifier_names
+  static const String VERSION = '1.0.3';
+
   /// The [Release] storage.
   final ReleaseStorage storage;
 
@@ -201,7 +204,7 @@ abstract class DataProvider {
   FutureOr<int> get length;
 }
 
-class ReleaseFile {
+class ReleaseFile implements Comparable<ReleaseFile> {
   static String normalizePath(String path) {
     path = path.trim();
 
@@ -269,8 +272,16 @@ class ReleaseFile {
     throw StateError('Unknown data type: $data');
   }
 
+  Future<String> get dataAsString async {
+    var bytes = await data;
+    return dart_convert.utf8.decode(bytes);
+  }
+
   @override
   String toString() {
     return 'ReleaseFile{path: $path, length: $length, time: $time, executable: $executable, compressed: $compressed}';
   }
+
+  @override
+  int compareTo(ReleaseFile other) => path.compareTo(other.path);
 }

@@ -57,6 +57,15 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
     expect(files, isEmpty);
   }
 
+  var listReleases = await releaseUpdater.listReleases();
+  expect(
+      listReleases.map((e) => e.toString()),
+      equals([
+        'foo/1.0.0/$currentPlatform',
+        'foo/1.0.1/$currentPlatform',
+        'foo/1.0.2/$currentPlatform',
+      ]));
+
   var lastRelease = await releaseUpdater.checkForUpdate();
   expect(lastRelease.toString(), equals('foo/1.0.2/$currentPlatform'));
 
@@ -67,14 +76,20 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
       equals(Release('foo', lastRelease.version, platform: currentPlatform)));
 
   {
-    var currentRelease = storage.currentRelease;
+    var currentRelease = releaseUpdater.currentRelease;
     expect(currentRelease, equals(Release.parse('foo/1.0.2/$currentPlatform')));
 
-    var currentReleasePath = storage.currentReleasePath;
+    var currentReleasePath = await releaseUpdater.currentReleasePath;
     expect(currentReleasePath, endsWith('foo--1.0.2'));
 
-    var files = (await storage.currentFiles).toList()
-      ..sort((a, b) => a.path.compareTo(b.path));
+    expect(await releaseUpdater.currentReleaseFilePath('README.md'),
+        endsWith('foo--1.0.2/README.md'));
+
+    expect((await storage.currentReleaseFile('README.md'))?.path,
+        endsWith('README.md'));
+
+    var files = (await storage.currentFiles).toList();
+    files.sort();
     expect(files.length, equals(2));
 
     var filesPaths = files.map((e) => e.path).toList();
@@ -86,6 +101,9 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
                 (i) => dart_convert.utf8.decode(files[i].data as Uint8List))
             .toList(),
         equals(['#Foo/1.0.2\n\nA Foo project.\n', 'Hello World!']));
+
+    expect(List.generate(files.length, (i) => files[i].length).toList(),
+        equals([27, 12]));
   }
 
   var lastRelease2 = await releaseUpdater.checkForUpdate();
