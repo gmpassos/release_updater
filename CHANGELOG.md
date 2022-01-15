@@ -1,3 +1,9 @@
+## 1.0.4
+
+- Improved CLI executables:
+  - `release_packer`
+  - `release_updater`
+
 ## 1.0.3
 
 - `ReleaseBundleZip` now can generate the `zipBytes`.

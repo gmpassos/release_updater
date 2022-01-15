@@ -20,7 +20,14 @@ void main(List<String> args) async {
   args = args.toList();
 
   print('--------------------------------------------------------------------');
-  print('[ Release Updater ]');
+  print('[ release_updater/${ReleaseUpdater.VERSION} ]\n');
+
+  if (args.isEmpty) {
+    print('USAGE:');
+    print(' \$> release_updater config.json\n');
+
+    exit(0);
+  }
 
   var config = parseConfig(args);
 

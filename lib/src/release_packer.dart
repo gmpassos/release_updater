@@ -80,8 +80,13 @@ class ReleasePacker {
     return content;
   }
 
-  ReleasePackerFile? getFile(String filePath) =>
-      files.firstWhereOrNull((e) => e.sourcePath == filePath);
+  ReleasePackerFile? getFile(String filePath, {String? platform}) {
+    var where = files.where((e) => e.sourcePath == filePath);
+    if (platform != null) {
+      where = where.where((e) => e.matchesPlatform(platform));
+    }
+    return where.firstOrNull;
+  }
 
   ReleasePackerFile? getFileMatching(RegExp filePathRegexp) =>
       files.firstWhereOrNull((e) => filePathRegexp.hasMatch(e.sourcePath));
@@ -122,8 +127,8 @@ class ReleasePacker {
 
           sourcePath = ReleaseFile.normalizePath(sourcePath);
 
-          var packFile = getFile(sourcePath);
-          if (packFile == null || !packFile.matchesPlatform(platform)) {
+          var packFile = getFile(sourcePath, platform: platform);
+          if (packFile == null) {
             return null;
           }
 

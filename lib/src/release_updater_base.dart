@@ -10,7 +10,7 @@ import 'release_updater_storage.dart';
 /// A [Release] updater from [releaseProvider] to [storage].
 class ReleaseUpdater {
   // ignore: constant_identifier_names
-  static const String VERSION = '1.0.3';
+  static const String VERSION = '1.0.4';
 
   /// The [Release] storage.
   final ReleaseStorage storage;
@@ -149,6 +149,17 @@ class Release implements Comparable<Release> {
   @override
   int get hashCode =>
       name.hashCode ^ version.hashCode ^ (platform?.hashCode ?? 0);
+
+  /// Returns this release as a compatible file name.
+  String get asFileName {
+    var platformStr = platform ?? '';
+    if (platformStr.isNotEmpty) {
+      platformStr = '-$platformStr';
+    }
+    var path = '$name-$version$platformStr';
+    path = path.replaceAll(RegExp(r'[^\w\.-]+'), '');
+    return path;
+  }
 
   @override
   String toString() {
