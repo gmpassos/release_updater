@@ -1,3 +1,7 @@
+## 1.0.2
+
+- Added `currentReleaseFilePath` and `currentReleaseFile`.
+
 ## 1.0.1
 
 - Added support for `ReleaseBundle` from Zip file.

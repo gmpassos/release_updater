@@ -36,6 +36,9 @@ class ReleaseUpdater {
   /// Returns the current [Release].
   FutureOr<Release?> get currentRelease => storage.currentRelease;
 
+  /// Returns the current [Release] [storage] path.
+  FutureOr<String?> get currentReleasePath => storage.currentReleasePath;
+
   /// Returns the last [Release] available for [name] and [platform].
   FutureOr<Release?> get lastRelease =>
       releaseProvider.lastRelease(name, platform: platform);

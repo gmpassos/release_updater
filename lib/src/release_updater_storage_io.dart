@@ -27,7 +27,7 @@ class ReleaseStorageDirectory extends ReleaseStorage {
     return p.isNotEmpty ? p : null;
   }
 
-  File get currentReleaseFile =>
+  File get currentReleaseConfigFile =>
       File(pack_path.join(directory.path, 'current.release'));
 
   Directory? get currentReleaseDirectory {
@@ -58,7 +58,7 @@ class ReleaseStorageDirectory extends ReleaseStorage {
 
   @override
   Release? get currentRelease {
-    var file = currentReleaseFile;
+    var file = currentReleaseConfigFile;
     if (!file.existsSync()) return null;
 
     try {
@@ -116,7 +116,7 @@ class ReleaseStorageDirectory extends ReleaseStorage {
 
   @override
   bool saveRelease(Release release) {
-    var file = currentReleaseFile;
+    var file = currentReleaseConfigFile;
     file.writeAsStringSync(release.toString());
     return true;
   }
