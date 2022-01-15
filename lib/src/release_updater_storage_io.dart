@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:path/path.dart' as pack_path;
 
 import 'release_updater_base.dart';
+import 'release_updater_io.dart';
 import 'release_updater_platform.dart';
 import 'release_updater_storage.dart';
 
@@ -132,7 +133,8 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   void _setFileExecutablePermissionImpl(File file, bool executable) {
     if (Platform.isLinux || Platform.isMacOS) {
       var mode = executable ? '+rx' : '-rx';
-      Process.runSync('/bin/chmod', [mode, file.path]);
+      var chmodPath = whichExecutablePath('chmod');
+      Process.runSync(chmodPath, [mode, file.path]);
     }
   }
 

@@ -1,8 +1,11 @@
 ## 1.0.4
 
 - Improved CLI executables:
-  - `release_packer`
-  - `release_updater`
+  - `release_packer`:
+    - Added usage message.
+    - now can auto compile Dart scripts.
+  - `release_updater`:
+    - Added usage message.
 
 ## 1.0.3
 

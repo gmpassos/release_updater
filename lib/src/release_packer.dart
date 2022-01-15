@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:path/path.dart' as pack_path;
+import 'release_updater_io.dart';
 import 'package:yaml/yaml.dart';
 
 import 'release_updater_base.dart';
@@ -80,6 +81,14 @@ class ReleasePacker {
     return content;
   }
 
+  List<ReleasePackerFile> getFiles({String? platform}) {
+    Iterable<ReleasePackerFile> where = files;
+    if (platform != null) {
+      where = where.where((e) => e.matchesPlatform(platform));
+    }
+    return where.toList();
+  }
+
   ReleasePackerFile? getFile(String filePath, {String? platform}) {
     var where = files.where((e) => e.sourcePath == filePath);
     if (platform != null) {
@@ -112,6 +121,11 @@ class ReleasePacker {
 
     if (rootDirectory == null) {
       throw ArgumentError("Can't define `rootDirectory`!");
+    }
+
+    for (var f in getFiles(platform: platform)
+        .where((e) => e.dartCompileExe != null)) {
+      _dartCompileExe(rootDirectory, f.dartCompileExe!);
     }
 
     var files = rootDirectory.listSync(recursive: true);
@@ -152,6 +166,24 @@ class ReleasePacker {
   String toString() {
     return 'ReleasePacker{name: $name, version: $version, files: ${files.length}';
   }
+
+  Future<bool> _dartCompileExe(
+      Directory rootDirectory, String dartScript) async {
+    print('-- Dart compile exe: ${rootDirectory.path} -> $dartScript');
+
+    var dartPath = whichExecutablePath('dart');
+
+    var result = Process.runSync(dartPath, ['compile', 'exe', dartScript],
+        workingDirectory: rootDirectory.path);
+
+    var ok = result.exitCode == 0;
+
+    if (!ok) {
+      print('** Error compiling: $dartScript');
+    }
+
+    return ok;
+  }
 }
 
 class ReleasePackerFile {
@@ -161,7 +193,10 @@ class ReleasePackerFile {
 
   List<RegExp> platforms;
 
-  ReleasePackerFile(this.sourcePath, String destinyPath, {Object? platform})
+  String? dartCompileExe;
+
+  ReleasePackerFile(this.sourcePath, String destinyPath,
+      {Object? platform, this.dartCompileExe})
       : destinyPath = destinyPath == '.' ? sourcePath : destinyPath,
         platforms = platform == null
             ? <RegExp>[]
@@ -176,8 +211,12 @@ class ReleasePackerFile {
       return ReleasePackerFile(json, json);
     } else if (json is Map) {
       var platform = json['platform'];
-      var entry = json.entries.where((e) => e.key != 'platform').first;
-      return ReleasePackerFile(entry.key, entry.value, platform: platform);
+      var dartCompileExe = json['dart_compile_exe'];
+      var entry = json.entries
+          .where((e) => e.key != 'platform' && e.key != 'dart_compile_exe')
+          .first;
+      return ReleasePackerFile(entry.key, entry.value,
+          platform: platform, dartCompileExe: dartCompileExe);
     } else {
       throw ArgumentError("Unknown type: $json");
     }
