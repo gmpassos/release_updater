@@ -4,6 +4,7 @@
 - When loading a `ReleaseBundle` from a Zip, detected executables by file extension.
 - When storing a `ReleaseFile`, ensure that the `executable` permission is set.
 - Added `startReleaseProcess` and `runReleaseProcess`.
+- collection: ^1.15.0
 
 ## 1.0.1
 
