@@ -1,6 +1,6 @@
 name: release_updater
 description: A simple way to update release/installation files in a local directory.
-version: 1.0.1
+version: 1.0.2
 homepage: https://github.com/gmpassos/release_updater
 
 environment:

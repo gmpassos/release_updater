@@ -45,6 +45,15 @@ You can implement your own `ReleaseProvider` or use just the built-in [ReleasePr
 
 [ReleaseProviderHttp_class]: https://pub.dev/documentation/release_updater/latest/release_updater.io/ReleaseProviderHttp-class.html
 
+## Executables
+
+- `release_updater.dart`: A `CLI` updater. 
+
+
+- `release_updater_server.dart`: A simple HTTP server to provide releases using the [shelf package][shelf].
+
+[shelf]: https://pub.dev/packages/shelf
+
 ## Source
 
 The official source code is [hosted @ GitHub][github_release_updater]:

@@ -82,9 +82,14 @@ class ReleaseProviderHttp extends ReleaseProvider {
     var rootPath =
         file.replaceFirst(RegExp(r'\.zip$', caseSensitive: false), '');
 
-    var releaseBundle = ReleaseBundleZip(Release(name, targetVersion), zipBytes,
-        rootPath: rootPath);
+    var release = Release(name, targetVersion, platform: platform);
+    var releaseBundle = ReleaseBundleZip(release, zipBytes, rootPath: rootPath);
 
     return releaseBundle;
+  }
+
+  @override
+  String toString() {
+    return 'ReleaseProviderHttp{baseURL: ${httpClient.baseURL}, releasesFile: $releasesFile, releasesBundleFileFormat: $releasesBundleFileFormat}';
   }
 }

@@ -14,11 +14,19 @@ abstract class ReleaseBundle {
 }
 
 class ReleaseBundleZip extends ReleaseBundle {
+  static const List<String> defaultExecutableExtensions = ['exe', 'sh'];
+
   final Uint8List _zipBytes;
   final String? rootPath;
+  final List<String> executableExtensions;
 
-  ReleaseBundleZip(Release release, this._zipBytes, {this.rootPath})
+  ReleaseBundleZip(Release release, this._zipBytes,
+      {this.rootPath, this.executableExtensions = defaultExecutableExtensions})
       : super(release);
+
+  bool isExecutableFilePath(String filePath) => executableExtensions
+      .where((ext) => filePath.endsWith('.$ext'))
+      .isNotEmpty;
 
   @override
   FutureOr<Set<ReleaseFile>> get files {
@@ -30,16 +38,19 @@ class ReleaseBundleZip extends ReleaseBundle {
   }
 
   ReleaseFile _toReleaseFile(ArchiveFile f) {
-    var name = f.name;
+    var filePath = f.name;
 
     var rootPath = this.rootPath;
 
-    if (rootPath != null && name.startsWith(rootPath)) {
-      name = name.substring(rootPath.length);
+    if (rootPath != null && filePath.startsWith(rootPath)) {
+      filePath = filePath.substring(rootPath.length);
     }
 
-    var releaseFile = ReleaseFile(name, f.content,
-        time: DateTime.fromMillisecondsSinceEpoch(f.lastModTime * 1000));
+    var executable = isExecutableFilePath(filePath);
+
+    var releaseFile = ReleaseFile(filePath, f.content,
+        time: DateTime.fromMillisecondsSinceEpoch(f.lastModTime * 1000),
+        executable: executable);
 
     return releaseFile;
   }

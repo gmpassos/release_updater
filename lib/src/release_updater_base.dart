@@ -39,6 +39,10 @@ class ReleaseUpdater {
   /// Returns the current [Release] [storage] path.
   FutureOr<String?> get currentReleasePath => storage.currentReleasePath;
 
+  /// Returns the current [ReleaseFile] [storage] path.
+  Future<String?> currentReleaseFilePath(String filePath) =>
+      storage.currentReleaseFilePath(filePath);
+
   /// Returns the last [Release] available for [name] and [platform].
   FutureOr<Release?> get lastRelease =>
       releaseProvider.lastRelease(name, platform: platform);
@@ -80,6 +84,11 @@ class ReleaseUpdater {
 
     return storage.updateTo(releaseBundle);
   }
+
+  @override
+  String toString() {
+    return 'ReleaseUpdater{storage: $storage, releaseProvider: $releaseProvider}';
+  }
 }
 
 /// A release an its information.
@@ -108,9 +117,9 @@ class Release implements Comparable<Release> {
         platform = normalizePlatform(platform);
 
   factory Release.parse(String s) {
-    var parts = s.split('/');
-    var name = parts[0];
-    var ver = parts[1];
+    var parts = s.trim().split('/');
+    var name = parts[0].trim();
+    var ver = parts[1].trim();
     var platform = parts.length > 2 ? parts[2] : null;
     return Release(name, SemanticVersioning.parse(ver),
         platform: platform?.trim());

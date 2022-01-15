@@ -50,7 +50,9 @@ extension JsonExtension on Map<String, Object?> {
     if (val == null) return def;
     if (val is V) return val as V;
 
-    if (V == int) {
+    if (V == String) {
+      return '$val' as V;
+    } else if (V == int) {
       return (int.tryParse('$val') as V?) ?? def;
     } else if (V == double) {
       return (double.tryParse('$val') as V?) ?? def;

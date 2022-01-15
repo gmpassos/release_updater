@@ -65,7 +65,10 @@ class ReleaseStorageDirectory extends ReleaseStorage {
       var data = file.readAsStringSync();
       if (data.isEmpty) return null;
 
-      return Release.parse(data);
+      var release = Release.parse(data);
+
+      var releaseDir = releaseDirectory(release);
+      return releaseDir.existsSync() ? release : null;
     } catch (e, s) {
       print(e);
       print(s);
@@ -111,13 +114,32 @@ class ReleaseStorageDirectory extends ReleaseStorage {
     localFile.writeAsBytesSync(data);
     localFile.setLastModifiedSync(file.time);
 
+    if (file.executable) {
+      _setFileExecutablePermissionImpl(localFile, true);
+    }
+
     return true;
+  }
+
+  void setFileExecutablePermission(
+      Release release, ReleaseFile file, bool executable) {
+    var dir = releaseDirectory(release);
+    var localFile = file.toFile(parentDirectory: dir);
+
+    _setFileExecutablePermissionImpl(localFile, executable);
+  }
+
+  void _setFileExecutablePermissionImpl(File file, bool executable) {
+    if (Platform.isLinux || Platform.isMacOS) {
+      var mode = executable ? '+rx' : '-rx';
+      Process.runSync('/bin/chmod', [mode, file.path]);
+    }
   }
 
   @override
   bool saveRelease(Release release) {
     var file = currentReleaseConfigFile;
-    file.writeAsStringSync(release.toString());
+    file.writeAsStringSync('$release\n');
     return true;
   }
 
