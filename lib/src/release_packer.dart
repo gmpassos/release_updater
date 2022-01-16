@@ -2,13 +2,13 @@ import 'dart:convert' as dart_convert;
 import 'dart:io';
 
 import 'package:collection/collection.dart';
-import 'package:path/path.dart' as pack_path;
-import 'release_updater_io.dart';
+import 'package:release_updater/src/release_updater_utils.dart';
 import 'package:yaml/yaml.dart';
 
 import 'release_updater_base.dart';
 import 'release_updater_bundle.dart';
 import 'release_updater_config.dart';
+import 'release_updater_io.dart';
 
 class ReleasePacker {
   final String name;
@@ -54,9 +54,7 @@ class ReleasePacker {
   }
 
   static File _toFile(String filePath, Directory? rootDirectory) {
-    var path = pack_path.isRootRelative(filePath)
-        ? filePath
-        : pack_path.join((rootDirectory ?? Directory.current).path, filePath);
+    var path = joinPaths((rootDirectory ?? Directory.current).path, filePath);
     return File(path);
   }
 
@@ -106,14 +104,7 @@ class ReleasePacker {
 
     if (rootDirectory == null) {
       if (sourcePath != null) {
-        if (pack_path.isRootRelative(sourcePath)) {
-          rootDirectory = Directory(sourcePath);
-        } else if (configDirectory != null) {
-          rootDirectory =
-              Directory(pack_path.join(configDirectory.path, sourcePath));
-        } else {
-          rootDirectory = Directory(sourcePath);
-        }
+        rootDirectory = Directory(joinPaths(configDirectory?.path, sourcePath));
       } else if (configDirectory != null) {
         rootDirectory = configDirectory;
       }

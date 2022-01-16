@@ -1,10 +1,10 @@
 @TestOn('vm')
-
-import 'package:pubspec/pubspec.dart';
-import 'package:test/test.dart';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
+import 'package:pubspec/pubspec.dart';
+import 'package:release_updater/src/release_updater_utils.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('ReleaseUpdater.VERSION', () {
@@ -24,8 +24,12 @@ void main() {
       print('PubSpec.name: ${pubSpec.name}');
       print('PubSpec.version: ${pubSpec.version}');
 
-      var srcFile = File(path.join(
-          projectDirectory.path, 'lib/src/release_updater_base.dart'));
+      var srcPath = path.join(
+          projectDirectory.path, 'lib\\src/release_updater_base.dart');
+
+      srcPath = normalizePlatformPath(srcPath);
+
+      var srcFile = File(srcPath);
 
       print(srcFile);
 

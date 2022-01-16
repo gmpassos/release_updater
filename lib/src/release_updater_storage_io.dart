@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:path/path.dart' as pack_path;
+import 'package:release_updater/src/release_updater_utils.dart';
 
 import 'release_updater_base.dart';
 import 'release_updater_io.dart';
@@ -29,7 +29,7 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   }
 
   File get currentReleaseConfigFile =>
-      File(pack_path.join(directory.path, 'current.release'));
+      File(joinPaths(directory.path, 'current.release'));
 
   Directory? get currentReleaseDirectory {
     var currentRelease = this.currentRelease;
@@ -51,7 +51,7 @@ class ReleaseStorageDirectory extends ReleaseStorage {
 
   Directory _releaseDirectoryImpl(Release release) {
     String dirName = releasePathName(release);
-    return Directory(pack_path.join(directory.path, dirName));
+    return Directory(joinPaths(directory.path, dirName));
   }
 
   String releasePathName(Release release) =>
@@ -82,7 +82,8 @@ class ReleaseStorageDirectory extends ReleaseStorage {
     var currentRelease = this.currentRelease;
     if (currentRelease == null) return null;
     var pathName = releasePathName(currentRelease);
-    return pack_path.join(directory.path, pathName);
+    var fullPath = joinPaths(directory.path, pathName);
+    return fullPath;
   }
 
   @override
@@ -164,10 +165,7 @@ extension FileExtension on File {
 
 extension ReleaseFileExtension on ReleaseFile {
   File toFile({Directory? parentDirectory}) {
-    var path = this.path;
-    if (parentDirectory != null) {
-      path = pack_path.join(parentDirectory.path, path);
-    }
+    var path = joinPaths(parentDirectory?.path, this.path);
     return File(path);
   }
 }

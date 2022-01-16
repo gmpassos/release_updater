@@ -6,11 +6,12 @@ import 'package:pub_semver/pub_semver.dart' as semver;
 
 import 'release_updater_provider.dart';
 import 'release_updater_storage.dart';
+import 'release_updater_utils.dart';
 
 /// A [Release] updater from [releaseProvider] to [storage].
 class ReleaseUpdater {
   // ignore: constant_identifier_names
-  static const String VERSION = '1.0.4';
+  static const String VERSION = '1.0.5';
 
   /// The [Release] storage.
   final ReleaseStorage storage;
@@ -219,19 +220,24 @@ class ReleaseFile implements Comparable<ReleaseFile> {
   static String normalizePath(String path) {
     path = path.trim();
 
-    while (path.startsWith('./')) {
-      path = path.substring(2);
+    var path2 = normalizePlatformPath(path, asPosix: true);
+    var parts = splitPathRootPrefix(path2, asPosix: true);
+
+    var path3 = parts[1];
+
+    if (startsWithDriver(path3)) {
+      throw StateError("Can't normalize path: $path -> $path3");
     }
 
-    while (path.startsWith('/')) {
-      path = path.substring(1);
+    while (startsWithGenericPathSeparator(path3)) {
+      path3 = path3.substring(1);
     }
 
-    while (path.startsWith('./')) {
-      path = path.substring(2);
+    if (path3.isEmpty) {
+      throw StateError("Can't normalize path: $path");
     }
 
-    return path;
+    return path3;
   }
 
   final String path;

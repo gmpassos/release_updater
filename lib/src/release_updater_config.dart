@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:path/path.dart' as pack_path;
+import 'package:release_updater/src/release_updater_utils.dart';
 
 Map<String, Object?> parseConfig(List<String> args) {
   var config = <String, Object?>{};
@@ -85,8 +85,7 @@ Directory parseReleaseDirectory(Map<String, Object?> config) {
     var executableFile = File(Platform.script.toFilePath());
     var executableDir = executableFile.parent;
 
-    var releasesDir =
-        Directory(pack_path.join(executableDir.path, releasesDirPath));
+    var releasesDir = Directory(joinPaths(executableDir.path, releasesDirPath));
     return releasesDir;
   }
 }

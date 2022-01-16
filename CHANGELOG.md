@@ -1,3 +1,7 @@
+## 1.0.5
+
+- Improved path resolution, to work at `Windows` and `Linux/POSIX` transparently.
+
 ## 1.0.4
 
 - Improved CLI executables:

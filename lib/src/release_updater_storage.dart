@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart';
-import 'package:path/path.dart' as pack_path;
 
 import 'release_updater_base.dart';
 import 'release_updater_bundle.dart';
+import 'release_updater_utils.dart';
 
 /// A [Release] storage.
 abstract class ReleaseStorage {
@@ -28,9 +28,8 @@ abstract class ReleaseStorage {
     var releaseFile = await currentReleaseFile(filePath);
     if (releaseFile == null) return null;
 
-    var fullPath = pack_path.join(releasePath, releaseFile.path);
-    var path = pack_path.normalize(fullPath);
-    return path;
+    var fullPath = joinPaths(releasePath, releaseFile.path);
+    return fullPath;
   }
 
   FutureOr<Set<ReleaseFile>> get currentFiles;
