@@ -45,6 +45,8 @@ void main() {
 
 Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
     _MyProvider provider, String currentPlatform) async {
+  final pathSeparator = getPathContext().separator;
+
   var releaseUpdater = ReleaseUpdater(storage, provider);
 
   {
@@ -84,7 +86,7 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
     expect(currentReleasePath, endsWith('foo--1.0.2'));
 
     expect(await releaseUpdater.currentReleaseFilePath('README.md'),
-        endsWith('foo--1.0.2/README.md'));
+        endsWith('foo--1.0.2${pathSeparator}README.md'));
 
     expect((await storage.currentReleaseFile('README.md'))?.path,
         endsWith('README.md'));

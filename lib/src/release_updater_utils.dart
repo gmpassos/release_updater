@@ -82,10 +82,7 @@ List<String> splitPathRootPrefix(String path,
   }
 
   pathContext ??= getPathContext(
-      separator: separator,
-      asWindows: asWindows,
-      asPosix: asPosix,
-      pathContext: pathContext);
+      separator: separator, asWindows: asWindows, asPosix: asPosix);
 
   separator ??= pathContext.separator;
 
@@ -151,10 +148,7 @@ String normalizePlatformPath(String path,
     bool asPosix = false,
     pack_path.Context? pathContext}) {
   pathContext ??= getPathContext(
-      separator: separator,
-      asWindows: asWindows,
-      asPosix: asPosix,
-      pathContext: pathContext);
+      separator: separator, asWindows: asWindows, asPosix: asPosix);
 
   separator ??= pathContext.separator;
 
@@ -227,23 +221,31 @@ String _normalizeToPlatformPath(
 }
 
 /// Joins [parent] and [path], respecting if [path] is root relative (platform agnostic).
-String joinPaths(String? parent, String path) {
+String joinPaths(String? parent, String path,
+    {String? separator,
+    bool asWindows = false,
+    bool asPosix = false,
+    pack_path.Context? pathContext}) {
   if (path.isEmpty) return '';
 
-  path = normalizePlatformPath(path);
-  if (parent == null || parent.isEmpty) {
+  pathContext ??= getPathContext(
+      separator: separator, asWindows: asWindows, asPosix: asPosix);
+
+  separator ??= pathContext.separator;
+
+  path = normalizePlatformPath(path,
+      separator: separator, pathContext: pathContext);
+
+  if (parent == null || parent.isEmpty || isRootRelativePath(path)) {
     return path;
   }
 
-  if (isRootRelativePath(path)) {
-    return path;
-  }
+  parent = normalizePlatformPath(parent,
+      separator: separator, pathContext: pathContext);
 
-  parent = normalizePlatformPath(parent);
+  var pathFull = pathContext.joinAll([parent, path]);
+  pathFull = pathContext.normalize(pathFull);
 
-  var pathFull = pack_path.joinAll([parent, path]);
-
-  pathFull = pack_path.normalize(pathFull);
   return pathFull;
 }
 
