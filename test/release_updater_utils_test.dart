@@ -13,7 +13,7 @@ void main() {
 
     test('normalizePlatformPathStyle', () async {
       expect(splitPathRootPrefix('/foo/bar/baz.txt'),
-          equals(['/', 'foo/bar/baz.txt']));
+          equals([pack_path.separator, 'foo/bar/baz.txt']));
 
       expect(splitPathRootPrefix('/foo/bar/baz.txt', asPosix: true),
           equals(['/', 'foo/bar/baz.txt']));
