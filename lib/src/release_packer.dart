@@ -420,8 +420,6 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
 
   @override
   bool execute(Directory rootDirectory, {int expectedExitCode = 0}) {
-    print('-- Process command> ${rootDirectory.path} -> $command $args');
-
     String commandPath;
     if (!containsGenericPathSeparator(command)) {
       commandPath = whichExecutablePath(command);
@@ -430,6 +428,8 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
     }
 
     commandPath = normalizePlatformPath(commandPath);
+
+    print('-- Process command> $commandPath $args');
 
     var result = Process.runSync(commandPath, args,
         workingDirectory: rootDirectory.path);
