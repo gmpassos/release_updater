@@ -48,7 +48,8 @@ bool isRootRelativePath(String path) {
 
 /// Resolves a [pack_path.Context].
 pack_path.Context getPathContext(
-    {bool asWindows = false,
+    {String? separator,
+    bool asWindows = false,
     bool asPosix = false,
     pack_path.Context? pathContext}) {
   if (pathContext != null) return pathContext;
@@ -61,6 +62,10 @@ pack_path.Context getPathContext(
     return pack_path.context.style != pack_path.Style.posix
         ? _contextPosix
         : pack_path.context;
+  } else if (separator == '/') {
+    return _contextPosix;
+  } else if (separator == '\\') {
+    return _contextWindows;
   }
 
   return pack_path.context;
@@ -77,7 +82,10 @@ List<String> splitPathRootPrefix(String path,
   }
 
   pathContext ??= getPathContext(
-      asWindows: asWindows, asPosix: asPosix, pathContext: pathContext);
+      separator: separator,
+      asWindows: asWindows,
+      asPosix: asPosix,
+      pathContext: pathContext);
 
   separator ??= pathContext.separator;
 
@@ -143,7 +151,10 @@ String normalizePlatformPath(String path,
     bool asPosix = false,
     pack_path.Context? pathContext}) {
   pathContext ??= getPathContext(
-      asWindows: asWindows, asPosix: asPosix, pathContext: pathContext);
+      separator: separator,
+      asWindows: asWindows,
+      asPosix: asPosix,
+      pathContext: pathContext);
 
   separator ??= pathContext.separator;
 
@@ -178,6 +189,14 @@ String normalizePlatformPath(String path,
       } else {
         rootPrefix = 'file://';
       }
+    }
+  }
+
+  if (separator == '/') {
+    rootPrefix = rootPrefix.replaceAll('\\', '/');
+  } else if (separator == '\\') {
+    if (!startsWithURI(path)) {
+      rootPrefix = rootPrefix.replaceAll('/', '\\');
     }
   }
 

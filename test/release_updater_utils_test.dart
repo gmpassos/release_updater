@@ -1,6 +1,6 @@
+import 'package:path/path.dart' as pack_path;
 import 'package:release_updater/src/release_updater_utils.dart';
 import 'package:test/test.dart';
-import 'package:path/path.dart' as pack_path;
 
 final pack_path.Context contextWindows =
     pack_path.Context(style: pack_path.Style.windows);
@@ -11,7 +11,7 @@ void main() {
   group('Utils', () {
     setUp(() {});
 
-    test('normalizePlatformPathStyle', () async {
+    test('splitPathRootPrefix', () async {
       expect(splitPathRootPrefix('/foo/bar/baz.txt'),
           equals([pack_path.separator, 'foo/bar/baz.txt']));
 
@@ -47,7 +47,7 @@ void main() {
           equals(['\\', 'foo\\bar/baz.txt']));
     });
 
-    test('normalizePlatformPathStyle', () async {
+    test('normalizePlatformPath', () async {
       expect(normalizePlatformPath('/foo/bar/baz.txt', separator: '/'),
           equals('/foo/bar/baz.txt'));
 
