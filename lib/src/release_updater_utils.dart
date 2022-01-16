@@ -246,3 +246,7 @@ String joinPaths(String? parent, String path) {
   pathFull = pack_path.normalize(pathFull);
   return pathFull;
 }
+
+extension StringExtension on String {
+  String normalizeToPosixLines() => replaceAll(RegExp(r'(?:\r\n|\r)'), '\n');
+}

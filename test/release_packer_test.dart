@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as pack_path;
 import 'package:release_updater/release_packer.dart';
 import 'package:release_updater/release_updater.dart';
+import 'package:release_updater/src/release_updater_utils.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -103,7 +104,8 @@ Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {
     expect(file.path, equals('README.md'));
 
     var dataStr = await file.dataAsString;
-    expect(dataStr.trim(), equals('# Foo/1.0.1\n\nA Foo project.'));
+    expect(dataStr.normalizeToPosixLines().trim(),
+        equals('# Foo/1.0.1\n\nA Foo project.'));
   }
 
   {
