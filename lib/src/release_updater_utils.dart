@@ -1,14 +1,18 @@
 import 'package:path/path.dart' as pack_path;
 
-final RegExp _genericSeparator = RegExp(r'[\\/]');
-
 final pack_path.Context _contextWindows =
     pack_path.Context(style: pack_path.Style.windows);
+
 final pack_path.Context _contextPosix =
     pack_path.Context(style: pack_path.Style.posix);
 
+final RegExp _genericSeparator = RegExp(r'[\\/]');
+
 bool isGenericPathSeparator(String separator) =>
     (separator == '/' || separator == '\\');
+
+bool containsGenericPathSeparator(String path) =>
+    _genericSeparator.hasMatch(path);
 
 final RegExp _genericSeparatorStart = RegExp(r'^[\\/]+[^\\/]');
 

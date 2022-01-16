@@ -1,3 +1,17 @@
+## 1.0.6
+
+- `ReleasePacker`:
+  - Added `prepareCommands` and `finalizeCommands`.
+- New `ReleasePackerCommand`:
+  - `ReleasePackerCommandDelete`
+  - `ReleasePackerProcessCommand`
+  - `ReleasePackerDartCommand`
+- Improved `README.md`:
+  - Added executables usage description.
+- Improved `ReleasePacker` build tests:
+  - Added commands.
+  - Added `prepare` and `finalize`.
+
 ## 1.0.5
 
 - Improved path resolution, to work at `Windows` and `Linux/POSIX` transparently.

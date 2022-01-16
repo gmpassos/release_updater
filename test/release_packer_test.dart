@@ -8,7 +8,14 @@ import 'package:test/test.dart';
 
 void main() {
   group('ReleasePacker', () {
-    test('memory', () async {
+    test('ReleasePackerCommand', () async {
+      expect(
+          ReleasePackerCommand.parseInlineCommand(
+              'bin/foo.exe arg1 "a b x" arg2'),
+          equals(['bin/foo.exe', 'arg1', 'a b x', 'arg2']));
+    });
+
+    test('buildFromDirectory', () async {
       var releasePackerJsonPath = resolveReleasePackerJsonFilePath();
       var releasePacker = ReleasePacker.fromFilePath(releasePackerJsonPath);
 
@@ -20,7 +27,38 @@ void main() {
       expect(releasePacker.name, equals('foo'));
       expect(releasePacker.version.toString(), equals(ReleaseUpdater.VERSION));
 
-      expect(releasePacker.files.length, equals(6));
+      var prepareCommands = releasePacker.prepareCommands!;
+      expect(prepareCommands.length, equals(3));
+
+      {
+        expect(prepareCommands[0], isA<ReleasePackerDartPubGet>());
+
+        expect(prepareCommands[1], isA<ReleasePackerDartCompileExe>());
+        expect((prepareCommands[1] as ReleasePackerDartCompileExe).args,
+            equals(['exe', 'bin/foo.dart']));
+
+        expect(prepareCommands[2], isA<ReleasePackerProcessCommand>());
+        expect((prepareCommands[2] as ReleasePackerProcessCommand).command,
+            equals('bin/foo.exe'));
+        expect(
+            (prepareCommands[2] as ReleasePackerProcessCommand).stdoutFilePath,
+            equals('foo.out'));
+      }
+
+      var finalizeCommands = releasePacker.finalizeCommands!;
+      expect(finalizeCommands.length, equals(2));
+
+      {
+        expect(finalizeCommands[0], isA<ReleasePackerCommandDelete>());
+        expect((finalizeCommands[0] as ReleasePackerCommandDelete).path,
+            equals('bin/foo.exe'));
+
+        expect(finalizeCommands[1], isA<ReleasePackerCommandDelete>());
+        expect((finalizeCommands[1] as ReleasePackerCommandDelete).path,
+            equals('foo.out'));
+      }
+
+      expect(releasePacker.files.length, equals(8));
 
       expect(releasePacker.configDirectory, isNotNull);
 
@@ -72,7 +110,7 @@ void main() {
 
       var platform = ReleasePlatform.platform;
 
-      var bundle = releasePacker.buildFromDirectory(
+      var bundle = await releasePacker.buildFromDirectory(
           sourcePath: 'project-foo', platform: platform);
 
       await _checkBundle(bundle, platform);
@@ -94,7 +132,7 @@ Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {
   var bundleFiles = (await bundle.files).toList();
   bundleFiles.sort();
 
-  expect(bundleFiles.length, equals(3));
+  expect(bundleFiles.length, equals(5));
 
   var bundleZipBytes = await bundle.zipBytes;
   expect(bundleZipBytes.length, greaterThan(100));
@@ -110,6 +148,22 @@ Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {
 
   {
     var file = bundleFiles[1];
+    expect(file.path, equals('bin/foo.exe'));
+
+    var length = await file.length;
+    expect(length, greaterThan(1024));
+  }
+
+  {
+    var file = bundleFiles[2];
+    expect(file.path, equals('foo.txt'));
+
+    var dataStr = await file.dataAsString;
+    expect(dataStr.trim(), equals('Foo!'));
+  }
+
+  {
+    var file = bundleFiles[3];
     expect(file.path, equals('hello-world.txt'));
 
     var dataStr = await file.dataAsString;
@@ -117,7 +171,7 @@ Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {
   }
 
   {
-    var file = bundleFiles[2];
+    var file = bundleFiles[4];
     expect(file.path, equals('platform.txt'));
 
     var dataStr = await file.dataAsString;

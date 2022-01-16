@@ -28,14 +28,23 @@ import 'package:release_updater/release_updater_io.dart';
 
 void main() async {
   var storage = ReleaseStorageDirectory('appx', Directory('/install/path'));
-  var provider =
-  ReleaseProviderHttp.baseURL('https://your.domain/appx/releases');
+  
+  var provider = ReleaseProviderHttp.baseURL('https://your.domain/appx/releases');
 
   var releaseUpdater = ReleaseUpdater(storage, provider);
 
   var version = await releaseUpdater.update();
 
   print('-- Updated to version: $version');
+
+  var runResult = await releaseUpdater.runReleaseProcess('run.exe', ['-a']);
+
+  var exitCode = runResult!.exitCode;
+  
+  print('-- Exit code: $exitCode');
+  print('-- Result: ${runResult.stdout}');
+
+  exit(exitCode);
 }
 ```
 
@@ -47,12 +56,102 @@ You can implement your own `ReleaseProvider` or use just the built-in [ReleasePr
 
 ## Executables
 
-- `release_updater.dart`: A `CLI` updater. 
+- `release_updater`: A `CLI` updater. 
 
-
-- `release_updater_server.dart`: A simple HTTP server to provide releases using the [shelf package][shelf].
+- `release_updater_server`: A simple HTTP server to provide releases using the [shelf package][shelf].
 
 [shelf]: https://pub.dev/packages/shelf
+
+### release_updater
+
+The `release_updater` is a **CLI** for the [ReleaseUpdater class][ReleaseUpdater_class].
+
+To build a release:
+
+```shell
+$> release_packer release_packer.json build ./source-dir ./releases-dir
+```
+
+Example of a `release_packer.json` file:
+
+```json
+{
+  "name": "appx",
+  "version_from": "pubspec.yaml",
+  "prepare": [
+    "dart_pub_get",
+    {"dart_compile_exe": "bin/foo.dart"}
+  ],
+  "finalize": [
+    {"rm": "bin/foo.exe"}
+  ],
+  "files": [
+    "README.md",
+    {"hello.txt": "hello-world.txt"},
+    {"bin/foo.exe": "."},
+    {"libfoo-arm64.dylib": ".", "platform":  "^macos-arm64$"},
+    {"libfoo-x64.dylib": ".", "platform":  "^macos-x64$"},
+    {"libfoo.so": ".", "platform":  "^linux.*$"},
+    {"libfoo.dll": ".", "platform":  "^windows.*$"}
+  ]
+}
+```
+
+#### JSON Format:
+
+- `name`: the application name, for the [Release][Release_class] name.
+
+- `version`: the version of the [Release][Release_class].
+
+- `version_from`: the `JSON` or `YAML` file to provide the field `version` (if the parameter `field` is not provided).
+
+- `platform`: is a `RegExp` string to match the building platform. See the [ReleasePlatform class][ReleasePlatform_class].
+
+- Command types:
+  - `dart_pub_get`: performs a `dart pub get`.
+  - `dart_compile_exe`: performs a `dart compile exe %dart_script`.
+  - `dart`: performs a `dart %command`.
+  - `command`: performs a shell `%command`.
+  - `rm`: Deletes a file.
+
+- `files`: each entry of `files` can be:
+  - A `String` with a file path:
+    ```JSON
+    "file/path.txt"
+    ```
+  - A `Map` with extra parameters:
+    - A file with a renamed path and a specific platform.
+      ```JSON
+      {"source/file/path.txt": "release/file/path", "platform": "^regexp"}
+      ```
+    - A file without rename it:
+      ```JSON
+      {"source/file/path.txt": "."}
+      ```
+    - A file from a `dart_compile_exe` command:
+      ```JSON
+      {"bin/client.exe": "client.exe", "dart_compile_exe": "bin/client.dart"}
+      ```
+
+[Release_class]: https://pub.dev/documentation/release_updater/latest/release_updater.io/Release-class.html  
+[ReleasePlatform_class]: https://pub.dev/documentation/release_updater/latest/release_updater.io/ReleasePlatform-class.html
+[ReleaseUpdater_class]: https://pub.dev/documentation/release_updater/latest/release_updater.io/ReleaseUpdater-class.html
+
+### release_updater_server
+
+To serve a release directory:
+```shell
+$> release_updater_server releases-server-config.json
+```
+
+Config file:
+```
+{
+  "releases-directory": "/path/to/releases",
+  "port": 8090,
+  "address": "0.0.0.0"
+}
+```
 
 ## Source
 

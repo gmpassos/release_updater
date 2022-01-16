@@ -1,5 +1,6 @@
 import 'dart:io';
 
+/// Provides the current [Release] platform.
 class ReleasePlatform {
   /// The platform ([osName] + [architecture]).
   static String get platform {

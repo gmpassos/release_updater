@@ -17,8 +17,12 @@ void main() async {
     print('-- Updated to version: $updatedToVersion');
   }
 
-  var runExecutable = await storage.currentReleaseFilePath('run.exe');
+  var runResult = await releaseUpdater.runReleaseProcess('run.exe', ['-a']);
 
-  print('-- Running: $runExecutable');
-  Process.run(runExecutable!, []);
+  var exitCode = runResult!.exitCode;
+
+  print('-- Exit code: $exitCode');
+  print('-- Result: ${runResult.stdout}');
+
+  exit(exitCode);
 }

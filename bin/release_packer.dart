@@ -29,7 +29,7 @@ void main(List<String> args) async {
     var sourcePath = args.isNotEmpty ? args[0] : './';
 
     ReleaseBundleZip releaseBundle =
-        _buildReleaseBundle(releasePacker, sourcePath);
+        await _buildReleaseBundle(releasePacker, sourcePath);
 
     await _showBundleFiles(releaseBundle);
   } else if (cmd == 'build') {
@@ -37,7 +37,7 @@ void main(List<String> args) async {
     var releasesPath = args.length > 1 ? args[1] : './';
 
     ReleaseBundleZip releaseBundle =
-        _buildReleaseBundle(releasePacker, sourcePath, releasesPath);
+        await _buildReleaseBundle(releasePacker, sourcePath, releasesPath);
 
     await _showBundleFiles(releaseBundle);
 
@@ -65,9 +65,9 @@ void main(List<String> args) async {
   exit(0);
 }
 
-ReleaseBundleZip _buildReleaseBundle(
+Future<ReleaseBundleZip> _buildReleaseBundle(
     ReleasePacker releasePacker, String sourcePath,
-    [String? releasesPath]) {
+    [String? releasesPath]) async {
   print(
       '** Building release: $sourcePath${releasesPath != null ? ' -> $releasesPath' : ''}');
 
@@ -75,7 +75,7 @@ ReleaseBundleZip _buildReleaseBundle(
 
   print('-- Generating release bundle...');
 
-  var releaseBundle = releasePacker.buildFromDirectory(
+  var releaseBundle = await releasePacker.buildFromDirectory(
       sourcePath: sourcePath, platform: platform);
 
   print('-- Generated release: ${releaseBundle.release}');
