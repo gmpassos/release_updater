@@ -429,6 +429,8 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
       commandPath = command;
     }
 
+    commandPath = normalizePlatformPath(commandPath);
+
     var result = Process.runSync(commandPath, args,
         workingDirectory: rootDirectory.path);
 

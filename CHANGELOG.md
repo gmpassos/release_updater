@@ -1,3 +1,7 @@
+## 1.0.7
+
+- Fix `ReleasePackerProcessCommand` execution on `Windows`.
+
 ## 1.0.6
 
 - `ReleasePacker`:
