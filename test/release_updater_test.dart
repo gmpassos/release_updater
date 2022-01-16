@@ -97,9 +97,11 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
     expect(filesPaths, equals(['README.md', 'hello.txt']));
 
     expect(
-        List.generate(filesPaths.length,
-                (i) => dart_convert.utf8.decode(files[i].data as Uint8List))
-            .toList(),
+        List.generate(
+            filesPaths.length,
+            (i) => dart_convert.utf8
+                .decode(files[i].data as Uint8List)
+                .normalizeLines()).toList(),
         equals(['#Foo/1.0.2\n\nA Foo project.\n', 'Hello World!']));
 
     expect(List.generate(files.length, (i) => files[i].length).toList(),
@@ -148,9 +150,11 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
     expect(filesPaths, equals(['README.md', 'hello.txt', 'note.txt']));
 
     expect(
-        List.generate(filesPaths.length,
-                (i) => dart_convert.utf8.decode(files[i].data as Uint8List))
-            .toList(),
+        List.generate(
+            filesPaths.length,
+            (i) => dart_convert.utf8
+                .decode(files[i].data as Uint8List)
+                .normalizeLines()).toList(),
         equals(
             ['#Foo/1.0.3\n\nA Foo project.\n', 'Hello New World!', 'A note.']));
   }
@@ -242,4 +246,8 @@ class _MyReleaseBundle extends ReleaseBundle {
 
   @override
   FutureOr<Set<ReleaseFile>> get files => _files.toSet();
+}
+
+extension _StringExtension on String {
+  String normalizeLines() => replaceAll(RegExp(r'(?:\r\n|\r)'), '\n');
 }
