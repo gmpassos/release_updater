@@ -1,5 +1,7 @@
 ## 1.0.7
 
+- `ReleasePackerCommand`:
+  - Improved commands error logging.
 - Fix `ReleasePackerProcessCommand` execution on `Windows`.
 
 ## 1.0.6
