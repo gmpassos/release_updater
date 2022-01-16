@@ -429,7 +429,7 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
 
     commandPath = normalizePlatformPath(commandPath);
 
-    print('-- Process command> $commandPath $args');
+    print('-- Process command> ${rootDirectory.path} -> $commandPath $args');
 
     var result = Process.runSync(commandPath, args,
         workingDirectory: rootDirectory.path);
@@ -441,8 +441,9 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
     var ok = exitCode == expectedExitCode;
 
     if (!ok) {
-      print(
-          '** Dart command error! exitCode: $exitCode ; command: $command $args');
+      print('** Command error! exitCode: $exitCode ; command: $command $args');
+      print(result.stdout);
+      print(result.stderr);
     }
 
     return ok;
@@ -499,9 +500,9 @@ class ReleasePackerDartCommand extends ReleasePackerCommandWithArgs {
 
   @override
   bool execute(Directory rootDirectory, {int expectedExitCode = 0}) {
-    print('-- Dart command> ${rootDirectory.path} -> $command $args');
-
     var dartPath = whichExecutablePath('dart');
+
+    print('-- Dart command> ${rootDirectory.path} -> $dartPath $command $args');
 
     var result = Process.runSync(dartPath, [command, ...args],
         workingDirectory: rootDirectory.path);
@@ -512,6 +513,8 @@ class ReleasePackerDartCommand extends ReleasePackerCommandWithArgs {
     if (!ok) {
       print(
           '** Dart command error! exitCode: $exitCode ; command: $command $args');
+      print(result.stdout);
+      print(result.stderr);
     }
 
     return ok;
