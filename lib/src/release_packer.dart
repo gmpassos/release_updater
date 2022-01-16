@@ -427,11 +427,12 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
       commandPath = command;
     }
 
-    commandPath = normalizePlatformPath(commandPath);
+    var fullCommandPath = joinPaths(rootDirectory.path, commandPath);
 
-    print('-- Process command> ${rootDirectory.path} -> $commandPath $args');
+    print(
+        '-- Process command> ${rootDirectory.path} -> $fullCommandPath $args');
 
-    var result = Process.runSync(commandPath, args,
+    var result = Process.runSync(fullCommandPath, args,
         workingDirectory: rootDirectory.path);
 
     saveStdout(rootDirectory, result.stdout);
