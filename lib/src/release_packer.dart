@@ -519,6 +519,7 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
 
     if (body != null) {
       print('-- Requesting URL[POS]: $url');
+      print('-- Body:\n<<$body>>');
 
       response = await httpClient.post('',
           parameters: parameters, authorization: authorization, body: body);
@@ -536,6 +537,11 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
         '-- Request response> status: ${response.status} ; body: ${response.bodyAsString}');
 
     return response.isOK;
+  }
+
+  @override
+  String toString() {
+    return '$runtimeType{ url: $url, parameters: $parameters, authorization: $authorization, body: $body }';
   }
 }
 

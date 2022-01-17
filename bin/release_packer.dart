@@ -14,7 +14,8 @@ void main(List<String> args) async {
     print(
         ' \$> release_packer release_packer.json build ./source-dir ./releases-dir -Puser=pass\n');
 
-    print(' \$> release_packer release_packer.json info ./source-dir\n');
+    print(
+        ' \$> release_packer release_packer.json info ./source-dir [generate]\n');
 
     exit(0);
   }
@@ -31,11 +32,40 @@ void main(List<String> args) async {
 
   if (cmd == 'info') {
     var sourcePath = args.isNotEmpty ? args[0] : './';
+    var generateBundle = args.where((a) => a.contains('generate')).isNotEmpty;
 
-    ReleaseBundleZip releaseBundle =
-        await _buildReleaseBundle(releasePacker, sourcePath);
+    print('-- Release name: ${releasePacker.name}');
+    print('-- Release version: ${releasePacker.version}');
 
-    await _showBundleFiles(releaseBundle);
+    var prepareCommands = releasePacker.prepareCommands;
+    if (prepareCommands != null) {
+      print('\n-- Prepare commands (${prepareCommands.length}):');
+      for (var cmd in prepareCommands) {
+        print('  -- $cmd');
+      }
+    }
+
+    var finalizeCommands = releasePacker.finalizeCommands;
+    if (finalizeCommands != null) {
+      print('\n-- Finalize commands (${finalizeCommands.length}):');
+      for (var cmd in finalizeCommands) {
+        print('  -- $cmd');
+      }
+    }
+
+    var files = releasePacker.files;
+    print('\n-- Files ${files.length}:');
+
+    for (var f in files) {
+      print('  -- $f');
+    }
+
+    if (generateBundle) {
+      ReleaseBundleZip releaseBundle =
+          await _buildReleaseBundle(releasePacker, sourcePath);
+
+      await _showBundleFiles(releaseBundle);
+    }
   } else if (cmd == 'build') {
     var sourcePath = args.isNotEmpty ? args[0] : './';
     var releasesPath = args.length > 1 ? args[1] : './';
@@ -89,7 +119,7 @@ Future<ReleaseBundleZip> _buildReleaseBundle(
 Future<void> _showBundleFiles(ReleaseBundleZip releaseBundle) async {
   var files = await releaseBundle.files;
 
-  print('\n-- Files (${files.length}):');
+  print('\n-- Bundle files (${files.length}):');
   for (var f in files) {
     print('  -- ${f.path} (${await f.length} bytes)');
   }

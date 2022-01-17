@@ -1,8 +1,10 @@
 ## 1.0.11
 
 - `ReleasePackerCommandURL`:
-  - Added request logging. 
-- Log prepare/finalize commands.
+  - Added request logging.
+- `release_packer`:
+  - Improve command `info`.
+  - Log prepare/finalize commands.
 
 ## 1.0.10
 
