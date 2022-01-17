@@ -505,15 +505,22 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
     HttpResponse response;
 
     if (body != null) {
+      print('-- Requesting URL[POS]: $url');
+
       response = await httpClient.post('',
           parameters: parameters, authorization: authorization, body: body);
     } else {
+      print('-- Requesting URL[GET]: $url');
+
       response = await httpClient.get(
         '',
         parameters: parameters,
         authorization: authorization,
       );
     }
+
+    print(
+        '-- Request response> status: ${response.status} ; body: ${response.bodyAsString}');
 
     return response.isOK;
   }

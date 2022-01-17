@@ -1,3 +1,8 @@
+## 1.0.11
+
+- `ReleasePackerCommandURL`:
+  - Added request logging. 
+
 ## 1.0.10
 
 - Fix `ReleasePackerCommandURL` `Credential` parser.
