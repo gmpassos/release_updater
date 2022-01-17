@@ -13,6 +13,30 @@ abstract class ReleaseBundle {
   FutureOr<Set<ReleaseFile>> get files;
 
   FutureOr<Uint8List> toBytes();
+
+  static const String defaultReleasesBundleFileFormat =
+      '%NAME%-%VER%%[-]PLATFORM%.zip';
+
+  static String formatReleaseBundleFile(
+      String file, String name, Version version,
+      [String? platform]) {
+    if (!file.contains('%')) {
+      return file;
+    }
+    file = _replaceMark(file, 'NAME', name);
+    file = _replaceMark(file, 'VER', version.toString());
+    file = _replaceMark(file, 'PLATFORM', platform);
+    return file;
+  }
+
+  static String _replaceMark(String s, String mark, String? value) {
+    var regExp = RegExp(r'%(?:\[(.*?)\])?(' + mark + r')%');
+
+    return s.replaceAllMapped(regExp, (m) {
+      var prev = m.group(1) ?? '';
+      return value != null ? '$prev$value' : '';
+    });
+  }
 }
 
 class ReleaseBundleZip extends ReleaseBundle {

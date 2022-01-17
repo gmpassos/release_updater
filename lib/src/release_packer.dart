@@ -530,6 +530,16 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
         return false;
       } else {
         print('-- Using `ReleaseBundle` as body.');
+
+        var file = parameters?['file'] as String?;
+        if (file != null) {
+          var release = releaseBundle.release;
+          var fileFormatted = ReleaseBundle.formatReleaseBundleFile(
+              file, release.name, release.version);
+          parameters!['file'] = fileFormatted;
+
+          print('-- Parameter `file`: $file');
+        }
       }
       body = await releaseBundle.toBytes();
     } else {
@@ -587,17 +597,31 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
 }
 
 class ReleasePackerCommandUploadReleaseBundle extends ReleasePackerCommandURL {
+  final String fileFormat;
+
   ReleasePackerCommandUploadReleaseBundle(String url,
-      {Map<String, Object?>? parameters, Credential? authorization})
+      {Map<String, Object?>? parameters,
+      Credential? authorization,
+      this.fileFormat = ReleaseBundle.defaultReleasesBundleFileFormat})
       : super(url,
             parameters: parameters,
             authorization: authorization,
             body: '%RELEASE_BUNDLE%');
 
   factory ReleasePackerCommandUploadReleaseBundle.fromJson(Object json) {
+    String? file;
+    if (json is Map) {
+      var map = json.asJsonMap;
+      file = map.get('file') ?? ReleaseBundle.defaultReleasesBundleFileFormat;
+    }
+
     var cmd = ReleasePackerCommandURL.fromJson(json);
+
+    var parameters = cmd.parameters ?? <String, Object?>{};
+    parameters['file'] = file;
+
     return ReleasePackerCommandUploadReleaseBundle(cmd.url,
-        parameters: cmd.parameters, authorization: cmd.authorization);
+        parameters: parameters, authorization: cmd.authorization);
   }
 }
 
