@@ -69,8 +69,10 @@ The `release_updater` is a **CLI** for the [ReleaseUpdater class][ReleaseUpdater
 To build a release:
 
 ```shell
-$> release_packer release_packer.json build ./source-dir ./releases-dir
+$> release_packer release_packer.json build ./source-dir ./releases-dir -Pupload-url=http://your-server:8090/ -Pupload-user=userx -Pupload-pass=pass123
 ```
+
+- The `-P` arguments are properties to the JSON configuration file (see `%UPLOAD_URL%` below).
 
 Example of a `release_packer.json` file:
 
@@ -83,7 +85,16 @@ Example of a `release_packer.json` file:
     {"dart_compile_exe": "bin/foo.dart"}
   ],
   "finalize": [
-    {"rm": "bin/foo.exe"}
+    {"rm": "bin/foo.exe"},
+    {
+      "upload_release": {
+        "url": "%UPLOAD_URL%",
+        "authorization": {
+          "user": "%UPLOAD_USER%",
+          "pass": "%UPLOAD_PASS%"
+        }
+      }
+    }
   ],
   "files": [
     "README.md",
@@ -113,6 +124,11 @@ Example of a `release_packer.json` file:
   - `dart`: performs a `dart %command`.
   - `command`: performs a shell `%command`.
   - `rm`: Deletes a file.
+  - `upload_release`: uploads the generated release.
+    - `url`: release server base URL.
+    - `authorization`: HTTP basic authorization.
+      - `username`: authentication username.
+      - `password`: authentication password.
 
 - `files`: each entry of `files` can be:
   - A `String` with a file path:
