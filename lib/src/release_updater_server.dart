@@ -114,12 +114,9 @@ FutureOr<shelf.Response>? _processUpLoad(
   var file = queryParameters['file'];
   if (file == null || file.isEmpty) return null;
 
-  var requestCredential = _parseRequestCredential(request);
-
-  print('!!! Credential: ${credential.username} ; ${credential.password}');
-  print('!!! Request Credential: ${requestCredential.username} ; ${requestCredential.password}');
-
   var address = requestInfo.address.address;
+
+  var requestCredential = _parseRequestCredential(request);
 
   if (credential.username != requestCredential.username ||
       credential.password != requestCredential.password) {
@@ -144,13 +141,10 @@ BasicCredential _parseRequestCredential(
 ) {
   var headerAuthorization = request.headers['authorization'];
 
-  print('!!! headerAuthorization: $headerAuthorization');
-
   if (headerAuthorization != null && headerAuthorization.isNotEmpty) {
     var headerAuthorizationLc = headerAuthorization.toLowerCase();
     if (headerAuthorizationLc.startsWith('basic')) {
-      var base64 = headerAuthorizationLc.split(RegExp(r'\s+'))[1].trim();
-      print('!!! base64: $base64');
+      var base64 = headerAuthorization.split(RegExp(r'\s+'))[1].trim();
       return BasicCredential.base64(base64);
     }
   }
