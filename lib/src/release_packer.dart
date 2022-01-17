@@ -382,6 +382,12 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
       results[c] = ok;
     }
 
+    print('-- Commands results:');
+    for (var e in results.entries) {
+      print('  -- ${e.key} -> ${e.value}');
+    }
+    print('');
+
     return results;
   }
 }
@@ -514,6 +520,8 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
       if (releaseBundle == null) {
         print('** Release bundle not provided for body: $this');
         return false;
+      } else {
+        print('-- Using `ReleaseBundle` as body.');
       }
       body = await releaseBundle.toBytes();
     } else {
