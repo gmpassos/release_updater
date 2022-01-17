@@ -150,6 +150,7 @@ BasicCredential _parseRequestCredential(
     var headerAuthorizationLc = headerAuthorization.toLowerCase();
     if (headerAuthorizationLc.startsWith('basic')) {
       var base64 = headerAuthorizationLc.split(RegExp(r'\s+'))[1].trim();
+      print('!!! base64: $base64');
       return BasicCredential.base64(base64);
     }
   }
