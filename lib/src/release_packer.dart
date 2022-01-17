@@ -121,15 +121,28 @@ class ReleasePacker {
       files.firstWhereOrNull((e) => filePathRegexp.hasMatch(e.sourcePath));
 
   Future<Map<ReleasePackerCommand, bool>> prepare(Directory rootDirectory,
-          {String? platform}) =>
-      ReleasePackerCommand.executeCommands(this, prepareCommands, rootDirectory,
-          platform: platform);
+      {String? platform}) {
+    var prepareCommands = this.prepareCommands;
+    if (prepareCommands != null && prepareCommands.isNotEmpty) {
+      print('-- Running prepared commands (${prepareCommands.length})...');
+    }
+
+    return ReleasePackerCommand.executeCommands(
+        this, prepareCommands, rootDirectory,
+        platform: platform);
+  }
 
   Future<Map<ReleasePackerCommand, bool>> finalize(Directory rootDirectory,
-          {ReleaseBundle? releaseBundle, String? platform}) =>
-      ReleasePackerCommand.executeCommands(
-          this, finalizeCommands, rootDirectory,
-          platform: platform);
+      {ReleaseBundle? releaseBundle, String? platform}) {
+    var finalizeCommands = this.finalizeCommands;
+    if (finalizeCommands != null && finalizeCommands.isNotEmpty) {
+      print('-- Running finalize commands (${finalizeCommands.length})...');
+    }
+
+    return ReleasePackerCommand.executeCommands(
+        this, finalizeCommands, rootDirectory,
+        platform: platform);
+  }
 
   Future<ReleaseBundleZip> buildFromDirectory(
       {Directory? rootDirectory, String? sourcePath, String? platform}) async {

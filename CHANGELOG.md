@@ -2,6 +2,7 @@
 
 - `ReleasePackerCommandURL`:
   - Added request logging. 
+- Log prepare/finalize commands.
 
 ## 1.0.10
 
