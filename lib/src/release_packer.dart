@@ -170,6 +170,8 @@ class ReleasePacker {
 
     var rootPath = rootDirectory.path;
 
+    print('-- Loading release bundle files from: $rootPath');
+
     var list = files
         .map((e) {
           var sourcePath = e.path;
