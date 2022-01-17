@@ -11,7 +11,23 @@
 [![Code size](https://img.shields.io/github/languages/code-size/gmpassos/release_updater?logo=github&logoColor=white)](https://github.com/gmpassos/release_updater)
 [![License](https://img.shields.io/github/license/gmpassos/release_updater?logo=open-source-initiative&logoColor=green)](https://github.com/gmpassos/release_updater/blob/master/LICENSE)
 
-This package brings a simple way to update release/installation files in a local directory.
+This package brings a simple way to automatically update release/installation files in a local directory.
+
+It also comes with built-in [CLI tools](#cli-tools) to easily generate a release bundle (Zip file) or
+serve release files for multiple platforms.
+
+## Motivation
+
+Since [Dart][dart_overview_platforms] can run in many native platforms (Linux/x64, macOS/x64/arm64, Windows/x86),
+it's not simple to manage all the different `releases`+`platforms` files that a
+[compiled Dart application][dart_compile] can have.
+
+In the same way that modern Browsers, and many other applications,
+can have automatic builds and updates for multiple platforms, this package
+provides [tools](#cli-tools) and an [API][api_doc] to easily achieve that.
+
+[dart_overview_platforms]: https://dart.dev/overview#platform
+[dart_compile]: https://dart.dev/tools/dart-compile
 
 ## API Documentation
 
@@ -54,7 +70,7 @@ You can implement your own `ReleaseProvider` or use just the built-in [ReleasePr
 
 [ReleaseProviderHttp_class]: https://pub.dev/documentation/release_updater/latest/release_updater.io/ReleaseProviderHttp-class.html
 
-## Executables
+## CLI Tools
 
 - `release_updater`: A `CLI` updater. 
 
