@@ -114,7 +114,7 @@ Future<ReleaseBundleZip> _buildReleaseBundle(
   print(
       '\n--------------------------------------------------------------------');
   print(
-      '** Building release: $sourcePath${releasesPath != null ? ' -> $releasesPath' : ''}');
+      '** Building release: $sourcePath${releasesPath != null ? ' -> $releasesPath' : ''}\n');
 
   var platform = ReleasePlatform.platform;
 

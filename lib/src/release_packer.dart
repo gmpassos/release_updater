@@ -162,8 +162,14 @@ class ReleasePacker {
 
     await prepare(rootDirectory, platform: platform);
 
-    for (var f in getFiles(platform: platform).where((e) => e.hasCommands)) {
-      await f.executeCommands(this, rootDirectory, platform: platform);
+    var filesWithCommand =
+        getFiles(platform: platform).where((e) => e.hasCommands).toList();
+
+    if (filesWithCommand.isNotEmpty) {
+      print('-- Running files commands (${filesWithCommand.length}):');
+      for (var f in filesWithCommand) {
+        await f.executeCommands(this, rootDirectory, platform: platform);
+      }
     }
 
     var files = rootDirectory.listSync(recursive: true);
