@@ -249,4 +249,9 @@ class _MyReleaseBundle extends ReleaseBundle {
 
   @override
   FutureOr<Set<ReleaseFile>> get files => _files.toSet();
+
+  @override
+  FutureOr<Uint8List> toBytes() {
+    throw UnimplementedError();
+  }
 }

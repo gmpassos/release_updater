@@ -11,6 +11,8 @@ abstract class ReleaseBundle {
   ReleaseBundle(this.release);
 
   FutureOr<Set<ReleaseFile>> get files;
+
+  FutureOr<Uint8List> toBytes();
 }
 
 class ReleaseBundleZip extends ReleaseBundle {
@@ -75,10 +77,17 @@ class ReleaseBundleZip extends ReleaseBundle {
     return releaseFile;
   }
 
-  FutureOr<Uint8List> get zipBytes async {
+  @override
+  FutureOr<Uint8List> toBytes() => zipBytes;
+
+  FutureOr<Uint8List> get zipBytes {
     if (_zipBytes != null) return _zipBytes!;
-    var bytes = _zipBytes = await _buildZipBytes();
-    return bytes;
+
+    return _buildZipBytes().then((bytes) {
+      var bytesView = UnmodifiableUint8ListView(bytes);
+      _zipBytes = bytesView;
+      return bytesView;
+    });
   }
 
   Future<Uint8List> _buildZipBytes() async {

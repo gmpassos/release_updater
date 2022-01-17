@@ -3,6 +3,7 @@ import 'dart:convert' as dart_convert;
 import 'dart:io';
 
 import 'package:collection/collection.dart';
+import 'package:mercury_client/mercury_client.dart';
 import 'package:release_updater/src/release_updater_utils.dart';
 import 'package:yaml/yaml.dart';
 
@@ -44,7 +45,6 @@ class ReleasePacker {
     var finalizeCommands = ReleasePackerCommand.toCommands(jsonList: finalize);
 
     var files = json.get<List>('files', [])!;
-
     var releaseFiles = files.map((e) => ReleasePackerFile.fromJson(e)).toList();
 
     return ReleasePacker(name, version, releaseFiles,
@@ -112,12 +112,13 @@ class ReleasePacker {
 
   Future<Map<ReleasePackerCommand, bool>> prepare(Directory rootDirectory,
           {String? platform}) =>
-      ReleasePackerCommand.executeCommands(prepareCommands, rootDirectory,
+      ReleasePackerCommand.executeCommands(this, prepareCommands, rootDirectory,
           platform: platform);
 
   Future<Map<ReleasePackerCommand, bool>> finalize(Directory rootDirectory,
-          {String? platform}) =>
-      ReleasePackerCommand.executeCommands(finalizeCommands, rootDirectory,
+          {ReleaseBundle? releaseBundle, String? platform}) =>
+      ReleasePackerCommand.executeCommands(
+          this, finalizeCommands, rootDirectory,
           platform: platform);
 
   Future<ReleaseBundleZip> buildFromDirectory(
@@ -139,7 +140,7 @@ class ReleasePacker {
     await prepare(rootDirectory, platform: platform);
 
     for (var f in getFiles(platform: platform).where((e) => e.hasCommands)) {
-      await f.executeCommands(rootDirectory);
+      await f.executeCommands(this, rootDirectory, platform: platform);
     }
 
     var files = rootDirectory.listSync(recursive: true);
@@ -172,10 +173,13 @@ class ReleasePacker {
         .whereType<ReleaseFile>()
         .toList();
 
-    await finalize(rootDirectory, platform: platform);
-
     var release = Release(name, version, platform: platform);
-    return ReleaseBundleZip(release, files: list);
+    var releaseBundle = ReleaseBundleZip(release, files: list);
+
+    await finalize(rootDirectory,
+        releaseBundle: releaseBundle, platform: platform);
+
+    return releaseBundle;
   }
 
   @override
@@ -259,7 +263,7 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
     } else if (command is List) {
       return ReleasePackerProcessCommand.fromList(command);
     } else if (command is Map) {
-      var map = command.map((key, value) => MapEntry('$key', value));
+      var map = command.asJsonMap;
 
       var dartCompileExe = map.get<String>('dart_compile_exe');
       if (dartCompileExe != null && dartCompileExe.isNotEmpty) {
@@ -295,6 +299,17 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
             stdoutFilePath: stdout, stderrFilePath: stderr);
       }
 
+      var url = map.get('url');
+      if (url != null) {
+        return ReleasePackerCommandURL.fromJson(url);
+      }
+
+      var uploadRelease =
+          map.get('upload_release') ?? map.get('upload_release_bundle');
+      if (uploadRelease != null) {
+        return ReleasePackerCommandUploadReleaseBundle.fromJson(uploadRelease);
+      }
+
       return null;
     } else {
       throw ArgumentError("Unknown command type: $command");
@@ -326,16 +341,21 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
     return list;
   }
 
-  FutureOr<bool> execute(Directory rootDirectory);
+  FutureOr<bool> execute(ReleasePacker releasePacker, Directory rootDirectory,
+      {ReleaseBundle? releaseBundle});
 
   static Future<Map<ReleasePackerCommand, bool>> executeCommands(
-      List<ReleasePackerCommand>? commands, Directory rootDirectory,
-      {String? platform}) async {
+      ReleasePacker releasePacker,
+      List<ReleasePackerCommand>? commands,
+      Directory rootDirectory,
+      {ReleaseBundle? releaseBundle,
+      String? platform}) async {
     var results = <ReleasePackerCommand, bool>{};
     if (commands == null || commands.isEmpty) return results;
 
     for (var c in commands.where((e) => e.matchesPlatform(platform))) {
-      var ok = await c.execute(rootDirectory);
+      var ok = await c.execute(releasePacker, rootDirectory,
+          releaseBundle: releaseBundle);
       results[c] = ok;
     }
 
@@ -367,7 +387,8 @@ class ReleasePackerCommandDelete extends ReleasePackerCommand {
   }
 
   @override
-  FutureOr<bool> execute(Directory rootDirectory) {
+  FutureOr<bool> execute(ReleasePacker releasePacker, Directory rootDirectory,
+      {ReleaseBundle? releaseBundle}) {
     var filePath = joinPaths(rootDirectory.path, path);
     var file = File(filePath);
 
@@ -378,6 +399,127 @@ class ReleasePackerCommandDelete extends ReleasePackerCommand {
     }
 
     return false;
+  }
+}
+
+class ReleasePackerCommandURL extends ReleasePackerCommand {
+  final String url;
+  final Map<String, Object?>? parameters;
+
+  final Credential? authorization;
+  final Object? body;
+
+  ReleasePackerCommandURL(this.url,
+      {this.parameters, this.authorization, this.body}) {
+    if (url.isEmpty) {
+      throw ArgumentError("Empty URL!");
+    }
+  }
+
+  factory ReleasePackerCommandURL.fromJson(Object json) {
+    if (json is String) {
+      return ReleasePackerCommandURL(json);
+    } else if (json is Map) {
+      var map = json.asJsonMap;
+
+      var url = map.get<String>('url')!;
+      var parameters = map.get<Map>('parameters');
+      var authorization = map.get('authorization');
+      var body = map.get('body');
+
+      var credential = toCredential(authorization);
+
+      return ReleasePackerCommandURL(url,
+          parameters: parameters?.asJsonMap,
+          authorization: credential,
+          body: body);
+    } else {
+      throw ArgumentError("Unknown type: $json");
+    }
+  }
+
+  static Credential? toCredential(Object o) {
+    if (o is Credential) return o;
+
+    if (o is String) {
+      var parts = o.split(':');
+
+      var user = parts[0];
+      var pass = parts.length > 1 ? parts[1] : null;
+
+      return BasicCredential(user, pass ?? '');
+    }
+    if (o is List) {
+      var list = o.map((e) => '$e').toList();
+      var user = list.isNotEmpty ? list[0] : null;
+      var pass = list.length > 1 ? list[1] : null;
+
+      if (user != null) {
+        return BasicCredential(user, pass ?? '');
+      }
+    } else if (o is Map) {
+      var map = o.asJsonMap;
+      var user = map.get<String>('username') ?? map.get<String>('user');
+      var pass = map.get<String>('password') ??
+          map.get<String>('pass') ??
+          map.get<String>('passphrase');
+      var bearer = map.get<String>('bearer') ?? map.get<String>('token');
+
+      if (user != null) {
+        return BasicCredential(user, pass ?? bearer ?? '');
+      }
+
+      if (bearer != null) {
+        return BearerCredential(bearer);
+      }
+    }
+
+    return null;
+  }
+
+  @override
+  Future<bool> execute(ReleasePacker releasePacker, Directory rootDirectory,
+      {ReleaseBundle? releaseBundle}) async {
+    Object? body;
+
+    if (this.body == '%RELEASE_BUNDLE%') {
+      if (releaseBundle == null) return false;
+      body = await releaseBundle.toBytes();
+    } else {
+      body = this.body;
+    }
+
+    var httpClient = HttpClient(url);
+
+    HttpResponse response;
+
+    if (body != null) {
+      response = await httpClient.post('',
+          parameters: parameters, authorization: authorization, body: body);
+    } else {
+      response = await httpClient.get(
+        '',
+        parameters: parameters,
+        authorization: authorization,
+      );
+    }
+
+    return response.isOK;
+  }
+}
+
+class ReleasePackerCommandUploadReleaseBundle extends ReleasePackerCommandURL {
+  ReleasePackerCommandUploadReleaseBundle(String url,
+      {Map<String, Object?>? parameters, Credential? authorization})
+      : super(url,
+            parameters: parameters,
+            authorization: authorization,
+            body: '%RELEASE_BUNDLE%');
+
+  factory ReleasePackerCommandUploadReleaseBundle.fromJson(Object json) {
+    var cmd = ReleasePackerCommandURL.fromJson(json);
+    return ReleasePackerCommandUploadReleaseBundle(cmd.url,
+        parameters: cmd.parameters, authorization: cmd.authorization);
   }
 }
 
@@ -419,7 +561,8 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
   }
 
   @override
-  bool execute(Directory rootDirectory, {int expectedExitCode = 0}) {
+  bool execute(ReleasePacker releasePacker, Directory rootDirectory,
+      {ReleaseBundle? releaseBundle, int expectedExitCode = 0}) {
     String commandPath;
     if (!containsGenericPathSeparator(command)) {
       commandPath = whichExecutablePath(command);
@@ -500,7 +643,8 @@ class ReleasePackerDartCommand extends ReleasePackerCommandWithArgs {
   }
 
   @override
-  bool execute(Directory rootDirectory, {int expectedExitCode = 0}) {
+  bool execute(ReleasePacker releasePacker, Directory rootDirectory,
+      {ReleaseBundle? releaseBundle, int expectedExitCode = 0}) {
     var dartPath = whichExecutablePath('dart');
 
     print('-- Dart command> ${rootDirectory.path} -> $dartPath $command $args');
@@ -543,18 +687,11 @@ abstract class ReleasePackerOperation extends ReleasePackerEntry {
       hasCommands && commands!.whereType<T>().isNotEmpty;
 
   Future<Map<ReleasePackerCommand, bool>> executeCommands(
-      Directory rootDirectory,
-      {String? platform}) async {
-    var results = <ReleasePackerCommand, bool>{};
-    if (!hasCommands) return results;
-
-    for (var c in commands!.where((e) => e.matchesPlatform(platform))) {
-      var ok = await c.execute(rootDirectory);
-      results[c] = ok;
-    }
-
-    return results;
-  }
+          ReleasePacker releasePacker, Directory rootDirectory,
+          {ReleaseBundle? releaseBundle, String? platform}) =>
+      ReleasePackerCommand.executeCommands(
+          releasePacker, commands, rootDirectory,
+          releaseBundle: releaseBundle, platform: platform);
 }
 
 class ReleasePackerFile extends ReleasePackerOperation {

@@ -44,6 +44,12 @@ Map<String, Object?> parseConfig(List<String> args) {
 String _normalizeKey(String key) =>
     key.toLowerCase().replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
 
+extension MapExtension on Map {
+  Map<String, Object?> get asJsonMap => this is Map<String, Object?>
+      ? (this as Map<String, Object?>)
+      : map((key, value) => MapEntry('$key', value));
+}
+
 extension JsonExtension on Map<String, Object?> {
   V? get<V>(String key, [V? def]) {
     var val = _get(key);
