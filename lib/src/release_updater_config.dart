@@ -3,6 +3,77 @@ import 'dart:io';
 
 import 'package:release_updater/src/release_updater_utils.dart';
 
+Map<String, String> parseProperties(List<String> args) {
+  var properties = <String, String>{};
+
+  for (var i = 0; i < args.length;) {
+    var a = args[i];
+    if (a.startsWith('-P') || a.startsWith('-D')) {
+      var parts = a.split('=');
+      var key = parts.removeAt(0).substring(2);
+      var val = parts.isEmpty
+          ? 'true'
+          : (parts.length == 1 ? parts[0] : parts.join(';'));
+      properties[key] = val;
+      args.removeAt(i);
+    } else {
+      i++;
+    }
+  }
+
+  return properties;
+}
+
+final RegExp _propertyPlaceHolder = RegExp(r'^\%(\w+)\%$');
+
+String? resolvePropertyValue(Map<String, String> properties, String? value) {
+  if (value == null) return null;
+
+  var match = _propertyPlaceHolder.firstMatch(value);
+  if (match == null) return value;
+
+  var key = match.group(1)!;
+  var propertyValue = properties.get(key);
+  return propertyValue;
+}
+
+Object? resolveJsonProperties(Object? json, Map<String, String>? properties) {
+  if (json == null || properties == null || properties.isEmpty) {
+    return json;
+  }
+
+  if (json is String) {
+    return resolvePropertyValue(properties, json);
+  } else if (json is List) {
+    return resolveJsonListProperties(json, properties);
+  } else if (json is Map) {
+    return resolveJsonMapProperties(json, properties);
+  }
+}
+
+List<Object?> resolveJsonListProperties(
+    List<Object?> jsonList, Map<String, String>? properties) {
+  if (jsonList.isEmpty || properties == null || properties.isEmpty) {
+    return jsonList;
+  }
+
+  var list = jsonList.map((e) => resolveJsonProperties(e, properties)).toList();
+
+  return list;
+}
+
+Map<String, Object?> resolveJsonMapProperties(
+    Map<Object?, Object?> jsonMap, Map<String, String>? properties) {
+  if (jsonMap.isEmpty || properties == null || properties.isEmpty) {
+    return jsonMap.asJsonMap;
+  }
+
+  var map = jsonMap.map((key, value) =>
+      MapEntry('$key', resolveJsonProperties(value, properties)));
+
+  return map;
+}
+
 Map<String, Object?> parseConfig(List<String> args) {
   var config = <String, Object?>{};
 
@@ -11,8 +82,9 @@ Map<String, Object?> parseConfig(List<String> args) {
   for (var i = 0; i < args.length;) {
     var a = args[i];
     if (a.startsWith('--') && i < args.length - 1) {
+      var k = a.substring(2);
       var v = args[i + 1];
-      config[a] = v;
+      config[k] = v;
       args.removeAt(i + 1);
       args.removeAt(i);
     } else {
@@ -42,7 +114,7 @@ Map<String, Object?> parseConfig(List<String> args) {
 }
 
 String _normalizeKey(String key) =>
-    key.toLowerCase().replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+    key.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
 
 extension MapExtension on Map {
   Map<String, Object?> get asJsonMap => this is Map<String, Object?>

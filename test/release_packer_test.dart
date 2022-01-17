@@ -17,7 +17,10 @@ void main() {
 
     test('buildFromDirectory', () async {
       var releasePackerJsonPath = resolveReleasePackerJsonFilePath();
-      var releasePacker = ReleasePacker.fromFilePath(releasePackerJsonPath);
+      var properties = {'readme': 'README.md', 'FOO_EXE_PATH': 'foo-cli.exe'};
+
+      var releasePacker = ReleasePacker.fromFilePath(releasePackerJsonPath,
+          properties: properties);
 
       print(releasePacker);
       for (var f in releasePacker.files) {
@@ -66,6 +69,14 @@ void main() {
         var file = releasePacker.getFile('hello.txt')!;
         expect(file.sourcePath, equals('hello.txt'));
         expect(file.destinyPath, equals('hello-world.txt'));
+        expect(file.platforms, isEmpty);
+        expect(file.matchesPlatform('any'), isTrue);
+      }
+
+      {
+        var file = releasePacker.getFile('bin/foo.exe')!;
+        expect(file.sourcePath, equals('bin/foo.exe'));
+        expect(file.destinyPath, equals('foo-cli.exe'));
         expect(file.platforms, isEmpty);
         expect(file.matchesPlatform('any'), isTrue);
       }
@@ -148,7 +159,7 @@ Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {
 
   {
     var file = bundleFiles[1];
-    expect(file.path, equals('bin/foo.exe'));
+    expect(file.path, equals('foo-cli.exe'));
 
     var length = await file.length;
     expect(length, greaterThan(1024));

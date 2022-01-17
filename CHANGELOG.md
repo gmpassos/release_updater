@@ -1,8 +1,10 @@
 ## 1.0.8
 
-- New `ReleasePacker` commands:
-  - `ReleasePackerCommandURL`
-  - `ReleasePackerCommandUploadReleaseBundle`
+- `ReleasePacker`:
+  - Allow properties in config JSON. 
+  - New commands:
+    - `ReleasePackerCommandURL`
+    - `ReleasePackerCommandUploadReleaseBundle`
 
 ## 1.0.7
 

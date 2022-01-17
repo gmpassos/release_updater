@@ -18,13 +18,20 @@ class ReleasePacker {
   final List<ReleasePackerCommand>? prepareCommands;
   final List<ReleasePackerCommand>? finalizeCommands;
   final List<ReleasePackerFile> files;
+  final Map<String, String> properties;
   final Directory? configDirectory;
 
   ReleasePacker(this.name, this.version, this.files,
-      {this.prepareCommands, this.finalizeCommands, this.configDirectory});
+      {this.prepareCommands,
+      this.finalizeCommands,
+      Map<String, String>? properties,
+      this.configDirectory})
+      : properties = properties ?? <String, String>{};
 
   factory ReleasePacker.fromJson(Map<String, Object?> json,
-      {Directory? rootDirectory}) {
+      {Map<String, String>? properties, Directory? rootDirectory}) {
+    json = resolveJsonMapProperties(json, properties);
+
     var name = json.get<String>('name') ?? 'app';
     var versionStr = json.get<String>('version');
 
@@ -50,19 +57,22 @@ class ReleasePacker {
     return ReleasePacker(name, version, releaseFiles,
         prepareCommands: prepareCommands,
         finalizeCommands: finalizeCommands,
+        properties: properties,
         configDirectory: rootDirectory);
   }
 
   factory ReleasePacker.fromFilePath(String filePath,
-      {Directory? rootDirectory}) {
+      {Map<String, String>? properties, Directory? rootDirectory}) {
     var file = _toFile(filePath, rootDirectory);
-    return ReleasePacker.fromFile(file, rootDirectory: rootDirectory);
+    return ReleasePacker.fromFile(file,
+        properties: properties, rootDirectory: rootDirectory);
   }
 
-  factory ReleasePacker.fromFile(File file, {Directory? rootDirectory}) {
+  factory ReleasePacker.fromFile(File file,
+      {Map<String, String>? properties, Directory? rootDirectory}) {
     var json = _readFile(file);
     return ReleasePacker.fromJson(json,
-        rootDirectory: rootDirectory ?? file.parent);
+        properties: properties, rootDirectory: rootDirectory ?? file.parent);
   }
 
   static File _toFile(String filePath, Directory? rootDirectory) {

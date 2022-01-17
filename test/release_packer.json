@@ -20,12 +20,12 @@
     }
   ],
   "files": [
-    "README.md",
+    "%README%",
     {
       "hello.txt": "hello-world.txt"
     },
     {
-      "bin/foo.exe": "."
+      "bin/foo.exe": "%FOO_EXE_PATH%"
     },
     {
       "foo.out": "foo.txt"

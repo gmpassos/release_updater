@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as pack_path;
 import 'package:release_updater/release_packer.dart';
 import 'package:release_updater/release_updater.dart';
+import 'package:release_updater/src/release_updater_config.dart';
 
 void main(List<String> args) async {
   print('--------------------------------------------------------------------');
@@ -11,7 +12,7 @@ void main(List<String> args) async {
   if (args.length < 2) {
     print('USAGE:\n');
     print(
-        ' \$> release_packer release_packer.json build ./source-dir ./releases-dir\n');
+        ' \$> release_packer release_packer.json build ./source-dir ./releases-dir -Puser=pass\n');
 
     print(' \$> release_packer release_packer.json info ./source-dir\n');
 
@@ -21,9 +22,12 @@ void main(List<String> args) async {
   args = args.toList();
 
   var releasePackerJsonPath = args.removeAt(0);
+  var properties = parseProperties(args);
+
   var cmd = args.removeAt(0).toLowerCase();
 
-  var releasePacker = ReleasePacker.fromFilePath(releasePackerJsonPath);
+  var releasePacker =
+      ReleasePacker.fromFilePath(releasePackerJsonPath, properties: properties);
 
   if (cmd == 'info') {
     var sourcePath = args.isNotEmpty ? args[0] : './';
