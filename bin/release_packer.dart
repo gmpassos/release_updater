@@ -112,7 +112,9 @@ Future<ReleaseBundleZip> _buildReleaseBundle(
     ReleasePacker releasePacker, String sourcePath,
     [String? releasesPath]) async {
   print(
-      '\n** Building release: $sourcePath${releasesPath != null ? ' -> $releasesPath' : ''}');
+      '\n--------------------------------------------------------------------');
+  print(
+      '** Building release: $sourcePath${releasesPath != null ? ' -> $releasesPath' : ''}');
 
   var platform = ReleasePlatform.platform;
 
