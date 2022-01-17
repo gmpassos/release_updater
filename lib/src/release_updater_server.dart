@@ -116,6 +116,9 @@ FutureOr<shelf.Response>? _processUpLoad(
 
   var requestCredential = _parseRequestCredential(request);
 
+  print('!!! Credential: ${credential.username} ; ${credential.password}');
+  print('!!! Request Credential: ${requestCredential.username} ; ${requestCredential.password}');
+
   var address = requestInfo.address.address;
 
   if (credential.username != requestCredential.username ||

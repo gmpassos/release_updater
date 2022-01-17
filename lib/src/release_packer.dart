@@ -546,7 +546,7 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
       body = this.body;
     }
 
-    var httpClient = HttpClient(url)..logRequests = true;
+    var httpClient = HttpClient(url);
 
     HttpResponse response;
 
