@@ -11,7 +11,7 @@ import 'release_updater_utils.dart';
 /// A [Release] updater from [releaseProvider] to [storage].
 class ReleaseUpdater {
   // ignore: constant_identifier_names
-  static const String VERSION = '1.0.12';
+  static const String VERSION = '1.0.13';
 
   /// The [Release] storage.
   final ReleaseStorage storage;
