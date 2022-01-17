@@ -1,3 +1,8 @@
+## 1.0.14
+
+- Fix upload of raw data.
+- mercury_client: ^2.1.3
+
 ## 1.0.13
 
 - Fix upload of release file format: platform as missing.
