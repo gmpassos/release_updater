@@ -144,6 +144,8 @@ BasicCredential _parseRequestCredential(
 ) {
   var headerAuthorization = request.headers['authorization'];
 
+  print('!!! headerAuthorization: $headerAuthorization');
+
   if (headerAuthorization != null && headerAuthorization.isNotEmpty) {
     var headerAuthorizationLc = headerAuthorization.toLowerCase();
     if (headerAuthorizationLc.startsWith('basic')) {
