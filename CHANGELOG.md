@@ -4,6 +4,7 @@
 - Fix passing of release bundle to finalize commands.
 - Handler `URL` request errors.
 - `ReleasePackerCommandUploadReleaseBundle``: fix parameter `file` format.
+- Server: Fix parse of request credential.
 
 ## 1.0.11
 

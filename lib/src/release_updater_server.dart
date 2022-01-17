@@ -114,12 +114,12 @@ FutureOr<shelf.Response>? _processUpLoad(
   var file = queryParameters['file'];
   if (file == null || file.isEmpty) return null;
 
-  var user = queryParameters['username'] ?? queryParameters['user'];
-  var pass = queryParameters['password'] ?? queryParameters['pass'];
+  var requestCredential = _parseRequestCredential(request);
 
   var address = requestInfo.address.address;
 
-  if (credential.username != user || credential.password != pass) {
+  if (credential.username != requestCredential.username ||
+      credential.password != requestCredential.password) {
     print("** Upload ERROR[$address]> Invalid authentication!");
     requestInfo.markError();
     return shelf.Response.forbidden('Authentication error.');
@@ -134,6 +134,26 @@ FutureOr<shelf.Response>? _processUpLoad(
     var responseJson = dart_convert.json.encode(response);
     return shelf.Response.ok(responseJson);
   });
+}
+
+BasicCredential _parseRequestCredential(
+  shelf.Request request,
+) {
+  var headerAuthorization = request.headers['authorization'];
+
+  if (headerAuthorization != null && headerAuthorization.isNotEmpty) {
+    var headerAuthorizationLc = headerAuthorization.toLowerCase();
+    if (headerAuthorizationLc.startsWith('basic')) {
+      var base64 = headerAuthorizationLc.split(RegExp(r'\s+'))[1].trim();
+      return BasicCredential.base64(base64);
+    }
+  }
+
+  var queryParameters = request.url.queryParameters;
+  var user = queryParameters['username'] ?? queryParameters['user'] ?? '';
+  var pass = queryParameters['password'] ?? queryParameters['pass'] ?? '';
+
+  return BasicCredential(user, pass);
 }
 
 final _regExpNonWord = RegExp(r'\W');

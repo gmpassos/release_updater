@@ -538,7 +538,7 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
               file, release.name, release.version);
           parameters!['file'] = fileFormatted;
 
-          print('-- Parameter `file`: $file');
+          print('-- Parameter `file`: $fileFormatted');
         }
       }
       body = await releaseBundle.toBytes();
