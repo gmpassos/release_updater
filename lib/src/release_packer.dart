@@ -445,7 +445,11 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
     } else if (json is Map) {
       var map = json.asJsonMap;
 
-      var url = map.get<String>('url')!;
+      var url = map.get<String>('url');
+      if (url == null || url.isEmpty) {
+        throw ArgumentError("Invalid JSON! Invalid `url`: $url");
+      }
+
       var parameters = map.get<Map>('parameters');
       var authorization = map.get('authorization');
       var body = map.get('body');
