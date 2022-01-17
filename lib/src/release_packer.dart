@@ -540,6 +540,12 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
 
           print('-- Parameter `file`: $fileFormatted');
         }
+
+        var release = parameters?['release'] as String?;
+        if (release != null && release.toLowerCase() == '%release%') {
+          release = releaseBundle.release.toString();
+          parameters!['release'] = release;
+        }
       }
       body = await releaseBundle.toBytes();
     } else {
@@ -597,31 +603,47 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
 }
 
 class ReleasePackerCommandUploadReleaseBundle extends ReleasePackerCommandURL {
-  final String fileFormat;
-
-  ReleasePackerCommandUploadReleaseBundle(String url,
-      {Map<String, Object?>? parameters,
-      Credential? authorization,
-      this.fileFormat = ReleaseBundle.defaultReleasesBundleFileFormat})
+  ReleasePackerCommandUploadReleaseBundle._(String url,
+      {Map<String, Object?>? parameters, Credential? authorization})
       : super(url,
             parameters: parameters,
             authorization: authorization,
             body: '%RELEASE_BUNDLE%');
 
+  factory ReleasePackerCommandUploadReleaseBundle(String url,
+      {Map<String, Object?>? parameters,
+      Credential? authorization,
+      String? file,
+      String? release}) {
+    file ??= ReleaseBundle.defaultReleasesBundleFileFormat;
+    release ??= '%RELEASE%';
+
+    parameters ??= <String, Object?>{};
+
+    parameters['file'] ??= file;
+    parameters['release'] ??= release;
+
+    return ReleasePackerCommandUploadReleaseBundle._(url,
+        parameters: parameters, authorization: authorization);
+  }
+
   factory ReleasePackerCommandUploadReleaseBundle.fromJson(Object json) {
     String? file;
+    String? release;
+
     if (json is Map) {
       var map = json.asJsonMap;
-      file = map.get('file') ?? ReleaseBundle.defaultReleasesBundleFileFormat;
+      file = map.get('file');
+      release = map.get('release');
     }
 
     var cmd = ReleasePackerCommandURL.fromJson(json);
 
-    var parameters = cmd.parameters ?? <String, Object?>{};
-    parameters['file'] = file;
-
     return ReleasePackerCommandUploadReleaseBundle(cmd.url,
-        parameters: parameters, authorization: cmd.authorization);
+        parameters: cmd.parameters,
+        authorization: cmd.authorization,
+        file: file,
+        release: release);
   }
 }
 

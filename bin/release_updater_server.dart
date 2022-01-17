@@ -6,6 +6,7 @@ import 'package:mercury_client/mercury_client.dart';
 import 'package:release_updater/src/release_updater_base.dart';
 import 'package:release_updater/src/release_updater_config.dart';
 import 'package:release_updater/src/release_updater_server.dart';
+import 'package:release_updater/src/release_updater_utils.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_gzip/shelf_gzip.dart';
@@ -28,6 +29,9 @@ void main(List<String> args) async {
   var port = parsePort(config);
   var address = parseAddress(config);
   var releasesDir = parseReleaseDirectory(config);
+  var releasesFilePath = parseReleaseFile(config);
+
+  var releasesFile = File(joinPaths(releasesDir.path, releasesFilePath));
 
   var uploadUsername = parseUploadUsername(config)?.trim();
   var uploadPassword = parseUploadPassword(config)?.trim();
@@ -60,6 +64,8 @@ void main(List<String> args) async {
     exit(1);
   }
 
+  showReleasesFile(releasesFile);
+
   final uploadCredential =
       allowUpload ? BasicCredential(uploadUsername!, uploadPassword!) : null;
 
@@ -69,8 +75,8 @@ void main(List<String> args) async {
   runZonedGuarded(() async {
     var handler = const shelf.Pipeline()
         .addMiddleware(gzipMiddleware)
-        .addMiddleware((handler) =>
-            processServerRequest(handler, releasesDir, uploadCredential))
+        .addMiddleware((handler) => processServerRequest(
+            handler, releasesDir, uploadCredential, releasesFile))
         .addHandler(staticHandler);
 
     await shelf_io.serve(handler, address, port);

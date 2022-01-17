@@ -170,6 +170,13 @@ Directory parseReleaseDirectory(Map<String, Object?> config) {
   }
 }
 
+String parseReleaseFile(Map<String, Object?> config) {
+  var releasesFile = config.get<String>('releases-file') ??
+      config.get<String>('release-file') ??
+      'releases.txt';
+  return releasesFile;
+}
+
 int parsePort(Map<String, Object?> config) {
   var port = config.get<int>('port', 8080)!;
   return port;

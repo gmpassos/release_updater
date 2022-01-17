@@ -82,8 +82,8 @@ class RequestInfo {
   }
 }
 
-shelf.Handler processServerRequest(
-    shelf.Handler handler, Directory releasesDir, BasicCredential? credential) {
+shelf.Handler processServerRequest(shelf.Handler handler, Directory releasesDir,
+    BasicCredential? credential, File releasesFile) {
   return (request) {
     var requestInfo = resolveRequestInfo(request);
 
@@ -93,8 +93,8 @@ shelf.Handler processServerRequest(
     }
 
     if (credential != null) {
-      var response =
-          _processUpLoad(request, releasesDir, credential, requestInfo);
+      var response = _processUpLoad(
+          request, releasesDir, credential, releasesFile, requestInfo);
       if (response != null) return response;
     }
 
@@ -106,6 +106,7 @@ FutureOr<shelf.Response>? _processUpLoad(
     shelf.Request request,
     Directory releasesDir,
     BasicCredential credential,
+    File releasesFile,
     RequestInfo requestInfo) {
   if (request.method != 'POST') return null;
 
@@ -113,6 +114,8 @@ FutureOr<shelf.Response>? _processUpLoad(
 
   var file = queryParameters['file'];
   if (file == null || file.isEmpty) return null;
+
+  var release = queryParameters['release'];
 
   var address = requestInfo.address.address;
 
@@ -126,7 +129,8 @@ FutureOr<shelf.Response>? _processUpLoad(
   }
 
   return request.read().toBytes().then((body) {
-    var response = _saveUploadedFile(releasesDir, file, body, address);
+    var response = _saveUploadedFile(
+        releasesDir, file, body, releasesFile, release, address);
     if (response == null) {
       requestInfo.markError();
       return shelf.Response.internalServerError();
@@ -158,8 +162,8 @@ BasicCredential _parseRequestCredential(
 
 final _regExpNonWord = RegExp(r'\W');
 
-Map<String, Object?>? _saveUploadedFile(
-    Directory releasesDir, String paramFile, Uint8List bytes, String address) {
+Map<String, Object?>? _saveUploadedFile(Directory releasesDir, String paramFile,
+    Uint8List bytes, File releasesFile, String? release, String address) {
   if (bytes.isEmpty) {
     print("** Upload ERROR[$address]> Empty release file: $paramFile");
     return null;
@@ -192,5 +196,58 @@ Map<String, Object?>? _saveUploadedFile(
   print(
       '-- Upload[$address]> Saved release file: ${file.path} ($savedBytes bytes)');
 
-  return {'file': fileName, 'bytes': savedBytes};
+  var result = {'file': fileName, 'bytes': savedBytes};
+
+  if (release != null) {
+    appendToReleasesFile(releasesFile, release);
+  }
+
+  return result;
+}
+
+bool appendToReleasesFile(File releasesFile, String release) {
+  release = release.trim();
+  if (release.isEmpty) return false;
+
+  if (!releasesFile.existsSync()) return false;
+
+  var lines = readReleasesFileLines(releasesFile);
+  if (lines.contains(release)) return false;
+
+  lines.add(release);
+
+  var content = lines.join('\n') + '\n';
+
+  releasesFile.writeAsStringSync(content);
+
+  print('-- Appended `$release` to releases file: ${releasesFile.path}');
+
+  return true;
+}
+
+void showReleasesFile(File releasesFile) {
+  if (!releasesFile.existsSync()) return;
+
+  var lines = readReleasesFileLines(releasesFile);
+
+  var content = '  -- ' + lines.join('\n  -- ');
+
+  print('\n-- Releases File: ${releasesFile.path}');
+  print(content);
+}
+
+List<String> readReleasesFileLines(File releasesFile) {
+  if (!releasesFile.existsSync()) {
+    return <String>[];
+  }
+
+  var content = releasesFile.readAsStringSync();
+
+  var lines = content
+      .split(RegExp(r'[\r\n]'))
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
+
+  return lines;
 }
