@@ -27,6 +27,7 @@ void main(List<String> args) async {
 
   var cmd = args.removeAt(0).toLowerCase();
 
+  print('-- Loading `ReleasePacker` from: $releasePackerJsonPath');
   var releasePacker =
       ReleasePacker.fromFilePath(releasePackerJsonPath, properties: properties);
 
@@ -34,31 +35,7 @@ void main(List<String> args) async {
     var sourcePath = args.isNotEmpty ? args[0] : './';
     var generateBundle = args.where((a) => a.contains('generate')).isNotEmpty;
 
-    print('-- Release name: ${releasePacker.name}');
-    print('-- Release version: ${releasePacker.version}');
-
-    var prepareCommands = releasePacker.prepareCommands;
-    if (prepareCommands != null) {
-      print('\n-- Prepare commands (${prepareCommands.length}):');
-      for (var cmd in prepareCommands) {
-        print('  -- $cmd');
-      }
-    }
-
-    var finalizeCommands = releasePacker.finalizeCommands;
-    if (finalizeCommands != null) {
-      print('\n-- Finalize commands (${finalizeCommands.length}):');
-      for (var cmd in finalizeCommands) {
-        print('  -- $cmd');
-      }
-    }
-
-    var files = releasePacker.files;
-    print('\n-- Files ${files.length}:');
-
-    for (var f in files) {
-      print('  -- $f');
-    }
+    _showReleasePacker(releasePacker, showFiles: true);
 
     if (generateBundle) {
       ReleaseBundleZip releaseBundle =
@@ -69,6 +46,8 @@ void main(List<String> args) async {
   } else if (cmd == 'build') {
     var sourcePath = args.isNotEmpty ? args[0] : './';
     var releasesPath = args.length > 1 ? args[1] : './';
+
+    _showReleasePacker(releasePacker);
 
     ReleaseBundleZip releaseBundle =
         await _buildReleaseBundle(releasePacker, sourcePath, releasesPath);
@@ -99,11 +78,41 @@ void main(List<String> args) async {
   exit(0);
 }
 
+void _showReleasePacker(ReleasePacker releasePacker, {bool showFiles = false}) {
+  print('\n-- Release name: ${releasePacker.name}');
+  print('-- Release version: ${releasePacker.version}');
+
+  var prepareCommands = releasePacker.prepareCommands;
+  if (prepareCommands != null) {
+    print('\n-- Prepare commands (${prepareCommands.length}):');
+    for (var cmd in prepareCommands) {
+      print('  -- $cmd');
+    }
+  }
+
+  var finalizeCommands = releasePacker.finalizeCommands;
+  if (finalizeCommands != null) {
+    print('\n-- Finalize commands (${finalizeCommands.length}):');
+    for (var cmd in finalizeCommands) {
+      print('  -- $cmd');
+    }
+  }
+
+  if (showFiles) {
+    var files = releasePacker.files;
+    print('\n-- Files ${files.length}:');
+
+    for (var f in files) {
+      print('  -- $f');
+    }
+  }
+}
+
 Future<ReleaseBundleZip> _buildReleaseBundle(
     ReleasePacker releasePacker, String sourcePath,
     [String? releasesPath]) async {
   print(
-      '** Building release: $sourcePath${releasesPath != null ? ' -> $releasesPath' : ''}');
+      '\n** Building release: $sourcePath${releasesPath != null ? ' -> $releasesPath' : ''}');
 
   var platform = ReleasePlatform.platform;
 

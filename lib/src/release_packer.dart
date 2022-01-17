@@ -663,6 +663,11 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
       return false;
     }
   }
+
+  @override
+  String toString() {
+    return 'ReleasePackerProcessCommand[$command $args]{stdoutFilePath: $stdoutFilePath, stderrFilePath: $stderrFilePath}';
+  }
 }
 
 class ReleasePackerDartCommand extends ReleasePackerCommandWithArgs {
@@ -708,15 +713,30 @@ class ReleasePackerDartCommand extends ReleasePackerCommandWithArgs {
 
     return ok;
   }
+
+  @override
+  String toString() {
+    return 'ReleasePackerDartCommand[$command $args]';
+  }
 }
 
 class ReleasePackerDartPubGet extends ReleasePackerDartCommand {
   ReleasePackerDartPubGet() : super('pub', ['get']);
+
+  @override
+  String toString() {
+    return 'ReleasePackerDartPubGet{}';
+  }
 }
 
 class ReleasePackerDartCompileExe extends ReleasePackerDartCommand {
   ReleasePackerDartCompileExe(String dartScript)
       : super('compile', ['exe', dartScript]);
+
+  @override
+  String toString() {
+    return 'ReleasePackerDartCompileExe[${args.last}]';
+  }
 }
 
 abstract class ReleasePackerOperation extends ReleasePackerEntry {
@@ -769,6 +789,7 @@ class ReleasePackerFile extends ReleasePackerOperation {
 
   @override
   String toString() {
-    return 'ReleasePackerFile{path: $sourcePath -> $destinyPath, platform: $platforms}';
+    var commandsStr = commands != null ? '<<${commands!.join(' ; ')}>>' : '';
+    return 'ReleasePackerFile{ path: $sourcePath -> $destinyPath, platform: $platforms }$commandsStr';
   }
 }
