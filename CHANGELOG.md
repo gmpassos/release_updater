@@ -1,3 +1,7 @@
+## 1.0.13
+
+- Fix upload of release file format: platform as missing.
+
 ## 1.0.12
 
 - Improved commands logging.

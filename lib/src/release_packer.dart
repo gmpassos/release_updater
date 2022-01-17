@@ -535,7 +535,7 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
         if (file != null) {
           var release = releaseBundle.release;
           var fileFormatted = ReleaseBundle.formatReleaseBundleFile(
-              file, release.name, release.version);
+              file, release.name, release.version, release.platform);
           parameters!['file'] = fileFormatted;
 
           print('-- Parameter `file`: $fileFormatted');
