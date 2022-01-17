@@ -124,7 +124,7 @@ class ReleasePacker {
       {String? platform}) {
     var prepareCommands = this.prepareCommands;
     if (prepareCommands != null && prepareCommands.isNotEmpty) {
-      print('\n-- Running prepared commands (${prepareCommands.length})...');
+      print('\n-- Running prepare commands (${prepareCommands.length})...');
     }
 
     return ReleasePackerCommand.executeCommands(
