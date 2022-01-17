@@ -155,7 +155,9 @@ extension JsonExtension on Map<String, Object?> {
 }
 
 Directory parseReleaseDirectory(Map<String, Object?> config) {
-  var releasesDirPath = config.get<String>('releases-directory', 'releases')!;
+  var releasesDirPath = config.get<String>('releases-directory') ??
+      config.get<String>('release-directory') ??
+      'releases';
 
   if (releasesDirPath.startsWith('/')) {
     return Directory(releasesDirPath);

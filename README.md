@@ -145,13 +145,22 @@ $> release_updater_server releases-server-config.json
 ```
 
 Config file:
-```
+```JSON
 {
   "releases-directory": "/path/to/releases",
   "port": 8090,
-  "address": "0.0.0.0"
+  "address": "0.0.0.0",
+  "upload-user": "userx",
+  "upload-pass": "123456"
 }
 ```
+
+- If the properties `upload-user` and `upload-pass` (with length `>= 6`) are defined,
+  upload of files will be allowed.
+  - All files are saved in the `releases-directory` without
+    any sub-directory.
+  - Upload errors can block an `IP` for **30min**.
+- A high volume of requests can block an `IP` for **2min**. 
 
 ## Source
 

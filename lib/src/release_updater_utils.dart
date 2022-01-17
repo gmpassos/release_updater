@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:path/path.dart' as pack_path;
 
 final pack_path.Context _contextWindows =
@@ -218,11 +220,14 @@ String _normalizeToPlatformPath(
     }
   }
 
-  var parts = pathNoRootPrefix.split(_genericSeparator);
+  var parts = splitGenericPathSeparator(pathNoRootPrefix);
   var pathStyled = parts.join(separator);
   var pathNormalized = pathContext.normalize(pathStyled);
   return pathNormalized;
 }
+
+List<String> splitGenericPathSeparator(String pathNoRootPrefix) =>
+    pathNoRootPrefix.split(_genericSeparator);
 
 /// Joins [parent] and [path], respecting if [path] is root relative (platform agnostic).
 String joinPaths(String? parent, String path,
@@ -255,4 +260,28 @@ String joinPaths(String? parent, String path,
 
 extension StringExtension on String {
   String normalizeToPosixLines() => replaceAll(RegExp(r'(?:\r\n|\r)'), '\n');
+}
+
+extension ListOfListIntExtension on List<List<int>> {
+  Uint8List toBytes() {
+    var totalLength = fold<int>(0, (total, e) => total + e.length);
+
+    var bytes = Uint8List(totalLength);
+    var bytesLength = 0;
+
+    for (var bs in this) {
+      bytes.setAll(bytesLength, bs);
+      bytesLength += bs.length;
+    }
+
+    return bytes;
+  }
+}
+
+extension StreamOfListIntExtension on Stream<List<int>> {
+  Future<Uint8List> toBytes() {
+    return fold<List<List<int>>>(
+            <List<int>>[], (allBytes, bytes) => allBytes..add(bytes))
+        .then((allBytes) => allBytes.toBytes());
+  }
 }

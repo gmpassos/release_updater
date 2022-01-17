@@ -1,3 +1,9 @@
+## 1.0.9
+
+- `release_updater_server`:
+  - Upload support.
+  - Block of IP by request errors or high volume of requests. 
+
 ## 1.0.8
 
 - `ReleasePacker`:
