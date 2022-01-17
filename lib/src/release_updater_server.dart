@@ -220,7 +220,9 @@ bool appendToReleasesFile(File releasesFile, String release) {
 
   releasesFile.writeAsStringSync(content);
 
-  print('-- Appended `$release` to releases file: ${releasesFile.path}');
+  print('-- Appended `$release` to releases file: ${releasesFile.path}\n');
+
+  showReleasesFile(releasesFile);
 
   return true;
 }
