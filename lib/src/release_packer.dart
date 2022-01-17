@@ -526,18 +526,36 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
 
     if (body != null) {
       print('-- Requesting URL[POS]: $url');
-      print('-- Body:\n<<$body>>');
 
-      response = await httpClient.post('',
-          parameters: parameters, authorization: authorization, body: body);
+      String bodyStr;
+      if (body is List<int>) {
+        bodyStr = '${body.length} bytes';
+      } else {
+        bodyStr = '<<$body>>';
+      }
+
+      print('-- Body: $bodyStr');
+
+      try {
+        response = await httpClient.post('',
+            parameters: parameters, authorization: authorization, body: body);
+      } catch (e) {
+        print('** Error requesting: $url > $e');
+        return false;
+      }
     } else {
       print('-- Requesting URL[GET]: $url');
 
-      response = await httpClient.get(
-        '',
-        parameters: parameters,
-        authorization: authorization,
-      );
+      try {
+        response = await httpClient.get(
+          '',
+          parameters: parameters,
+          authorization: authorization,
+        );
+      } catch (e) {
+        print('** Error requesting: $url > $e');
+        return false;
+      }
     }
 
     print(

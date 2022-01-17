@@ -2,6 +2,7 @@
 
 - Improved commands logging.
 - Fix passing of release bundle to finalize commands.
+- Handler `URL` request errors.
 
 ## 1.0.11
 
