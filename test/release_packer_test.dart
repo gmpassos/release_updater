@@ -1,6 +1,7 @@
 @TestOn('vm')
 import 'dart:io';
 
+import 'package:mercury_client/mercury_client.dart';
 import 'package:path/path.dart' as pack_path;
 import 'package:release_updater/release_packer.dart';
 import 'package:release_updater/release_updater.dart';
@@ -14,6 +15,54 @@ void main() {
           ReleasePackerCommand.parseInlineCommand(
               'bin/foo.exe arg1 "a b x" arg2'),
           equals(['bin/foo.exe', 'arg1', 'a b x', 'arg2']));
+    });
+
+    test('ReleasePackerCommand', () async {
+      {
+        var cmd = ReleasePackerCommandURL.fromJson(
+            {'url': 'http://foo/bar', 'authorization': 'joe:12345678'});
+
+        expect(cmd.url, equals('http://foo/bar'));
+
+        var authorization = cmd.authorization as BasicCredential;
+        expect(authorization.username, equals('joe'));
+        expect(authorization.password, equals('12345678'));
+
+        expect(cmd.parameters, isNull);
+        expect(cmd.body, isNull);
+      }
+      {
+        var cmd = ReleasePackerCommandURL.fromJson({
+          'url': 'http://foo/bar',
+          'authorization': 'joe:12345678',
+          'parameters': {'a': 123},
+          'body': 'Data'
+        });
+
+        expect(cmd.url, equals('http://foo/bar'));
+
+        var authorization = cmd.authorization as BasicCredential;
+        expect(authorization.username, equals('joe'));
+        expect(authorization.password, equals('12345678'));
+
+        expect(cmd.parameters, equals({'a': 123}));
+        expect(cmd.body, equals('Data'));
+      }
+
+      {
+        var cmd = ReleasePackerCommandURL.fromJson({
+          'url': 'http://foo/bar',
+          'authorization': {'user': 'userX', 'pass': 'pass123'},
+          'parameters': {'a': 123},
+          'body': 'Data'
+        });
+
+        expect(cmd.url, equals('http://foo/bar'));
+
+        var authorization = cmd.authorization as BasicCredential;
+        expect(authorization.username, equals('userX'));
+        expect(authorization.password, equals('pass123'));
+      }
     });
 
     test('buildFromDirectory', () async {

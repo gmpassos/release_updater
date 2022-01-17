@@ -1,3 +1,7 @@
+## 1.0.10
+
+- Fix `ReleasePackerCommandURL` `Credential` parser.
+
 ## 1.0.9
 
 - `release_updater_server`:

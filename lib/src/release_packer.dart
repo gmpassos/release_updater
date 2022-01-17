@@ -448,7 +448,8 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
     }
   }
 
-  static Credential? toCredential(Object o) {
+  static Credential? toCredential(Object? o) {
+    if (o == null) return null;
     if (o is Credential) return o;
 
     if (o is String) {
