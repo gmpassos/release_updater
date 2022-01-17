@@ -1,3 +1,8 @@
+## 1.0.12
+
+- Improved commands logging.
+- Fix passing of release bundle to finalize commands.
+
 ## 1.0.11
 
 - `ReleasePackerCommandURL`:

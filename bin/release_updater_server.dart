@@ -3,6 +3,7 @@ import 'dart:async' show runZonedGuarded;
 import 'dart:io';
 
 import 'package:mercury_client/mercury_client.dart';
+import 'package:release_updater/src/release_updater_base.dart';
 import 'package:release_updater/src/release_updater_config.dart';
 import 'package:release_updater/src/release_updater_server.dart';
 import 'package:shelf/shelf.dart' as shelf;
@@ -20,7 +21,7 @@ void main(List<String> args) async {
   args = args.toList();
 
   print('--------------------------------------------------------------------');
-  print('[ Release Updater - Server ]');
+  print('[ release_updater_server/${ReleaseUpdater.VERSION} ]\n');
 
   var config = parseConfig(args);
 

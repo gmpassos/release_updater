@@ -124,7 +124,7 @@ class ReleasePacker {
       {String? platform}) {
     var prepareCommands = this.prepareCommands;
     if (prepareCommands != null && prepareCommands.isNotEmpty) {
-      print('-- Running prepared commands (${prepareCommands.length})...');
+      print('\n-- Running prepared commands (${prepareCommands.length})...');
     }
 
     return ReleasePackerCommand.executeCommands(
@@ -136,12 +136,12 @@ class ReleasePacker {
       {ReleaseBundle? releaseBundle, String? platform}) {
     var finalizeCommands = this.finalizeCommands;
     if (finalizeCommands != null && finalizeCommands.isNotEmpty) {
-      print('-- Running finalize commands (${finalizeCommands.length})...');
+      print('\n-- Running finalize commands (${finalizeCommands.length})...');
     }
 
     return ReleasePackerCommand.executeCommands(
         this, finalizeCommands, rootDirectory,
-        platform: platform);
+        releaseBundle: releaseBundle, platform: platform);
   }
 
   Future<ReleaseBundleZip> buildFromDirectory(
@@ -507,7 +507,10 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
     Object? body;
 
     if (this.body == '%RELEASE_BUNDLE%') {
-      if (releaseBundle == null) return false;
+      if (releaseBundle == null) {
+        print('** Release bundle not provided for body: $this');
+        return false;
+      }
       body = await releaseBundle.toBytes();
     } else {
       body = this.body;
