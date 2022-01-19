@@ -19,7 +19,7 @@ typedef OnRelease = void Function(Release release);
 /// A [Release] updater from [releaseProvider] to [storage].
 class ReleaseUpdater implements Copiable<ReleaseUpdater> {
   // ignore: constant_identifier_names
-  static const String VERSION = '1.0.15';
+  static const String VERSION = '1.0.16';
 
   /// The [Release] storage.
   final ReleaseStorage storage;
