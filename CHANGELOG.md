@@ -1,3 +1,8 @@
+## 1.0.17
+
+- `release_updater_server`:
+  - Sort entries for routes: `RELEASES-FILES` and `RELEASES-URLS`.
+
 ## 1.0.16
 
 - `release_updater_server`:

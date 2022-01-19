@@ -163,6 +163,8 @@ List<String> _listReleasesFilesPaths(Directory releasesDir) {
       .toList();
 
   var filesPaths = files.map((f) => pack_path.split(f.path).last).toList();
+  filesPaths.sort();
+
   return filesPaths;
 }
 
@@ -279,6 +281,7 @@ bool appendToReleasesFile(File releasesFile, String release) {
   if (lines.contains(release)) return false;
 
   lines.add(release);
+  lines.sort();
 
   var content = lines.join('\n') + '\n';
 
