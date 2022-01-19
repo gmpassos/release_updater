@@ -23,6 +23,9 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   ReleaseStorageDirectory(this.name, this.directory);
 
   @override
+  ReleaseStorageDirectory copy() => ReleaseStorageDirectory(name, directory);
+
+  @override
   String? get platform {
     var p = ReleasePlatform.platform;
     return p.isNotEmpty ? p : null;

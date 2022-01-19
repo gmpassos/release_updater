@@ -7,7 +7,7 @@ import 'release_updater_bundle.dart';
 import 'release_updater_utils.dart';
 
 /// A [Release] storage.
-abstract class ReleaseStorage {
+abstract class ReleaseStorage implements Copiable<ReleaseStorage> {
   /// The name of the stored [Release].
   String get name;
 

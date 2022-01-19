@@ -174,6 +174,9 @@ class _MyStorageMemory extends ReleaseStorage {
   Release? currentRelease;
 
   @override
+  _MyStorageMemory copy() => _MyStorageMemory();
+
+  @override
   FutureOr<String?> get currentReleasePath => currentRelease != null
       ? '${currentRelease!.name}--${currentRelease!.version}'
       : null;
@@ -203,6 +206,9 @@ class _MyProvider extends ReleaseProvider {
   final String platform;
 
   late final List<Release> _releases;
+
+  @override
+  _MyProvider copy() => _MyProvider(platform);
 
   _MyProvider(this.platform) {
     _releases = [

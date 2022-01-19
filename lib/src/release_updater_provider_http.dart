@@ -8,7 +8,8 @@ import 'release_updater_bundle.dart';
 import 'release_updater_provider.dart';
 
 class ReleaseProviderHttp extends ReleaseProvider {
-  final HttpClient httpClient;
+  final String baseURL;
+  HttpClient? _httpClient;
 
   final String releasesFile;
   static const String defaultReleasesFile = 'releases.txt';
@@ -17,16 +18,20 @@ class ReleaseProviderHttp extends ReleaseProvider {
   static const String defaultReleasesBundleFileFormat =
       ReleaseBundle.defaultReleasesBundleFileFormat;
 
-  ReleaseProviderHttp.withClient(this.httpClient,
+  ReleaseProviderHttp.withClient(this._httpClient,
       {this.releasesFile = defaultReleasesFile,
-      this.releasesBundleFileFormat = defaultReleasesBundleFileFormat});
+      this.releasesBundleFileFormat = defaultReleasesBundleFileFormat})
+      : baseURL = _httpClient!.baseURL;
 
-  ReleaseProviderHttp.baseURL(String baseURL,
-      {String releasesFile = defaultReleasesFile,
-      String releasesBundleFileFormat = defaultReleasesBundleFileFormat})
-      : this.withClient(HttpClient(baseURL),
-            releasesFile: releasesFile,
-            releasesBundleFileFormat: releasesBundleFileFormat);
+  ReleaseProviderHttp.baseURL(this.baseURL,
+      {this.releasesFile = defaultReleasesFile,
+      this.releasesBundleFileFormat = defaultReleasesBundleFileFormat})
+      : _httpClient = null;
+
+  @override
+  ReleaseProviderHttp copy() => ReleaseProviderHttp.baseURL(baseURL);
+
+  HttpClient get httpClient => _httpClient ??= HttpClient(baseURL);
 
   @override
   Future<List<Release>> listReleases() async {

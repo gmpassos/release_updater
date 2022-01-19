@@ -1,3 +1,8 @@
+## 1.0.15
+
+- `ReleaseUpdater`:
+  - Added `startPeriodicUpdateChecker` and `spawnPeriodicUpdateCheckerIsolate`.
+
 ## 1.0.14
 
 - Fix upload of raw data.

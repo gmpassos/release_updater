@@ -8,10 +8,18 @@ import 'release_updater_provider.dart';
 import 'release_updater_storage.dart';
 import 'release_updater_utils.dart';
 
+abstract class Copiable<T> {
+  /// Returns a copy of this instance.
+  /// - Fresh instances should be prepared to be sent through `Isolate`s.
+  T copy();
+}
+
+typedef OnRelease = void Function(Release release);
+
 /// A [Release] updater from [releaseProvider] to [storage].
-class ReleaseUpdater {
+class ReleaseUpdater implements Copiable<ReleaseUpdater> {
   // ignore: constant_identifier_names
-  static const String VERSION = '1.0.14';
+  static const String VERSION = '1.0.15';
 
   /// The [Release] storage.
   final ReleaseStorage storage;
@@ -21,20 +29,52 @@ class ReleaseUpdater {
 
   ReleaseUpdater(this.storage, this.releaseProvider);
 
+  @override
+  ReleaseUpdater copy() =>
+      ReleaseUpdater(storage.copy(), releaseProvider.copy());
+
   String get name => storage.name;
 
   String? get platform => storage.platform;
 
   /// Checks if there's a new version to update and returns it, otherwise returns `null`.
-  FutureOr<Release?> checkForUpdate() async {
+  ///
+  /// - [onNewRelease] is called when a new release is available.
+  FutureOr<Release?> checkForUpdate({OnRelease? onNewRelease}) async {
     var currentRelease = await this.currentRelease;
 
     var lastRelease = await this.lastRelease;
     if (lastRelease == null) return null;
 
-    return currentRelease == null || lastRelease.compareTo(currentRelease) > 0
-        ? lastRelease
-        : null;
+    var newRelease =
+        currentRelease == null || lastRelease.compareTo(currentRelease) > 0;
+
+    if (newRelease) {
+      if (onNewRelease != null) {
+        try {
+          onNewRelease(lastRelease);
+        } catch (e, s) {
+          print(e);
+          print(s);
+        }
+      }
+
+      return lastRelease;
+    } else {
+      return null;
+    }
+  }
+
+  /// Starts a [Timer] with a periodic call to [checkForUpdate].
+  ///
+  /// - [onNewRelease] is called when a new release is available.
+  /// - [interval] is the [Timer] interval. Default: 1min.
+  Timer startPeriodicUpdateChecker(OnRelease onNewRelease,
+      {Duration? interval}) {
+    interval ??= Duration(minutes: 1);
+
+    return Timer.periodic(
+        interval, (_) => checkForUpdate(onNewRelease: onNewRelease));
   }
 
   /// Returns the current [Release].
