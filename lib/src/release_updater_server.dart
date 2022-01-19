@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart';
 import 'package:mercury_client/mercury_client.dart';
 import 'package:shelf/shelf.dart' as shelf;
+import 'package:path/path.dart' as pack_path;
 
 import 'release_updater_utils.dart';
 
@@ -98,8 +99,71 @@ shelf.Handler processServerRequest(shelf.Handler handler, Directory releasesDir,
       if (response != null) return response;
     }
 
+    final urlPath = request.url.path;
+
+    switch (urlPath) {
+      case 'RELEASES':
+        return _processReleases(releasesFile);
+      case 'RELEASES-FILES':
+        return _processReleasesFiles(releasesDir);
+      case 'RELEASES-URL':
+      case 'RELEASES-URLS':
+        return _processReleasesURLs(releasesDir, request.requestedUri);
+      default:
+        break;
+    }
+
     return handler(request);
   };
+}
+
+shelf.Response _processReleases(File releasesFile) {
+  var content = releasesFile.readAsStringSync();
+
+  return shelf.Response.ok(content, headers: {
+    HttpHeaders.contentTypeHeader: 'text/plain',
+  });
+}
+
+shelf.Response _processReleasesFiles(Directory releasesDir) {
+  Iterable<String> filesPaths = _listReleasesFilesPaths(releasesDir);
+
+  var content = filesPaths.join('\n') + '\n';
+
+  return shelf.Response.ok(content, headers: {
+    HttpHeaders.contentTypeHeader: 'text/plain',
+  });
+}
+
+shelf.Response _processReleasesURLs(Directory releasesDir, Uri requestedURL) {
+  var basePaths = requestedURL.pathSegments.toList();
+  if (basePaths.isNotEmpty) {
+    basePaths.removeAt(0);
+  }
+
+  var filesPaths = _listReleasesFilesPaths(releasesDir);
+
+  var urls = filesPaths
+      .map((f) => [...basePaths, f].join('/'))
+      .map((p) => requestedURL.replace(path: p))
+      .toList();
+
+  var content = urls.join('\n') + '\n';
+
+  return shelf.Response.ok(content, headers: {
+    HttpHeaders.contentTypeHeader: 'text/plain',
+  });
+}
+
+List<String> _listReleasesFilesPaths(Directory releasesDir) {
+  var files = releasesDir
+      .listSync()
+      .where((f) => f.path.endsWith('.zip'))
+      .whereType<File>()
+      .toList();
+
+  var filesPaths = files.map((f) => pack_path.split(f.path).last).toList();
+  return filesPaths;
 }
 
 FutureOr<shelf.Response>? _processUpLoad(

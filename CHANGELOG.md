@@ -1,3 +1,8 @@
+## 1.0.16
+
+- `release_updater_server`:
+  - Info routes: `RELEASES`, `RELEASES-FILES` and `RELEASES-URLS`. 
+
 ## 1.0.15
 
 - `ReleaseUpdater`:
