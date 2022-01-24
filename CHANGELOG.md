@@ -1,3 +1,9 @@
+## 1.0.19
+
+- `update`:
+  - Added optional parameter `force`.
+  - If the current version is the same of the target version, returns `null`.
+
 ## 1.0.18
 
 - `checkForUpdate`:

@@ -46,7 +46,7 @@ abstract class ReleaseStorage implements Copiable<ReleaseStorage> {
     var currentRelease = await this.currentRelease;
     var release = bundle.release;
 
-    if (currentRelease == release) return null;
+    if (!force && currentRelease == release) return null;
 
     var files = await bundle.files;
 

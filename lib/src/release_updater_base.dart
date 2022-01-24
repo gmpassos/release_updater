@@ -19,7 +19,7 @@ typedef OnRelease = void Function(Release release);
 /// A [Release] updater from [releaseProvider] to [storage].
 class ReleaseUpdater implements Copiable<ReleaseUpdater> {
   // ignore: constant_identifier_names
-  static const String VERSION = '1.0.18';
+  static const String VERSION = '1.0.19';
 
   /// The [Release] storage.
   final ReleaseStorage storage;
@@ -113,11 +113,13 @@ class ReleaseUpdater implements Copiable<ReleaseUpdater> {
   /// - [targetVersion] is the desired [Version] for the release.
   /// - [platform] is the desired platform of the available [Release].
   /// - [exactPlatform] when `true` ensures that the update is for the exact [platform] parameter.
+  /// - [force] when `true` performs the update even when already updated to the [targetRelease] and [targetVersion].
   FutureOr<Release?> update(
       {Release? targetRelease,
       Version? targetVersion,
       String? platform,
-      bool exactPlatform = false}) async {
+      bool exactPlatform = false,
+      bool force = false}) async {
     Release? lastRelease;
 
     if (targetVersion == null) {
@@ -129,6 +131,19 @@ class ReleaseUpdater implements Copiable<ReleaseUpdater> {
 
     platform ??= targetRelease?.platform ?? storage.platform;
 
+    if (!force) {
+      var currentRelease = await storage.currentRelease;
+      if (currentRelease != null &&
+          currentRelease.name == name &&
+          currentRelease.version == targetVersion) {
+        if (platform == null ||
+            currentRelease.platform == null ||
+            currentRelease.platform == platform) {
+          return null;
+        }
+      }
+    }
+
     var releaseBundle =
         await releaseProvider.getReleaseBundle(name, targetVersion, platform);
 
@@ -139,7 +154,7 @@ class ReleaseUpdater implements Copiable<ReleaseUpdater> {
 
     if (releaseBundle == null) return null;
 
-    return storage.updateTo(releaseBundle);
+    return storage.updateTo(releaseBundle, force: force);
   }
 
   @override
