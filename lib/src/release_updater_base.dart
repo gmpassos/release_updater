@@ -19,7 +19,7 @@ typedef OnRelease = void Function(Release release);
 /// A [Release] updater from [releaseProvider] to [storage].
 class ReleaseUpdater implements Copiable<ReleaseUpdater> {
   // ignore: constant_identifier_names
-  static const String VERSION = '1.0.17';
+  static const String VERSION = '1.0.18';
 
   /// The [Release] storage.
   final ReleaseStorage storage;
@@ -40,8 +40,16 @@ class ReleaseUpdater implements Copiable<ReleaseUpdater> {
   /// Checks if there's a new version to update and returns it, otherwise returns `null`.
   ///
   /// - [onNewRelease] is called when a new release is available.
-  FutureOr<Release?> checkForUpdate({OnRelease? onNewRelease}) async {
-    var currentRelease = await this.currentRelease;
+  FutureOr<Release?> checkForUpdate(
+      {OnRelease? onNewRelease, Release? currentRelease}) async {
+    final realCurrentRelease = await this.currentRelease;
+
+    if (currentRelease == null) {
+      currentRelease = realCurrentRelease;
+    } else if (realCurrentRelease == null ||
+        currentRelease.compareTo(realCurrentRelease) > 0) {
+      currentRelease = realCurrentRelease;
+    }
 
     var lastRelease = await this.lastRelease;
     if (lastRelease == null) return null;
@@ -70,11 +78,16 @@ class ReleaseUpdater implements Copiable<ReleaseUpdater> {
   /// - [onNewRelease] is called when a new release is available.
   /// - [interval] is the [Timer] interval. Default: 1min.
   Timer startPeriodicUpdateChecker(OnRelease onNewRelease,
-      {Duration? interval}) {
+      {Duration? interval, Release? currentRelease}) {
     interval ??= Duration(minutes: 1);
 
-    return Timer.periodic(
-        interval, (_) => checkForUpdate(onNewRelease: onNewRelease));
+    return Timer.periodic(interval, (_) async {
+      var newRelease = await checkForUpdate(
+          onNewRelease: onNewRelease, currentRelease: currentRelease);
+      if (newRelease != null) {
+        currentRelease = newRelease;
+      }
+    });
   }
 
   /// Returns the current [Release].

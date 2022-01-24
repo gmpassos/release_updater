@@ -11,14 +11,14 @@ extension ReleaseUpdaterIsolateExtension on ReleaseUpdater {
   ///
   /// See [startPeriodicUpdateChecker].
   Future<Isolate> spawnPeriodicUpdateCheckerIsolate(OnRelease onNewRelease,
-      {Duration? interval}) async {
+      {Duration? interval, Release? currentRelease}) async {
     var receivePort = ReceivePort();
 
     receivePort.listen((release) => onNewRelease(release));
 
     var isolate = await Isolate.spawn(
       _isolateMain,
-      [receivePort.sendPort, copy(), interval],
+      [receivePort.sendPort, copy(), interval, currentRelease.toString()],
       debugName: 'PeriodicUpdateChecker',
     );
 
@@ -30,7 +30,11 @@ void _isolateMain(List msg) {
   var sendPort = msg[0] as SendPort;
   ReleaseUpdater releaseUpdater = msg[1];
   Duration? interval = msg[2];
+  String? currentReleaseStr = msg[3];
+
+  var currentRelease =
+      currentReleaseStr != null ? Release.parse(currentReleaseStr) : null;
 
   releaseUpdater.startPeriodicUpdateChecker((r) => sendPort.send(r),
-      interval: interval);
+      interval: interval, currentRelease: currentRelease);
 }

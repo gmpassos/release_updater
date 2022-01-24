@@ -1,3 +1,8 @@
+## 1.0.18
+
+- `checkForUpdate`:
+  - new parameter `currentRelease` to allow check fo current release context, and not only from local file. 
+
 ## 1.0.17
 
 - `release_updater_server`:
