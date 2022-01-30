@@ -69,7 +69,7 @@ abstract class ReleaseStorage implements Copiable<ReleaseStorage>, Spawnable {
           var storedFileEquals = await isFileEquals(release, f, manifestFile);
           if (storedFileEquals) {
             if (verbose) {
-              print('-- Skipping unchanged file: ${f.filePath}');
+              print('  -- Skipping unchanged file: ${f.filePath}');
             }
             continue;
           }
@@ -99,7 +99,7 @@ abstract class ReleaseStorage implements Copiable<ReleaseStorage>, Spawnable {
       throw StateError("Error checking Manifest!");
     }
 
-    var result = ReleaseUpdateResult(release, savedFiles);
+    var result = ReleaseUpdateResult(release, manifest, savedFiles);
     return result;
   }
 
@@ -115,8 +115,12 @@ abstract class ReleaseStorage implements Copiable<ReleaseStorage>, Spawnable {
   FutureOr<bool> saveRelease(Release release);
 
   /// Checks the [manifest] with the stored files to this storage implementation.
-  FutureOr<bool> checkManifest(ReleaseManifest manifest);
+  FutureOr<bool> checkManifest(ReleaseManifest manifest,
+      {bool verbose = false});
 
   /// Saves the current [manifest] to this storage implementation.
   FutureOr<bool> saveManifest(ReleaseManifest manifest);
+
+  /// Loads the stored [ReleaseManifest].
+  FutureOr<ReleaseManifest?> loadManifest();
 }

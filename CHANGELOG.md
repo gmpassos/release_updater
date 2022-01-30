@@ -1,3 +1,8 @@
+## 1.0.23
+
+- Fix `checkManifest` when saving files with suffix `.new_release`.
+- Improve check of manifest.
+
 ## 1.0.22
 
 - Improved update response: `ReleaseUpdateResult`.

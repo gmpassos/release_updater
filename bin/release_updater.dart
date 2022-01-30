@@ -65,7 +65,7 @@ Future<void> updateRelease(
   var currentRelease = storage.currentRelease;
   print('-- [$name] Current release: $currentRelease');
 
-  var currentReleasePath = await storage.currentReleasePath;
+  var currentReleasePath = storage.currentReleasePath;
 
   if (currentReleasePath != null) {
     var releaseDirectory = Directory(currentReleasePath).absolute;
@@ -77,7 +77,7 @@ Future<void> updateRelease(
   if (updatedRelease != null) {
     print('-- [$name] Updated to: $updatedRelease');
 
-    currentReleasePath = await storage.currentReleasePath;
+    currentReleasePath = storage.currentReleasePath;
 
     if (currentReleasePath != null) {
       var releaseDirectory = Directory(currentReleasePath).absolute;

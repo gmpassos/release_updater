@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert' as dart_convert;
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -98,7 +99,7 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   }
 
   @override
-  FutureOr<String?> get currentReleasePath {
+  String? get currentReleasePath {
     var currentRelease = this.currentRelease;
     if (currentRelease == null) return null;
 
@@ -223,31 +224,74 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   }
 
   @override
-  Future<bool> checkManifest(ReleaseManifest manifest) async {
+  Future<bool> checkManifest(ReleaseManifest manifest,
+      {bool verbose = false, bool checkNewReleaseFiles = true}) async {
     var release = manifest.release;
-
     var dir = releaseDirectory(release);
-    if (!dir.existsSync()) return false;
+
+    if (verbose) {
+      print(
+          '-- Checking manifest (${manifest.release}) with release at: ${dir.path}');
+    }
+
+    if (!dir.existsSync()) {
+      print("  ** Can't find release directory: ${dir.path}");
+      return false;
+    }
+
+    var checkOK = true;
 
     for (var f in manifest.files) {
       var localFile = File(joinPaths(dir.path, f.filePath));
-      var ok = await f.checkFile(localFile);
-      if (!ok) return false;
+
+      bool? ok;
+
+      if (!overwriteFiles && checkNewReleaseFiles) {
+        var localFile2 = File(localFile.path + _newReleaseSuffix);
+        if (localFile2.existsSync()) {
+          ok = await f.checkFile(localFile2);
+        }
+      }
+
+      ok ??= await f.checkFile(localFile);
+
+      if (!ok) {
+        print("  ** Error checking file: ${localFile.path}");
+        checkOK = false;
+        continue;
+      }
     }
 
-    return true;
+    return checkOK;
   }
 
   File get currentManifestFile =>
       File(joinPaths(directory.path, 'release-manifest.json'));
 
   @override
-  FutureOr<bool> saveManifest(ReleaseManifest manifest) {
+  bool saveManifest(ReleaseManifest manifest) {
     var file = currentManifestFile;
 
     file.writeAsStringSync(manifest.toJsonEncoded());
 
     return true;
+  }
+
+  @override
+  FutureOr<ReleaseManifest?> loadManifest() {
+    var file = currentManifestFile;
+    if (!file.existsSync()) return null;
+
+    try {
+      var jsonEncoded = file.readAsStringSync();
+      var json = dart_convert.json.decode(jsonEncoded);
+      return ReleaseManifest.fromJson(json);
+    } catch (e, s) {
+      print('** Error loading manifest file: ${file.path}');
+      print(e);
+      print(s);
+      return null;
+    }
   }
 
   @override

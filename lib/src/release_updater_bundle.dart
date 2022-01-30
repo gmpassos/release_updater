@@ -375,9 +375,10 @@ class ReleaseManifestFile {
 
   /// Checks a [bundleFile] with this manifest file.
   Future<bool> checkReleaseFile(ReleaseFile bundleFile) async {
-    var dataSHA256 = await bundleFile.dataSHA256;
     var length = await bundleFile.length;
+    if (length != this.length) return false;
 
-    return length == this.length && sha256.equals(dataSHA256);
+    var dataSHA256 = await bundleFile.dataSHA256;
+    return sha256.equals(dataSHA256);
   }
 }

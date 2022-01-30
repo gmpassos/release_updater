@@ -7,6 +7,7 @@ import 'package:pub_semver/pub_semver.dart' as semver;
 import 'release_updater_provider.dart';
 import 'release_updater_storage.dart';
 import 'release_updater_utils.dart';
+import 'release_updater_bundle.dart';
 
 abstract class Copiable<T> {
   /// Returns a copy of this instance.
@@ -24,7 +25,7 @@ typedef OnRelease = void Function(Release release);
 /// A [Release] updater from [releaseProvider] to [storage].
 class ReleaseUpdater implements Copiable<ReleaseUpdater>, Spawnable {
   // ignore: constant_identifier_names
-  static const String VERSION = '1.0.22';
+  static const String VERSION = '1.0.23';
 
   /// The [Release] storage.
   final ReleaseStorage storage;
@@ -205,9 +206,10 @@ class ReleaseUpdater implements Copiable<ReleaseUpdater>, Spawnable {
 /// See [ReleaseUpdater.update]
 class ReleaseUpdateResult {
   final Release release;
+  final ReleaseManifest manifest;
   final List<ReleaseFile> savedFiles;
 
-  ReleaseUpdateResult(this.release, this.savedFiles);
+  ReleaseUpdateResult(this.release, this.manifest, this.savedFiles);
 
   int get savedFilesLength => savedFiles.length;
 

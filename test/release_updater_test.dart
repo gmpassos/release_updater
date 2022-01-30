@@ -179,6 +179,9 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
       updateResult2.release.toString(), equals('foo/1.0.3/$currentPlatform'));
   expect(updateResult2.savedFilesLength, equals(3));
 
+  expect((await releaseUpdater.storage.loadManifest())?.release,
+      equals(updateResult2.release));
+
   {
     var currentRelease = storage.currentRelease;
     expect(currentRelease, equals(Release.parse('foo/1.0.3/$currentPlatform')));
@@ -224,18 +227,17 @@ class _MyStorageMemory extends ReleaseStorage {
   }
 
   @override
-  FutureOr<String?> get currentReleasePath => currentRelease != null
+  String? get currentReleasePath => currentRelease != null
       ? '${currentRelease!.name}--${currentRelease!.version}'
       : null;
 
   final Map<String, ReleaseFile> _files = <String, ReleaseFile>{};
 
   @override
-  FutureOr<Set<ReleaseFile>> get currentFiles => _files.values.toSet();
+  Set<ReleaseFile> get currentFiles => _files.values.toSet();
 
   @override
-  FutureOr<bool> saveFile(Release release, ReleaseFile file,
-      {bool verbose = false}) {
+  bool saveFile(Release release, ReleaseFile file, {bool verbose = false}) {
     _files[file.filePath] = file;
     return true;
   }
@@ -250,7 +252,7 @@ class _MyStorageMemory extends ReleaseStorage {
   }
 
   @override
-  FutureOr<bool> saveRelease(Release release) {
+  bool saveRelease(Release release) {
     currentRelease = release;
     return true;
   }
@@ -259,25 +261,47 @@ class _MyStorageMemory extends ReleaseStorage {
   String? get platform => 'generic';
 
   @override
-  Future<bool> checkManifest(ReleaseManifest manifest) async {
-    for (var f in manifest.files) {
-      var file = _files[f.filePath];
-      if (file == null) return false;
-
-      var ok = await f.checkReleaseFile(file);
-      if (!ok) return false;
+  Future<bool> checkManifest(ReleaseManifest manifest,
+      {bool verbose = false}) async {
+    if (verbose) {
+      print('-- Checking manifest (${manifest.release}):');
     }
 
-    return true;
+    var checkOK = true;
+
+    for (var f in manifest.files) {
+      var file = _files[f.filePath];
+      if (file == null) {
+        if (verbose) {
+          print("  ** Can't find file: ${f.filePath}");
+        }
+        checkOK = false;
+        continue;
+      }
+
+      var ok = await f.checkReleaseFile(file);
+      if (!ok) {
+        if (verbose) {
+          print("  ** Error checking file: ${f.filePath}");
+        }
+        checkOK = false;
+        continue;
+      }
+    }
+
+    return checkOK;
   }
 
   ReleaseManifest? currentManifest;
 
   @override
-  FutureOr<bool> saveManifest(ReleaseManifest manifest) {
+  bool saveManifest(ReleaseManifest manifest) {
     currentManifest = manifest;
     return true;
   }
+
+  @override
+  ReleaseManifest? loadManifest() => currentManifest;
 }
 
 class _MyProvider extends ReleaseProvider {
