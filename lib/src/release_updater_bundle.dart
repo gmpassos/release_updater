@@ -97,13 +97,13 @@ class ReleaseBundleZip extends ReleaseBundle {
 
   @override
   FutureOr<Set<ReleaseFile>> get files {
-    if (_files != null) return _files!;
+    if (_files != null) return UnmodifiableSetView(_files!);
 
     var files = _loadFiles();
     if (files is Set<ReleaseFile>) {
-      return _files = files;
+      return UnmodifiableSetView(_files = files);
     } else {
-      return files.then((value) => _files = value);
+      return files.then((value) => UnmodifiableSetView(_files = value));
     }
   }
 
@@ -219,6 +219,9 @@ class ReleaseManifest {
 
   /// The files in this manifest.
   List<ReleaseManifestFile> get files => _files.values.toList();
+
+  /// Returns a [ReleaseManifestFile] with the [filePath];
+  ReleaseManifestFile? getFileByPath(String filePath) => _files[filePath];
 
   /// Adds a [file] to this manifest.
   void addFile(ReleaseManifestFile file) {

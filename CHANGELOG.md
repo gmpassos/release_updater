@@ -1,3 +1,8 @@
+## 1.0.22
+
+- Improved update response: `ReleaseUpdateResult`.
+- `spawnPeriodicUpdateCheckerIsolate` now shares the same `Isolate` for multiple calls.
+
 ## 1.0.21
 
 - Added support for `ReleaseManifest` and save it as `release-manifest.json`.

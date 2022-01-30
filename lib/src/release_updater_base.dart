@@ -14,12 +14,17 @@ abstract class Copiable<T> {
   T copy();
 }
 
+abstract class Spawnable {
+  /// Called when an [Isolate] is spawned and receives a [Spawnable] instance.
+  FutureOr<bool> onSpawned();
+}
+
 typedef OnRelease = void Function(Release release);
 
 /// A [Release] updater from [releaseProvider] to [storage].
-class ReleaseUpdater implements Copiable<ReleaseUpdater> {
+class ReleaseUpdater implements Copiable<ReleaseUpdater>, Spawnable {
   // ignore: constant_identifier_names
-  static const String VERSION = '1.0.21';
+  static const String VERSION = '1.0.22';
 
   /// The [Release] storage.
   final ReleaseStorage storage;
@@ -32,6 +37,37 @@ class ReleaseUpdater implements Copiable<ReleaseUpdater> {
   @override
   ReleaseUpdater copy() =>
       ReleaseUpdater(storage.copy(), releaseProvider.copy());
+
+  @override
+  FutureOr<bool> onSpawned() {
+    var returns = <FutureOr<bool>>[];
+
+    try {
+      var ret = storage.onSpawned();
+      returns.add(ret);
+    } catch (e, s) {
+      print(e);
+      print(s);
+    }
+
+    try {
+      var ret = releaseProvider.onSpawned();
+      returns.add(ret);
+    } catch (e, s) {
+      print(e);
+      print(s);
+    }
+
+    if (returns.isEmpty) return false;
+
+    if (returns.whereType<Future>().isEmpty) {
+      return returns.map((e) => e as bool).where((r) => r == false).isEmpty;
+    } else {
+      return Future.wait(returns.map((e) => Future.sync(() => e))).then((oks) {
+        return returns.where((r) => r == false).isEmpty;
+      });
+    }
+  }
 
   String get name => storage.name;
 
@@ -114,7 +150,7 @@ class ReleaseUpdater implements Copiable<ReleaseUpdater> {
   /// - [platform] is the desired platform of the available [Release].
   /// - [exactPlatform] when `true` ensures that the update is for the exact [platform] parameter.
   /// - [force] when `true` performs the update even when already updated to the [targetRelease] and [targetVersion].
-  FutureOr<Release?> update(
+  FutureOr<ReleaseUpdateResult?> update(
       {Release? targetRelease,
       Version? targetVersion,
       String? platform,
@@ -161,6 +197,25 @@ class ReleaseUpdater implements Copiable<ReleaseUpdater> {
   @override
   String toString() {
     return 'ReleaseUpdater{storage: $storage, releaseProvider: $releaseProvider}';
+  }
+}
+
+/// The result of a [Release] update.
+///
+/// See [ReleaseUpdater.update]
+class ReleaseUpdateResult {
+  final Release release;
+  final List<ReleaseFile> savedFiles;
+
+  ReleaseUpdateResult(this.release, this.savedFiles);
+
+  int get savedFilesLength => savedFiles.length;
+
+  bool get hasSavedFiles => savedFiles.isNotEmpty;
+
+  @override
+  String toString() {
+    return 'ReleaseUpdateResult{ release: $release, savedFiles: ${savedFiles.length} }';
   }
 }
 
@@ -327,13 +382,16 @@ class ReleaseFile implements Comparable<ReleaseFile> {
 
   static Object toBytes(Object data) {
     if (data is DataProvider) return data;
-    if (data is Uint8List) return data;
+    if (data is Uint8List) return UnmodifiableUint8ListView(data);
 
-    if (data is Iterable<int>) return Uint8List.fromList(data.toList());
+    if (data is Iterable<int>) {
+      return UnmodifiableUint8ListView(Uint8List.fromList(data.toList()));
+    }
 
     var s = data.toString();
     var encoded = dart_convert.utf8.encode(s);
-    return encoded is Uint8List ? encoded : Uint8List.fromList(encoded);
+    return UnmodifiableUint8ListView(
+        encoded is Uint8List ? encoded : Uint8List.fromList(encoded));
   }
 
   FutureOr<int> get length {

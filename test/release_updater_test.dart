@@ -73,11 +73,17 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
   var lastRelease = await releaseUpdater.checkForUpdate();
   expect(lastRelease.toString(), equals('foo/1.0.2/$currentPlatform'));
 
-  var updatedRelease =
+  var updateResult =
       await releaseUpdater.update(targetVersion: lastRelease!.version);
-  print('-- Updated to: $updatedRelease');
-  expect(updatedRelease,
+  print('-- Updated: $updateResult');
+  for (var f in updateResult!.savedFiles) {
+    print('  -- $f');
+  }
+
+  expect(updateResult.release,
       equals(Release('foo', lastRelease.version, platform: currentPlatform)));
+
+  expect(updateResult.savedFilesLength, equals(2));
 
   {
     var currentRelease = releaseUpdater.currentRelease;
@@ -114,6 +120,28 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
 
   var lastRelease2 = await releaseUpdater.checkForUpdate();
   expect(lastRelease2, isNull);
+
+  var notifiedNewReleases = <Release>[];
+
+  print('-- spawnPeriodicUpdateCheckerIsolate');
+
+  var spawned = await releaseUpdater.spawnPeriodicUpdateCheckerIsolate(
+    (release) {
+      if (!notifiedNewReleases.contains(release)) {
+        print('** Periodic Checker> new release: $release');
+        notifiedNewReleases.add(release);
+      }
+    },
+    interval: Duration(milliseconds: 200),
+    currentRelease: await releaseUpdater.currentRelease,
+  );
+
+  expect(spawned, isTrue);
+
+  await Future.delayed(Duration(seconds: 1));
+
+  expect(notifiedNewReleases.isEmpty, isTrue);
+
   {
     var lastVersion2 = await provider.lastRelease('foo');
     expect(lastVersion2.toString(), equals('foo/1.0.2/$currentPlatform'));
@@ -124,6 +152,12 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
     expect(lastVersion2.toString(), equals('foo/1.0.3/$currentPlatform'));
   }
 
+  print('-- Sleeping for new release...');
+  await Future.delayed(Duration(seconds: 4));
+
+  expect(notifiedNewReleases.isNotEmpty, isTrue);
+  expect(notifiedNewReleases[0].version.toString(), equals('1.0.3'));
+
   var lastRelease3 = await releaseUpdater.checkForUpdate();
   expect(lastRelease3.toString(), equals('foo/1.0.3/$currentPlatform'));
 
@@ -133,10 +167,17 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
     expect(updatedReleaseError, isNull);
   }
 
-  var updatedRelease2 = await releaseUpdater.update(
+  var updateResult2 = await releaseUpdater.update(
       platform: currentPlatform, exactPlatform: true);
-  print('-- Updated to: $updatedRelease2');
-  expect(updatedRelease2.toString(), equals('foo/1.0.3/$currentPlatform'));
+
+  print('-- Updated: $updateResult2');
+  for (var f in updateResult2!.savedFiles) {
+    print('  -- $f');
+  }
+
+  expect(
+      updateResult2.release.toString(), equals('foo/1.0.3/$currentPlatform'));
+  expect(updateResult2.savedFilesLength, equals(3));
 
   {
     var currentRelease = storage.currentRelease;
@@ -174,7 +215,13 @@ class _MyStorageMemory extends ReleaseStorage {
   Release? currentRelease;
 
   @override
-  _MyStorageMemory copy() => _MyStorageMemory();
+  _MyStorageMemory copy() {
+    var copy = _MyStorageMemory();
+    copy._files.addAll(_files);
+    copy.currentRelease = currentRelease;
+    copy.currentManifest = currentManifest;
+    return copy;
+  }
 
   @override
   FutureOr<String?> get currentReleasePath => currentRelease != null
@@ -191,6 +238,15 @@ class _MyStorageMemory extends ReleaseStorage {
       {bool verbose = false}) {
     _files[file.filePath] = file;
     return true;
+  }
+
+  @override
+  FutureOr<bool> isFileEquals(
+      Release release, ReleaseFile file, ReleaseManifestFile manifestFile) {
+    var storedFile = _files[file.filePath];
+    if (storedFile == null) return false;
+
+    return manifestFile.checkReleaseFile(storedFile);
   }
 
   @override
@@ -229,15 +285,27 @@ class _MyProvider extends ReleaseProvider {
 
   late final List<Release> _releases;
 
-  @override
-  _MyProvider copy() => _MyProvider(platform);
-
   _MyProvider(this.platform) {
     _releases = [
       Release.parse('foo/1.0.0/$platform'),
       Release.parse('foo/1.0.1/$platform'),
       Release.parse('foo/1.0.2/$platform'),
     ];
+  }
+
+  @override
+  _MyProvider copy() => _MyProvider(platform);
+
+  @override
+  bool onSpawned() {
+    print('** onSpawned> $this');
+
+    Future.delayed(Duration(seconds: 3), () {
+      var platform = _releases.last.platform;
+      _releases.add(Release.parse('foo/1.0.3/$platform'));
+    });
+
+    return true;
   }
 
   @override
@@ -268,6 +336,11 @@ class _MyProvider extends ReleaseProvider {
       default:
         return null;
     }
+  }
+
+  @override
+  String toString() {
+    return '_MyProvider{ platform: $platform, _releases: $_releases }';
   }
 }
 

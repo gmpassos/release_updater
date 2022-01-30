@@ -204,6 +204,18 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   }
 
   @override
+  FutureOr<bool> isFileEquals(
+      Release release, ReleaseFile file, ReleaseManifestFile manifestFile) {
+    var dir = releaseDirectory(release);
+    if (!dir.existsSync()) return false;
+
+    var localFile = file.toFile(parentDirectory: dir);
+    if (!localFile.existsSync()) return false;
+
+    return manifestFile.checkFile(localFile);
+  }
+
+  @override
   bool saveRelease(Release release) {
     var file = currentReleaseConfigFile;
     file.writeAsStringSync('$release\n');

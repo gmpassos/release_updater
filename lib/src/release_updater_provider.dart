@@ -4,7 +4,10 @@ import 'release_updater_base.dart';
 import 'release_updater_bundle.dart';
 
 /// The [Release] provider.
-abstract class ReleaseProvider implements Copiable<ReleaseProvider> {
+abstract class ReleaseProvider implements Copiable<ReleaseProvider>, Spawnable {
+  @override
+  FutureOr<bool> onSpawned() => true;
+
   /// Lists all releases.
   FutureOr<List<Release>> listReleases();
 

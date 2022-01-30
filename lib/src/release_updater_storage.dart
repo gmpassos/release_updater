@@ -7,7 +7,10 @@ import 'release_updater_bundle.dart';
 import 'release_updater_utils.dart';
 
 /// A [Release] storage.
-abstract class ReleaseStorage implements Copiable<ReleaseStorage> {
+abstract class ReleaseStorage implements Copiable<ReleaseStorage>, Spawnable {
+  @override
+  FutureOr<bool> onSpawned() => true;
+
   /// The name of the stored [Release].
   String get name;
 
@@ -41,7 +44,7 @@ abstract class ReleaseStorage implements Copiable<ReleaseStorage> {
   }
 
   /// Updates the current stored version to the [bundle].
-  FutureOr<Release?> updateTo(ReleaseBundle bundle,
+  FutureOr<ReleaseUpdateResult?> updateTo(ReleaseBundle bundle,
       {bool force = false, bool verbose = false}) async {
     var currentRelease = await this.currentRelease;
     var release = bundle.release;
@@ -50,16 +53,34 @@ abstract class ReleaseStorage implements Copiable<ReleaseStorage> {
 
     var files = await bundle.files;
 
+    var manifest = await bundle.buildManifest();
+
+    var savedFiles = <ReleaseFile>[];
+
     if (files.isNotEmpty) {
       if (verbose) {
         print('-- Saving release `$release` files (${files.length}):');
       }
 
       for (var f in files) {
+        var manifestFile = manifest.getFileByPath(f.filePath);
+
+        if (manifestFile != null) {
+          var storedFileEquals = await isFileEquals(release, f, manifestFile);
+          if (storedFileEquals) {
+            if (verbose) {
+              print('-- Skipping unchanged file: ${f.filePath}');
+            }
+            continue;
+          }
+        }
+
         var ok = await saveFile(release, f, verbose: verbose);
         if (!ok) {
           throw StateError("Can't save file: $f");
         }
+
+        savedFiles.add(f);
       }
     }
 
@@ -67,8 +88,6 @@ abstract class ReleaseStorage implements Copiable<ReleaseStorage> {
     if (!ok) {
       throw StateError("Can't save release: $release");
     }
-
-    var manifest = await bundle.buildManifest();
 
     ok = await saveManifest(manifest);
     if (!ok) {
@@ -80,12 +99,17 @@ abstract class ReleaseStorage implements Copiable<ReleaseStorage> {
       throw StateError("Error checking Manifest!");
     }
 
-    return release;
+    var result = ReleaseUpdateResult(release, savedFiles);
+    return result;
   }
 
   /// Saves a file to this storage implementation.
   FutureOr<bool> saveFile(Release release, ReleaseFile file,
       {bool verbose = false});
+
+  /// Returns `true` if the stored [file] is equals to [manifestFile].
+  FutureOr<bool> isFileEquals(
+      Release release, ReleaseFile file, ReleaseManifestFile manifestFile);
 
   /// Saves the current [release] to this storage implementation.
   FutureOr<bool> saveRelease(Release release);
