@@ -11,7 +11,7 @@ void main() async {
   var releaseUpdater = ReleaseUpdater(storage, provider);
 
   print('-- Updating...');
-  var updatedToVersion = await releaseUpdater.update();
+  var updatedToVersion = await releaseUpdater.update(verbose: true);
 
   if (updatedToVersion != null) {
     print('-- Updated to version: $updatedToVersion');

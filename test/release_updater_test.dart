@@ -187,7 +187,8 @@ class _MyStorageMemory extends ReleaseStorage {
   FutureOr<Set<ReleaseFile>> get currentFiles => _files.values.toSet();
 
   @override
-  FutureOr<bool> saveFile(Release release, ReleaseFile file) {
+  FutureOr<bool> saveFile(Release release, ReleaseFile file,
+      {bool verbose = false}) {
     _files[file.path] = file;
     return true;
   }

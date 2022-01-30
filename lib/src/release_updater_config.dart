@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:release_updater/src/release_updater_utils.dart';
+import 'release_updater_utils.dart';
 
 Map<String, String> parseProperties(List<String> args) {
   var properties = <String, String>{};

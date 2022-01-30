@@ -1,3 +1,10 @@
+## 1.0.20
+
+- Handle `HttpClient` exceptions and added retries.
+- `ReleaseStorageDirectory`:
+  - Added `installNewReleaseFiles`, to allow self directory storage mode.
+- `ReleaseBundleZip` now stores the mode (`755`) for executable files.
+
 ## 1.0.19
 
 - `update`:

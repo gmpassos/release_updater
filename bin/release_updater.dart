@@ -72,7 +72,7 @@ Future<void> updateRelease(
     print('-- [$name] Current Release directory: ${releaseDirectory.path}');
   }
 
-  var updatedRelease = await releaseUpdater.update();
+  var updatedRelease = await releaseUpdater.update(verbose: true);
 
   if (updatedRelease != null) {
     print('-- [$name] Updated to: $updatedRelease');

@@ -92,7 +92,7 @@ class ReleaseBundleZip extends ReleaseBundle {
       filePath = filePath.substring(rootPath.length);
     }
 
-    var executable = isExecutable(filePath);
+    var executable = f.mode == 755 || isExecutable(filePath);
 
     var releaseFile = ReleaseFile(filePath, f.content,
         time: DateTime.fromMillisecondsSinceEpoch(f.lastModTime * 1000),
@@ -127,6 +127,7 @@ class ReleaseBundleZip extends ReleaseBundle {
     for (var f in files) {
       var data = await f.data;
       var archiveFile = ArchiveFile(f.path, data.length, data);
+      archiveFile.mode = f.executable ? 755 : 420;
       archive.addFile(archiveFile);
     }
 

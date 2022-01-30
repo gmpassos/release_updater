@@ -43,7 +43,8 @@ final Map<String, String> _cachedExecutablesPaths = <String, String>{};
 /// Returns an [executable] binary path.
 ///
 /// - If [useCache] is `true` will use the cached resolutions.
-String whichExecutablePath(String executable, {bool useCache = true}) {
+String whichExecutablePath(String executable,
+    {bool useCache = true, String? def}) {
   executable = executable.trim();
 
   if (useCache) {
@@ -51,13 +52,13 @@ String whichExecutablePath(String executable, {bool useCache = true}) {
     if (cached != null) return cached;
   }
 
-  var path = _whichExecutablePathImpl(executable);
+  var path = _whichExecutablePathImpl(executable, def);
   _cachedExecutablesPaths[executable] = path;
 
   return path;
 }
 
-String _whichExecutablePathImpl(String executable) {
+String _whichExecutablePathImpl(String executable, String? def) {
   late final String findCmd;
   if (Platform.isWindows) {
     findCmd = 'where';
@@ -85,5 +86,5 @@ String _whichExecutablePathImpl(String executable) {
     }
   }
 
-  return executable;
+  return def ?? executable;
 }

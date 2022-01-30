@@ -33,12 +33,25 @@ class ReleaseProviderHttp extends ReleaseProvider {
 
   HttpClient get httpClient => _httpClient ??= HttpClient(baseURL);
 
+  Future<HttpBody?> _getHttpPath(String path, {int maxRetries = 3}) async {
+    for (var i = 0; i < maxRetries; ++i) {
+      try {
+        var response = await httpClient.get(path);
+        return response.isOK ? response.body : null;
+      } catch (_) {
+        await Future.delayed(Duration(seconds: 1));
+      }
+    }
+
+    return null;
+  }
+
   @override
   Future<List<Release>> listReleases() async {
-    var response = await httpClient.get(releasesFile);
-    if (response.isNotOK) return <Release>[];
+    var body = await _getHttpPath(releasesFile);
+    if (body == null) return <Release>[];
 
-    var listStr = response.bodyAsString!;
+    var listStr = body.asString ?? '';
 
     var list = listStr
         .split(RegExp(r'[\r\n]+'))
@@ -55,11 +68,9 @@ class ReleaseProviderHttp extends ReleaseProvider {
       [String? platform]) async {
     var file = ReleaseBundle.formatReleaseBundleFile(
         releasesBundleFileFormat, name, targetVersion, platform);
-    var response = await httpClient.get(file);
 
-    if (response.isNotOK) return null;
-
-    var body = response.body!;
+    var body = await _getHttpPath(file);
+    if (body == null) return null;
 
     var byteArray = body.asByteArray!;
 

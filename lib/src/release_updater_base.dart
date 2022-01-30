@@ -19,7 +19,7 @@ typedef OnRelease = void Function(Release release);
 /// A [Release] updater from [releaseProvider] to [storage].
 class ReleaseUpdater implements Copiable<ReleaseUpdater> {
   // ignore: constant_identifier_names
-  static const String VERSION = '1.0.19';
+  static const String VERSION = '1.0.20';
 
   /// The [Release] storage.
   final ReleaseStorage storage;
@@ -119,7 +119,8 @@ class ReleaseUpdater implements Copiable<ReleaseUpdater> {
       Version? targetVersion,
       String? platform,
       bool exactPlatform = false,
-      bool force = false}) async {
+      bool force = false,
+      bool verbose = false}) async {
     Release? lastRelease;
 
     if (targetVersion == null) {
@@ -154,7 +155,7 @@ class ReleaseUpdater implements Copiable<ReleaseUpdater> {
 
     if (releaseBundle == null) return null;
 
-    return storage.updateTo(releaseBundle, force: force);
+    return storage.updateTo(releaseBundle, force: force, verbose: verbose);
   }
 
   @override
@@ -360,6 +361,13 @@ class ReleaseFile implements Comparable<ReleaseFile> {
   Future<String> get dataAsString async {
     var bytes = await data;
     return dart_convert.utf8.decode(bytes);
+  }
+
+  String toInfo() {
+    var execStr = executable ? ' (EXEC)' : '';
+    var compressedStr = compressed ? ' (COMP)' : '';
+
+    return '$path ($length bytes)$execStr$compressedStr';
   }
 
   @override

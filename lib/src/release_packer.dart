@@ -4,13 +4,14 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:mercury_client/mercury_client.dart';
-import 'package:release_updater/src/release_updater_utils.dart';
 import 'package:yaml/yaml.dart';
 
 import 'release_updater_base.dart';
 import 'release_updater_bundle.dart';
 import 'release_updater_config.dart';
 import 'release_updater_io.dart';
+import 'release_updater_utils.dart';
+import 'release_updater_utils_io.dart';
 
 class ReleasePacker {
   final String name;
@@ -197,9 +198,12 @@ class ReleasePacker {
           var destinyPath = packFile.destinyPath;
           var data = file.readAsBytesSync();
           var time = file.lastModifiedSync();
-          var exec = ReleaseBundleZip.isExecutableFilePath(destinyPath);
+          var exec = file.hasExecutablePermission ||
+              ReleaseBundleZip.isExecutableFilePath(destinyPath);
 
-          return ReleaseFile(destinyPath, data, time: time, executable: exec);
+          var releaseFile =
+              ReleaseFile(destinyPath, data, time: time, executable: exec);
+          return releaseFile;
         })
         .whereType<ReleaseFile>()
         .toList();
@@ -436,6 +440,11 @@ class ReleasePackerCommandDelete extends ReleasePackerCommand {
     }
 
     return false;
+  }
+
+  @override
+  String toString() {
+    return 'ReleasePackerCommandDelete{ path: $path }';
   }
 }
 

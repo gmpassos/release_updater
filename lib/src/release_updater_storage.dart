@@ -42,7 +42,7 @@ abstract class ReleaseStorage implements Copiable<ReleaseStorage> {
 
   /// Updates the current stored version to the [bundle].
   FutureOr<Release?> updateTo(ReleaseBundle bundle,
-      {bool force = false}) async {
+      {bool force = false, bool verbose = false}) async {
     var currentRelease = await this.currentRelease;
     var release = bundle.release;
 
@@ -50,10 +50,16 @@ abstract class ReleaseStorage implements Copiable<ReleaseStorage> {
 
     var files = await bundle.files;
 
-    for (var f in files) {
-      var ok = await saveFile(release, f);
-      if (!ok) {
-        throw StateError("Can't save file: $f");
+    if (files.isNotEmpty) {
+      if (verbose) {
+        print('-- Saving release `$release` files (${files.length}):');
+      }
+
+      for (var f in files) {
+        var ok = await saveFile(release, f, verbose: verbose);
+        if (!ok) {
+          throw StateError("Can't save file: $f");
+        }
       }
     }
 
@@ -65,7 +71,10 @@ abstract class ReleaseStorage implements Copiable<ReleaseStorage> {
     return release;
   }
 
-  FutureOr<bool> saveFile(Release release, ReleaseFile file);
+  /// Saves a file to this storage implementation.
+  FutureOr<bool> saveFile(Release release, ReleaseFile file,
+      {bool verbose = false});
 
+  /// Saves the current [Release] to this storage implementation.
   FutureOr<bool> saveRelease(Release release);
 }

@@ -2,13 +2,15 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:release_updater/src/release_updater_utils.dart';
-
 import 'release_updater_base.dart';
+import 'release_updater_bundle.dart';
 import 'release_updater_io.dart';
 import 'release_updater_platform.dart';
 import 'release_updater_storage.dart';
+import 'release_updater_utils.dart';
+import 'release_updater_utils_io.dart';
 
+/// A [ReleaseStorage] implementation for a local [Directory].
 class ReleaseStorageDirectory extends ReleaseStorage {
   static String normalizeFileName(String name) {
     name = name.trim().replaceAll(RegExp(r'[^\w-.]+'), '_');
@@ -18,9 +20,17 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   @override
   String name;
 
+  /// The storage directory.
   final Directory directory;
 
-  ReleaseStorageDirectory(this.name, this.directory);
+  /// If `true` will overwrite files that already exists.
+  final bool overwriteFiles;
+
+  final bool selfReleaseDirectory;
+
+  ReleaseStorageDirectory(this.name, this.directory,
+      {bool overwriteFiles = true, this.selfReleaseDirectory = false})
+      : overwriteFiles = overwriteFiles && !selfReleaseDirectory;
 
   @override
   ReleaseStorageDirectory copy() => ReleaseStorageDirectory(name, directory);
@@ -31,8 +41,8 @@ class ReleaseStorageDirectory extends ReleaseStorage {
     return p.isNotEmpty ? p : null;
   }
 
-  File get currentReleaseConfigFile =>
-      File(joinPaths(directory.path, 'current.release'));
+  File get currentReleaseConfigFile => File(
+      joinPaths(directory.path, normalizeFileName(name) + '--current.release'));
 
   Directory? get currentReleaseDirectory {
     var currentRelease = this.currentRelease;
@@ -53,12 +63,17 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   }
 
   Directory _releaseDirectoryImpl(Release release) {
+    if (selfReleaseDirectory) {
+      return directory;
+    }
+
     String dirName = releasePathName(release);
     return Directory(joinPaths(directory.path, dirName));
   }
 
-  String releasePathName(Release release) =>
-      release.name + '--' + normalizeFileName(release.version.toString());
+  String releasePathName(Release release) {
+    return release.name + '--' + normalizeFileName(release.version.toString());
+  }
 
   @override
   Release? get currentRelease {
@@ -84,9 +99,9 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   FutureOr<String?> get currentReleasePath {
     var currentRelease = this.currentRelease;
     if (currentRelease == null) return null;
-    var pathName = releasePathName(currentRelease);
-    var fullPath = joinPaths(directory.path, pathName);
-    return fullPath;
+
+    var dir = _releaseDirectoryImpl(currentRelease);
+    return dir.path;
   }
 
   @override
@@ -95,10 +110,10 @@ class ReleaseStorageDirectory extends ReleaseStorage {
     if (currentRelease == null) return <ReleaseFile>{};
 
     var dir = releaseDirectory(currentRelease);
-    return directoryFiles(dir).toSet();
+    return directoryReleaseFiles(dir).toSet();
   }
 
-  List<ReleaseFile> directoryFiles(Directory directory) {
+  List<ReleaseFile> directoryReleaseFiles(Directory directory) {
     var dirPath = directory.path;
 
     return directory
@@ -107,12 +122,50 @@ class ReleaseStorageDirectory extends ReleaseStorage {
         .toList();
   }
 
+  List<File> directoryFiles(Directory directory) {
+    return directory
+        .listSync(recursive: true)
+        .map((f) => File(f.path))
+        .toList();
+  }
+
+  static const String _newReleaseSuffix = '.new_release';
+
+  /// Install files with suffix `.new_release`.
+  /// Files with `.new_release` are generated when [selfReleaseDirectory]
+  /// is enabled.
+  List<File> installNewReleaseFiles() {
+    var newReleaseFiles = directoryFiles(directory)
+        .where((f) => f.path.endsWith(_newReleaseSuffix))
+        .toList();
+
+    var movedFiles = <File>[];
+
+    for (var file in newReleaseFiles) {
+      var filePath = file.path;
+      assert(filePath.endsWith(_newReleaseSuffix));
+
+      var file2 = File(
+          filePath.substring(0, filePath.length - _newReleaseSuffix.length));
+
+      var fileMoved = file.renameSync(file2.path);
+      movedFiles.add(fileMoved);
+    }
+
+    return movedFiles;
+  }
+
   @override
-  Future<bool> saveFile(Release release, ReleaseFile file) async {
+  Future<bool> saveFile(Release release, ReleaseFile file,
+      {bool verbose = false}) async {
     var dir = releaseDirectory(release);
 
     var localFile = file.toFile(parentDirectory: dir);
-    localFile.createSync(recursive: true);
+    localFile.parent.createSync(recursive: true);
+
+    if (!overwriteFiles && localFile.existsSync()) {
+      localFile = File(localFile.path + _newReleaseSuffix);
+    }
 
     var data = await file.data;
 
@@ -120,21 +173,27 @@ class ReleaseStorageDirectory extends ReleaseStorage {
     localFile.setLastModifiedSync(file.time);
 
     if (file.executable) {
-      _setFileExecutablePermissionImpl(localFile, true);
+      setFileExecutablePermission(localFile, true);
+    }
+
+    if (verbose) {
+      print('  -- ${file.toInfo()} > ${localFile.path}');
     }
 
     return true;
   }
 
-  void setFileExecutablePermission(
+  void setReleaseFileExecutablePermission(
       Release release, ReleaseFile file, bool executable) {
     var dir = releaseDirectory(release);
     var localFile = file.toFile(parentDirectory: dir);
 
-    _setFileExecutablePermissionImpl(localFile, executable);
+    setFileExecutablePermission(localFile, executable);
   }
 
-  void _setFileExecutablePermissionImpl(File file, bool executable) {
+  static void setFileExecutablePermission(File file, bool executable) {
+    if (file.path.endsWith('.dart')) return;
+
     if (Platform.isLinux || Platform.isMacOS) {
       var mode = executable ? '+rx' : '-rx';
       var chmodPath = whichExecutablePath('chmod');
@@ -155,14 +214,18 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   }
 }
 
-extension FileExtension on File {
+extension FileStorageExtension on File {
   ReleaseFile toReleaseFile({String? parentPath}) {
     var path = this.path;
     if (parentPath != null && path.startsWith(parentPath)) {
       path = path.substring(parentPath.length);
     }
     var data = FileDataProvider(this);
-    return ReleaseFile(path, data, time: lastModifiedSync());
+    var executable =
+        hasExecutablePermission || ReleaseBundleZip.isExecutableFilePath(path);
+
+    return ReleaseFile(path, data,
+        time: lastModifiedSync(), executable: executable);
   }
 }
 
