@@ -1,3 +1,9 @@
+## 1.0.21
+
+- Added support for `ReleaseManifest` and save it as `release-manifest.json`.
+- crypto: ^3.0.1
+- base_codecs: ^1.0.1
+
 ## 1.0.20
 
 - Handle `HttpClient` exceptions and added retries.

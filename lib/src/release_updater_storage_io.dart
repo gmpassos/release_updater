@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:collection/collection.dart';
+
 import 'release_updater_base.dart';
 import 'release_updater_bundle.dart';
 import 'release_updater_io.dart';
@@ -209,6 +211,34 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   }
 
   @override
+  Future<bool> checkManifest(ReleaseManifest manifest) async {
+    var release = manifest.release;
+
+    var dir = releaseDirectory(release);
+    if (!dir.existsSync()) return false;
+
+    for (var f in manifest.files) {
+      var localFile = File(joinPaths(dir.path, f.filePath));
+      var ok = await f.checkFile(localFile);
+      if (!ok) return false;
+    }
+
+    return true;
+  }
+
+  File get currentManifestFile =>
+      File(joinPaths(directory.path, 'release-manifest.json'));
+
+  @override
+  FutureOr<bool> saveManifest(ReleaseManifest manifest) {
+    var file = currentManifestFile;
+
+    file.writeAsStringSync(manifest.toJsonEncoded());
+
+    return true;
+  }
+
+  @override
   String toString() {
     return 'ReleaseStorageDirectory{$directory}';
   }
@@ -231,7 +261,7 @@ extension FileStorageExtension on File {
 
 extension ReleaseFileExtension on ReleaseFile {
   File toFile({Directory? parentDirectory}) {
-    var path = joinPaths(parentDirectory?.path, this.path);
+    var path = joinPaths(parentDirectory?.path, filePath);
     return File(path);
   }
 }
@@ -241,9 +271,27 @@ class FileDataProvider implements DataProvider {
 
   FileDataProvider(this.file);
 
+  UnmodifiableUint8ListView? _data;
+
   @override
-  Uint8List get() => file.readAsBytesSync();
+  UnmodifiableUint8ListView get() =>
+      _data ??= UnmodifiableUint8ListView(file.readAsBytesSync());
 
   @override
   int get length => file.lengthSync();
+}
+
+extension ReleaseManifestFileExtension on ReleaseManifestFile {
+  /// Checks a [file] with a manifest file.
+  Future<bool> checkFile(File file) async {
+    if (!file.existsSync()) return false;
+
+    var length = file.lengthSync();
+    if (length != this.length) return false;
+
+    var data = file.readAsBytesSync();
+    var dataSHA256 = data.computeSHA256();
+
+    return sha256.equals(dataSHA256);
+  }
 }

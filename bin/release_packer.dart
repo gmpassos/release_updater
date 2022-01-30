@@ -133,7 +133,7 @@ Future<void> _showBundleFiles(ReleaseBundleZip releaseBundle) async {
   print('\n-- Bundle files (${files.length}):');
   for (var f in files) {
     var execStr = f.executable ? ' (EXEC)' : '';
-    print('  -- ${f.path} (${await f.length} bytes)$execStr');
+    print('  -- ${f.filePath} (${await f.length} bytes)$execStr');
   }
   print('');
 }

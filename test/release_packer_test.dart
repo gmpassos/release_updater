@@ -200,7 +200,7 @@ Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {
 
   {
     var file = bundleFiles[0];
-    expect(file.path, equals('README.md'));
+    expect(file.filePath, equals('README.md'));
 
     var dataStr = await file.dataAsString;
     expect(dataStr.normalizeToPosixLines().trim(),
@@ -209,7 +209,7 @@ Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {
 
   {
     var file = bundleFiles[1];
-    expect(file.path, equals('foo-cli.exe'));
+    expect(file.filePath, equals('foo-cli.exe'));
 
     var length = await file.length;
     expect(length, greaterThan(1024));
@@ -217,7 +217,7 @@ Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {
 
   {
     var file = bundleFiles[2];
-    expect(file.path, equals('foo.txt'));
+    expect(file.filePath, equals('foo.txt'));
 
     var dataStr = await file.dataAsString;
     expect(dataStr.trim(), equals('Foo!'));
@@ -225,7 +225,7 @@ Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {
 
   {
     var file = bundleFiles[3];
-    expect(file.path, equals('hello-world.txt'));
+    expect(file.filePath, equals('hello-world.txt'));
 
     var dataStr = await file.dataAsString;
     expect(dataStr.trim(), equals('Hello World!'));
@@ -233,7 +233,7 @@ Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {
 
   {
     var file = bundleFiles[4];
-    expect(file.path, equals('platform.txt'));
+    expect(file.filePath, equals('platform.txt'));
 
     var dataStr = await file.dataAsString;
     expect(dataStr.trim(), equals(platform));

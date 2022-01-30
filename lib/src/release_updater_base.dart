@@ -19,7 +19,7 @@ typedef OnRelease = void Function(Release release);
 /// A [Release] updater from [releaseProvider] to [storage].
 class ReleaseUpdater implements Copiable<ReleaseUpdater> {
   // ignore: constant_identifier_names
-  static const String VERSION = '1.0.20';
+  static const String VERSION = '1.0.21';
 
   /// The [Release] storage.
   final ReleaseStorage storage;
@@ -280,7 +280,7 @@ class SemanticVersioning extends Version {
 }
 
 abstract class DataProvider {
-  FutureOr<Uint8List> get();
+  FutureOr<UnmodifiableUint8ListView> get();
 
   FutureOr<int> get length;
 }
@@ -309,7 +309,7 @@ class ReleaseFile implements Comparable<ReleaseFile> {
     return path3;
   }
 
-  final String path;
+  final String filePath;
 
   final Object? _data;
 
@@ -319,9 +319,9 @@ class ReleaseFile implements Comparable<ReleaseFile> {
 
   final bool compressed;
 
-  ReleaseFile(String path, Object data,
+  ReleaseFile(String filePath, Object data,
       {DateTime? time, this.executable = false, this.compressed = false})
-      : path = normalizePath(path),
+      : filePath = normalizePath(filePath),
         _data = toBytes(data),
         time = time ?? DateTime.now();
 
@@ -350,7 +350,7 @@ class ReleaseFile implements Comparable<ReleaseFile> {
   FutureOr<Uint8List> get data {
     var data = _data;
     if (data is Uint8List) {
-      return data;
+      return UnmodifiableUint8ListView(data);
     } else if (data is DataProvider) {
       return data.get();
     }
@@ -363,18 +363,32 @@ class ReleaseFile implements Comparable<ReleaseFile> {
     return dart_convert.utf8.decode(bytes);
   }
 
+  Uint8List? _dataSHA256;
+
+  FutureOr<Uint8List> get dataSHA256 {
+    if (_dataSHA256 != null) return _dataSHA256!;
+
+    var data = this.data;
+
+    if (data is Uint8List) {
+      return _dataSHA256 = data.computeSHA256();
+    } else {
+      return data.then((value) => _dataSHA256 = value.computeSHA256());
+    }
+  }
+
   String toInfo() {
     var execStr = executable ? ' (EXEC)' : '';
     var compressedStr = compressed ? ' (COMP)' : '';
 
-    return '$path ($length bytes)$execStr$compressedStr';
+    return '$filePath ($length bytes)$execStr$compressedStr';
   }
 
   @override
   String toString() {
-    return 'ReleaseFile{path: $path, length: $length, time: $time, executable: $executable, compressed: $compressed}';
+    return 'ReleaseFile{path: $filePath, length: $length, time: $time, executable: $executable, compressed: $compressed}';
   }
 
   @override
-  int compareTo(ReleaseFile other) => path.compareTo(other.path);
+  int compareTo(ReleaseFile other) => filePath.compareTo(other.filePath);
 }

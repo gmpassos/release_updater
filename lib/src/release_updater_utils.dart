@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as pack_path;
 
 final pack_path.Context _contextWindows =
@@ -283,5 +285,35 @@ extension StreamOfListIntExtension on Stream<List<int>> {
     return fold<List<List<int>>>(
             <List<int>>[], (allBytes, bytes) => allBytes..add(bytes))
         .then((allBytes) => allBytes.toBytes());
+  }
+}
+
+extension FutureOrListIntExtension on FutureOr<List<int>> {
+  FutureOr<Uint8List> computeSHA256(
+      {void Function(Uint8List sha356)? onValue}) {
+    var data = this;
+    if (data is List<int>) {
+      var sha256 = data.computeSHA256();
+      if (onValue != null) {
+        onValue(sha256);
+      }
+      return sha256;
+    } else {
+      return data.then((value) {
+        var sha256 = value.computeSHA256();
+        if (onValue != null) {
+          onValue(sha256);
+        }
+        return sha256;
+      });
+    }
+  }
+}
+
+extension ListIntExtension on List<int> {
+  Uint8List computeSHA256() {
+    var hash = sha256.convert(this).bytes;
+    var bytes = hash is Uint8List ? hash : Uint8List.fromList(hash);
+    return UnmodifiableUint8ListView(bytes);
   }
 }

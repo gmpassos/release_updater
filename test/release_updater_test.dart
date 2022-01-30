@@ -89,14 +89,14 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
     expect(await releaseUpdater.currentReleaseFilePath('README.md'),
         endsWith('foo--1.0.2${pathSeparator}README.md'));
 
-    expect((await storage.currentReleaseFile('README.md'))?.path,
+    expect((await storage.currentReleaseFile('README.md'))?.filePath,
         endsWith('README.md'));
 
     var files = (await storage.currentFiles).toList();
     files.sort();
     expect(files.length, equals(2));
 
-    var filesPaths = files.map((e) => e.path).toList();
+    var filesPaths = files.map((e) => e.filePath).toList();
 
     expect(filesPaths, equals(['README.md', 'hello.txt']));
 
@@ -146,10 +146,10 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
     expect(currentReleasePath, endsWith('foo--1.0.3'));
 
     var files = (await storage.currentFiles).toList()
-      ..sort((a, b) => a.path.compareTo(b.path));
+      ..sort((a, b) => a.filePath.compareTo(b.filePath));
     expect(files.length, equals(3));
 
-    var filesPaths = files.map((e) => e.path).toList();
+    var filesPaths = files.map((e) => e.filePath).toList();
 
     expect(filesPaths, equals(['README.md', 'hello.txt', 'note.txt']));
 
@@ -189,7 +189,7 @@ class _MyStorageMemory extends ReleaseStorage {
   @override
   FutureOr<bool> saveFile(Release release, ReleaseFile file,
       {bool verbose = false}) {
-    _files[file.path] = file;
+    _files[file.filePath] = file;
     return true;
   }
 
@@ -201,6 +201,27 @@ class _MyStorageMemory extends ReleaseStorage {
 
   @override
   String? get platform => 'generic';
+
+  @override
+  Future<bool> checkManifest(ReleaseManifest manifest) async {
+    for (var f in manifest.files) {
+      var file = _files[f.filePath];
+      if (file == null) return false;
+
+      var ok = await f.checkReleaseFile(file);
+      if (!ok) return false;
+    }
+
+    return true;
+  }
+
+  ReleaseManifest? currentManifest;
+
+  @override
+  FutureOr<bool> saveManifest(ReleaseManifest manifest) {
+    currentManifest = manifest;
+    return true;
+  }
 }
 
 class _MyProvider extends ReleaseProvider {

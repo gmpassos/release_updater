@@ -1,17 +1,23 @@
 import 'dart:async';
+import 'dart:convert' as dart_convert;
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
+import 'package:base_codecs/base_codecs.dart';
+import 'package:collection/collection.dart';
 
 import 'release_updater_base.dart';
 
+/// A [Release] bundle of files.
 abstract class ReleaseBundle {
   final Release release;
 
   ReleaseBundle(this.release);
 
+  /// The [ReleaseFile]s of this bundle.
   FutureOr<Set<ReleaseFile>> get files;
 
+  /// Converts this bundle to bytes.
   FutureOr<Uint8List> toBytes();
 
   static const String defaultReleasesBundleFileFormat =
@@ -37,8 +43,23 @@ abstract class ReleaseBundle {
       return value != null ? '$prev$value' : '';
     });
   }
+
+  /// Builds a [ReleaseManifest] of this bundle.
+  Future<ReleaseManifest> buildManifest() async {
+    var files = await this.files;
+
+    var manifest = ReleaseManifest(release);
+
+    var manifestFiles =
+        await ReleaseManifestFile.toReleaseManifestFileList(files);
+
+    manifest.addFiles(manifestFiles);
+
+    return manifest;
+  }
 }
 
+/// A [ReleaseBundle] in a Zip format.
 class ReleaseBundleZip extends ReleaseBundle {
   static const List<String> defaultExecutableExtensions = ['exe', 'sh'];
 
@@ -75,12 +96,42 @@ class ReleaseBundleZip extends ReleaseBundle {
       isExecutableFilePath(filePath, executableExtensions);
 
   @override
-  FutureOr<Set<ReleaseFile>> get files => _files ??= _loadFiles();
+  FutureOr<Set<ReleaseFile>> get files {
+    if (_files != null) return _files!;
 
-  Set<ReleaseFile> _loadFiles() {
+    var files = _loadFiles();
+    if (files is Set<ReleaseFile>) {
+      return _files = files;
+    } else {
+      return files.then((value) => _files = value);
+    }
+  }
+
+  FutureOr<Set<ReleaseFile>> _loadFiles() {
     final archive = ZipDecoder().decodeBytes(_zipBytes!);
     var files = archive.where((f) => f.isFile).map(_toReleaseFile).toSet();
-    return files;
+
+    var manifestJsonFile =
+        files.firstWhereOrNull((f) => f.filePath == releaseManifestFilePath);
+
+    if (manifestJsonFile != null) {
+      files.remove(manifestJsonFile);
+
+      return manifestJsonFile.dataAsString.then((jsonString) async {
+        var json = dart_convert.json.decode(jsonString);
+
+        var manifest = ReleaseManifest.fromJson(json);
+
+        var ok = await manifest.checkBundleFiles(files);
+        if (!ok) {
+          throw StateError("Manifest check error!");
+        }
+
+        return files;
+      });
+    } else {
+      return files;
+    }
   }
 
   ReleaseFile _toReleaseFile(ArchiveFile f) {
@@ -114,6 +165,8 @@ class ReleaseBundleZip extends ReleaseBundle {
     });
   }
 
+  static const String releaseManifestFilePath = 'release-manifest.json';
+
   Future<Uint8List> _buildZipBytes() async {
     var files = _files;
     if (files == null) {
@@ -126,13 +179,202 @@ class ReleaseBundleZip extends ReleaseBundle {
 
     for (var f in files) {
       var data = await f.data;
-      var archiveFile = ArchiveFile(f.path, data.length, data);
+      var archiveFile = ArchiveFile(f.filePath, data.length, data);
       archiveFile.mode = f.executable ? 755 : 420;
+      archive.addFile(archiveFile);
+    }
+
+    {
+      var manifest = await buildManifest();
+      var jsonBytes = manifest.toJsonEncodedBytes();
+      var archiveFile =
+          ArchiveFile(releaseManifestFilePath, jsonBytes.length, jsonBytes);
       archive.addFile(archiveFile);
     }
 
     var bytes = zipEncoder.encode(archive)!;
 
     return bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+  }
+}
+
+/// A [ReleaseBundle] manifest.
+class ReleaseManifest {
+  /// The [Release] of this manifest.
+  final Release release;
+
+  /// The [DateTime] of creation of the [ReleaseBundle].
+  final DateTime date;
+
+  ReleaseManifest(this.release,
+      {Iterable<ReleaseManifestFile>? files, DateTime? date})
+      : date = date ?? DateTime.now() {
+    if (files != null) {
+      addFiles(files);
+    }
+  }
+
+  final Map<String, ReleaseManifestFile> _files =
+      <String, ReleaseManifestFile>{};
+
+  /// The files in this manifest.
+  List<ReleaseManifestFile> get files => _files.values.toList();
+
+  /// Adds a [file] to this manifest.
+  void addFile(ReleaseManifestFile file) {
+    _files[file.filePath] = file;
+  }
+
+  /// Add [files] to this manifest.
+  void addFiles(Iterable<ReleaseManifestFile> files) {
+    for (var f in files) {
+      addFile(f);
+    }
+  }
+
+  Uint8List toJsonEncodedBytes() {
+    var bs = dart_convert.utf8.encode(toJsonEncoded());
+    return bs is Uint8List ? bs : Uint8List.fromList(bs);
+  }
+
+  String toJsonEncoded() {
+    return dart_convert.JsonEncoder.withIndent('  ').convert(toJson());
+  }
+
+  /// This manifest as JSON.
+  Map<String, Object> toJson() {
+    var entries = _files.values
+        .map((e) =>
+            MapEntry(e.filePath, {'sha256': e.sha256Hex, 'length': e.length}))
+        .toList();
+
+    entries.sort((a, b) => a.key.compareTo(b.key));
+
+    var filesMap = Map<String, Map<String, Object>>.fromEntries(entries);
+
+    return {
+      'release': '$release',
+      'name': release.name,
+      'version': '${release.version}',
+      'platform': '${release.platform}',
+      'date:': '${DateTime.now().toUtc()}',
+      'files': filesMap,
+    };
+  }
+
+  factory ReleaseManifest.fromJson(Map<String, Object?> json) {
+    var releaseStr = json['release'] as String?;
+    var nameStr = json['name'] as String?;
+    var versionStr = json['version'] as String?;
+    var platformStr = json['platform'] as String?;
+    var dateStr = json['date'] as String?;
+    var filesMap = json['files'] as Map<String, dynamic>;
+
+    Release release;
+
+    if (releaseStr != null) {
+      release = Release.parse(releaseStr);
+
+      nameStr ??= release.name;
+      versionStr ??= release.version.toString();
+      platformStr ??= release.platform;
+    } else {
+      releaseStr = '${nameStr!}/${versionStr!}';
+      if (platformStr != null) {
+        releaseStr += '/$platformStr';
+      }
+
+      release = Release.parse(releaseStr);
+    }
+
+    if (nameStr != release.name) {
+      throw ArgumentError('Invalid JSON. Wrong name and release.name');
+    }
+
+    if (versionStr != release.version.toString()) {
+      throw ArgumentError('Invalid JSON. Wrong version and release.version');
+    }
+
+    if (platformStr != release.platform) {
+      throw ArgumentError('Invalid JSON. Wrong platform and release.platform');
+    }
+
+    var date = dateStr != null ? DateTime.tryParse(dateStr) : null;
+
+    var files = filesMap.entries.map((e) => ReleaseManifestFile.fromSha256Hex(
+        e.key, e.value['length'], e.value['sha256']));
+
+    return ReleaseManifest(release, date: date, files: files);
+  }
+
+  /// Checks a [releaseBundle] with this manifest.
+  Future<bool> checkBundle(ReleaseBundle releaseBundle) async {
+    var bundleFiles = await releaseBundle.files;
+    return checkBundleFiles(bundleFiles);
+  }
+
+  /// Checks a [bundleFiles] with this manifest.
+  Future<bool> checkBundleFiles(Iterable<ReleaseFile> bundleFiles) async {
+    var map = Map.fromEntries(bundleFiles.map((e) => MapEntry(e.filePath, e)));
+
+    for (var f in _files.values) {
+      var bundleFile = map[f.filePath];
+      if (bundleFile == null) return false;
+
+      var ok = await f.checkReleaseFile(bundleFile);
+      if (!ok) return false;
+    }
+
+    return true;
+  }
+}
+
+/// A [ReleaseManifest] file.
+class ReleaseManifestFile {
+  static Future<List<ReleaseManifestFile>> toReleaseManifestFileList(
+          Iterable<ReleaseFile> releaseFiles) =>
+      Future.wait(releaseFiles.map(
+          (f) => Future.sync(() => ReleaseManifestFile.fromReleaseFile(f))));
+
+  /// The file path.
+  final String filePath;
+
+  /// The length of the file in bytes.
+  final int length;
+
+  /// The SHA-256 of this file.
+  final Uint8List sha256;
+
+  ReleaseManifestFile(this.filePath, this.length, Uint8List sha256)
+      : sha256 = UnmodifiableUint8ListView(sha256);
+
+  ReleaseManifestFile.fromSha256Hex(String file, int length, String sha256Hex)
+      : this(file, length, base16.decode(sha256Hex));
+
+  static FutureOr<ReleaseManifestFile> fromReleaseFile(
+      ReleaseFile releaseFile) {
+    var sha256 = releaseFile.dataSHA256;
+    var length = releaseFile.length;
+    if (sha256 is Uint8List && length is int) {
+      return ReleaseManifestFile(releaseFile.filePath, length, sha256);
+    } else {
+      return Future.sync(() => sha256).then((sha256Value) {
+        return Future.sync(() => length).then((lengthValue) =>
+            ReleaseManifestFile(
+                releaseFile.filePath, lengthValue, sha256Value));
+      });
+    }
+  }
+
+  String? _sha256Hex;
+
+  String get sha256Hex => _sha256Hex ??= base16.encode(sha256);
+
+  /// Checks a [bundleFile] with this manifest file.
+  Future<bool> checkReleaseFile(ReleaseFile bundleFile) async {
+    var dataSHA256 = await bundleFile.dataSHA256;
+    var length = await bundleFile.length;
+
+    return length == this.length && sha256.equals(dataSHA256);
   }
 }
