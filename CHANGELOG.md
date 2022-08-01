@@ -1,3 +1,21 @@
+## 1.0.24
+
+- Update GitHub CI.
+- archive: ^3.3.1
+- mercury_client: ^2.1.6
+- path: ^1.8.2
+- pub_semver: ^2.1.1
+- shelf: ^1.3.2
+- shelf_static: ^1.1.1
+- crypto: ^3.0.2
+- collection: ^1.16.0
+- yaml: ^3.1.1
+- lints: ^2.0.0
+- test: ^1.21.4
+- dependency_validator: ^3.2.2
+- coverage: ^1.5.0
+- pubspec: ^2.3.0
+
 ## 1.0.23
 
 - Fix `checkManifest` when saving files with suffix `.new_release`.

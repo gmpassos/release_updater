@@ -24,7 +24,7 @@ Map<String, String> parseProperties(List<String> args) {
   return properties;
 }
 
-final RegExp _propertyPlaceHolder = RegExp(r'^\%(\w+)\%$');
+final RegExp _propertyPlaceHolder = RegExp(r'^%(\w+)%$');
 
 String? resolvePropertyValue(Map<String, String> properties, String? value) {
   if (value == null) return null;
@@ -48,6 +48,8 @@ Object? resolveJsonProperties(Object? json, Map<String, String>? properties) {
     return resolveJsonListProperties(json, properties);
   } else if (json is Map) {
     return resolveJsonMapProperties(json, properties);
+  } else {
+    return null;
   }
 }
 

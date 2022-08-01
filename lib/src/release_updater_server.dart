@@ -128,7 +128,7 @@ shelf.Response _processReleases(File releasesFile) {
 shelf.Response _processReleasesFiles(Directory releasesDir) {
   Iterable<String> filesPaths = _listReleasesFilesPaths(releasesDir);
 
-  var content = filesPaths.join('\n') + '\n';
+  var content = '${filesPaths.join('\n')}\n';
 
   return shelf.Response.ok(content, headers: {
     HttpHeaders.contentTypeHeader: 'text/plain',
@@ -148,7 +148,7 @@ shelf.Response _processReleasesURLs(Directory releasesDir, Uri requestedURL) {
       .map((p) => requestedURL.replace(path: p))
       .toList();
 
-  var content = urls.join('\n') + '\n';
+  var content = '${urls.join('\n')}\n';
 
   return shelf.Response.ok(content, headers: {
     HttpHeaders.contentTypeHeader: 'text/plain',
@@ -283,7 +283,7 @@ bool appendToReleasesFile(File releasesFile, String release) {
   lines.add(release);
   lines.sort();
 
-  var content = lines.join('\n') + '\n';
+  var content = '${lines.join('\n')}\n';
 
   releasesFile.writeAsStringSync(content);
 
@@ -300,7 +300,7 @@ void showReleasesFile(File releasesFile) {
 
   var lines = readReleasesFileLines(releasesFile);
 
-  var content = '  -- ' + lines.join('\n  -- ');
+  var content = '  -- ${lines.join('\n  -- ')}';
 
   print('\n-- Releases File: ${releasesFile.path}');
   print(content);

@@ -295,6 +295,8 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
           return ReleasePackerProcessCommand.fromList(list);
         }
       }
+
+      return null;
     } else if (command is List) {
       return ReleasePackerProcessCommand.fromList(command);
     } else if (command is Map) {
@@ -357,7 +359,7 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
     var list = <String>[];
 
     fullCommand.splitMapJoin(
-      RegExp(r'(?:(\s+)|"(.*?)")'),
+      RegExp(r'(\s+)|"(.*?)"'),
       onMatch: (m) {
         var quoted = m[2];
         if (quoted != null) {

@@ -45,7 +45,7 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   }
 
   File get currentReleaseConfigFile => File(
-      joinPaths(directory.path, normalizeFileName(name) + '--current.release'));
+      joinPaths(directory.path, '${normalizeFileName(name)}--current.release'));
 
   Directory? get currentReleaseDirectory {
     var currentRelease = this.currentRelease;
@@ -75,7 +75,7 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   }
 
   String releasePathName(Release release) {
-    return release.name + '--' + normalizeFileName(release.version.toString());
+    return '${release.name}--${normalizeFileName(release.version.toString())}';
   }
 
   @override
