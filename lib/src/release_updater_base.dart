@@ -25,7 +25,7 @@ typedef OnRelease = void Function(Release release);
 /// A [Release] updater from [releaseProvider] to [storage].
 class ReleaseUpdater implements Copiable<ReleaseUpdater>, Spawnable {
   // ignore: constant_identifier_names
-  static const String VERSION = '1.0.23';
+  static const String VERSION = '1.0.24';
 
   /// The [Release] storage.
   final ReleaseStorage storage;
@@ -284,7 +284,7 @@ class Release implements Comparable<Release> {
       platformStr = '-$platformStr';
     }
     var path = '$name-$version$platformStr';
-    path = path.replaceAll(RegExp(r'[^\w\.-]+'), '');
+    path = path.replaceAll(RegExp(r'[^\w.-]+'), '');
     return path;
   }
 
