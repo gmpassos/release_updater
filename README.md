@@ -160,6 +160,10 @@ Example of a `release_packer.json` file:
       ```JSON
       {"source/file/path.txt": "."}
       ```
+    - A directory tree:
+      ```JSON
+      {"lib/resources/": "packages/pack_name/resources/"}
+      ```
     - A file from a `dart_compile_exe` command:
       ```JSON
       {"bin/client.exe": "client.exe", "dart_compile_exe": "bin/client.dart"}
