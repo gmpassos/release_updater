@@ -1,3 +1,7 @@
+## 1.1.1
+
+- Allow packing of a directory tree.
+
 ## 1.1.0
 
 - sdk: '>=3.0.0 <4.0.0'

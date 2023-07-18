@@ -119,10 +119,9 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   List<ReleaseFile> directoryReleaseFiles(Directory directory) {
     var dirPath = directory.path;
 
-    return directory
-        .listSync(recursive: true)
-        .map((f) => File(f.path).toReleaseFile(parentPath: dirPath))
-        .toList();
+    var files = directory.listSync(recursive: true).whereType<File>().toList();
+
+    return files.map((f) => f.toReleaseFile(parentPath: dirPath)).toList();
   }
 
   List<File> directoryFiles(Directory directory) {

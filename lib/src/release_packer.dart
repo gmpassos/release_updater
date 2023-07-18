@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:mercury_client/mercury_client.dart';
 import 'package:yaml/yaml.dart';
+import 'package:path/path.dart' as pack_path;
 
 import 'release_updater_base.dart';
 import 'release_updater_bundle.dart';
@@ -111,10 +112,15 @@ class ReleasePacker {
   }
 
   ReleasePackerFile? getFile(String filePath, {String? platform}) {
-    var where = files.where((e) => e.sourcePath == filePath);
+    var dirPath = filePath.endsWith('/') ? filePath : '$filePath/';
+
+    var where =
+        files.where((e) => e.sourcePath == filePath || e.sourcePath == dirPath);
+
     if (platform != null) {
       where = where.where((e) => e.matchesPlatform(platform));
     }
+
     return where.firstOrNull;
   }
 
@@ -189,23 +195,62 @@ class ReleasePacker {
           sourcePath = ReleaseFile.normalizePath(sourcePath);
 
           var packFile = getFile(sourcePath, platform: platform);
+
           if (packFile == null) {
             return null;
           }
 
-          var file = File(e.path);
-
           var destinyPath = packFile.destinyPath;
-          var data = file.readAsBytesSync();
-          var time = file.lastModifiedSync();
-          var exec = file.hasExecutablePermission ||
-              ReleaseBundleZip.isExecutableFilePath(destinyPath);
 
-          var releaseFile =
-              ReleaseFile(destinyPath, data, time: time, executable: exec);
-          return releaseFile;
+          var file = File(e.path);
+          var fileType = file.statSync().type;
+
+          var releaseFiles = <ReleaseFile>[];
+
+          if (fileType == FileSystemEntityType.directory) {
+            var dir = Directory(file.path);
+            var dirPath = dir.path;
+
+            var dirFiles =
+                dir.listSync(recursive: true).whereType<File>().toList();
+
+            for (var f in dirFiles) {
+              var filePath = f.path;
+              if (filePath.startsWith(dirPath)) {
+                filePath = filePath.substring(dirPath.length);
+                while (filePath.startsWith('/')) {
+                  filePath = filePath.substring(1);
+                }
+              }
+
+              var fileDestinyPath = pack_path.join(destinyPath, filePath);
+
+              var data = f.readAsBytesSync();
+              var time = f.lastModifiedSync();
+              var exec = f.hasExecutablePermission ||
+                  ReleaseBundleZip.isExecutableFilePath(destinyPath);
+
+              var releaseFile = ReleaseFile(fileDestinyPath, data,
+                  time: time, executable: exec);
+
+              releaseFiles.add(releaseFile);
+            }
+          } else {
+            var data = file.readAsBytesSync();
+            var time = file.lastModifiedSync();
+            var exec = file.hasExecutablePermission ||
+                ReleaseBundleZip.isExecutableFilePath(destinyPath);
+
+            var releaseFile =
+                ReleaseFile(destinyPath, data, time: time, executable: exec);
+
+            releaseFiles.add(releaseFile);
+          }
+
+          return releaseFiles;
         })
-        .whereType<ReleaseFile>()
+        .whereNotNull()
+        .expand((e) => e)
         .toList();
 
     var release = Release(name, version, platform: platform);
