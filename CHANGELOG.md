@@ -1,3 +1,20 @@
+## 1.1.0
+
+- sdk: '>=3.0.0 <4.0.0'
+- archive: ^3.3.7
+- mercury_client: ^2.1.8
+- path: ^1.8.3
+- pub_semver: ^2.1.4
+- shelf: ^1.4.1
+- shelf_static: ^1.1.2
+- shelf_gzip: ^4.0.1
+- crypto: ^3.0.3
+- collection: ^1.17.1
+- yaml: ^3.1.2
+- lints: ^2.1.1
+- test: ^1.24.4
+- coverage: ^1.6.3
+
 ## 1.0.24
 
 - Update GitHub CI.

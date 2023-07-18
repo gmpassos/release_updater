@@ -83,7 +83,7 @@ class ReleasePlatform {
           return process.stdout;
         }
       } catch (e) {
-        error == e;
+        error = e;
         continue;
       }
     }

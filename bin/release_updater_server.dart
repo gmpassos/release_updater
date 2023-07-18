@@ -67,7 +67,7 @@ void main(List<String> args) async {
   showReleasesFile(releasesFile);
 
   final uploadCredential =
-      allowUpload ? BasicCredential(uploadUsername!, uploadPassword!) : null;
+      allowUpload ? BasicCredential(uploadUsername, uploadPassword) : null;
 
   var staticHandler =
       createStaticHandler(releasesDir.path, defaultDocument: 'index.html');
