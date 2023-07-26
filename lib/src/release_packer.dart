@@ -112,10 +112,10 @@ class ReleasePacker {
   }
 
   ReleasePackerFile? getFile(String filePath, {String? platform}) {
-    var dirPath = filePath.endsWith('/') ? filePath : '$filePath/';
+    var possibleDirPath = filePath.endsWith('/') ? filePath : '$filePath/';
 
-    var where =
-        files.where((e) => e.sourcePath == filePath || e.sourcePath == dirPath);
+    var where = files.where(
+        (e) => e.sourcePath == filePath || e.sourcePath == possibleDirPath);
 
     if (platform != null) {
       where = where.where((e) => e.matchesPlatform(platform));
@@ -218,7 +218,7 @@ class ReleasePacker {
               var filePath = f.path;
               if (filePath.startsWith(dirPath)) {
                 filePath = filePath.substring(dirPath.length);
-                while (filePath.startsWith('/')) {
+                while (filePath.startsWith(pack_path.separator)) {
                   filePath = filePath.substring(1);
                 }
               }

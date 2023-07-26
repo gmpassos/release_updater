@@ -94,7 +94,7 @@ abstract class ReleaseStorage implements Copiable<ReleaseStorage>, Spawnable {
       throw StateError("Can't save manifest!");
     }
 
-    ok = await checkManifest(manifest);
+    ok = await checkManifest(manifest, verbose: true);
     if (!ok) {
       throw StateError("Error checking Manifest!");
     }

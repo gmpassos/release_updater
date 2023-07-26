@@ -1,3 +1,7 @@
+## 1.1.2
+
+- Fix packing of directory tree on Windows.
+
 ## 1.1.1
 
 - Allow packing of a directory tree.
