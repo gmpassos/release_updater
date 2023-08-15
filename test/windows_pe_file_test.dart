@@ -15,22 +15,26 @@ void main() {
 
       var windowsPEFile = WindowsPEFile(file, verbose: true);
 
-      var windowsSubsystem = windowsPEFile.readWindowsSubsystem();
-      // Expect `console` Windows Subsystem.
-      expect(windowsSubsystem, 3);
+      try {
+        var windowsSubsystem = windowsPEFile.readWindowsSubsystem();
+        // Expect `console` Windows Subsystem.
+        expect(windowsSubsystem, 3);
 
-      var peInfo = windowsPEFile.readInformation();
-      print(peInfo);
+        var peInfo = windowsPEFile.readInformation();
+        print(peInfo);
 
-      expect(peInfo['windowsSubsystem'], 3);
-      expect(peInfo['machineType'], 0x8664);
+        expect(peInfo['windowsSubsystem'], 3);
+        expect(peInfo['machineType'], 0x8664);
 
-      expect(windowsPEFile.isMachineTypeX64, isTrue);
+        expect(windowsPEFile.isMachineTypeX64, isTrue);
 
-      expect(windowsPEFile.isMachineTypeI386, isFalse);
-      expect(windowsPEFile.isMachineTypeItanium, isFalse);
-      expect(windowsPEFile.isMachineTypeARM, isFalse);
-      expect(windowsPEFile.isMachineTypeARM64, isFalse);
+        expect(windowsPEFile.isMachineTypeI386, isFalse);
+        expect(windowsPEFile.isMachineTypeItanium, isFalse);
+        expect(windowsPEFile.isMachineTypeARM, isFalse);
+        expect(windowsPEFile.isMachineTypeARM64, isFalse);
+      } finally {
+        windowsPEFile.close();
+      }
     });
 
     test('Set Windows Subsystem', () {
@@ -48,9 +52,8 @@ void main() {
 
       expect(file2.lengthSync(), equals(file.lengthSync()));
 
+      var windowsPEFile = WindowsPEFile(file2, verbose: true);
       try {
-        var windowsPEFile = WindowsPEFile(file2, verbose: true);
-
         expect(windowsPEFile.isValidExecutable, isTrue);
 
         var windowsSubsystem = windowsPEFile.readWindowsSubsystem();
@@ -71,6 +74,7 @@ void main() {
         // Expect `console` Windows Subsystem.
         expect(windowsSubsystem3, 3);
       } finally {
+        windowsPEFile.close();
         file2.deleteSync();
       }
     });

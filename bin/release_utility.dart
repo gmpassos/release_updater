@@ -80,6 +80,8 @@ void main(List<String> args) async {
     _ => '?',
   };
 
+  windowsPEFile2.close();
+
   print(
       '-- Current Windows Subsystem: $windowsSubsystem ($windowsSubsystemName)');
 }

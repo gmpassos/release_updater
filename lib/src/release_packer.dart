@@ -962,9 +962,17 @@ class ReleasePackerWindowsSubsystemCommand
     print(
         '-- WindowsPEFile command> ${rootDirectory.path} -> GUI: $gui ; executable: $filePath');
 
+    WindowsPEFile windowsPEFile;
     try {
-      var windowsPEFile = WindowsPEFile(file);
+      windowsPEFile = WindowsPEFile(file);
+    } catch (e, s) {
+      print("** Error opening Windows Executable: $filePath");
+      print(e);
+      print(s);
+      return false;
+    }
 
+    try {
       if (!windowsPEFile.isValidExecutable) {
         print(
             "-- IGNORING Windows Subsystem command> Not a valid Windows Executable: $filePath");
@@ -976,6 +984,8 @@ class ReleasePackerWindowsSubsystemCommand
       print(e);
       print(s);
       return false;
+    } finally {
+      windowsPEFile.close();
     }
 
     return true;
