@@ -7,8 +7,13 @@ import 'package:data_serializer/data_serializer_io.dart';
 /// - PE Format:
 ///   https://learn.microsoft.com/en-gb/windows/win32/debug/pe-format?redirectedfrom=MSDN#characteristics
 class WindowPEFile {
+  /// The file to read or modify.
   final File file;
+
+  /// The [file] buffer.
   late final BytesBuffer fileBuffer;
+
+  /// If `true` will [print] to the console each operation.
   final bool verbose;
 
   WindowPEFile(this.file, {this.verbose = false}) {
@@ -37,15 +42,26 @@ class WindowPEFile {
     _log('$key: $o$desc');
   }
 
+  /// Seeks to the Windows Subsystem position.
   int seekToWindowsSubsystem() {
+    var info = _seekToWindowsSubsystemImpl();
+    var windowsSubsystemOffset = info['windowsSubsystemOffset']!;
+    return windowsSubsystemOffset;
+  }
+
+  Map<String, int> _seekToWindowsSubsystemImpl() {
     fileBuffer.seek(0x3c);
 
+    var info = <String, int>{};
+
     var peHeaderOffset = fileBuffer.readUint16(Endian.little);
+    info['peHeaderOffset'] = peHeaderOffset;
     _logEntry('peHeaderOffset', peHeaderOffset);
 
     fileBuffer.seek(peHeaderOffset);
 
     var peSignature = fileBuffer.readUint32();
+    info['peSignature'] = peSignature;
     _logEntry('peSignature', peSignature);
 
     if (peSignature != 0x50450000) {
@@ -54,14 +70,17 @@ class WindowPEFile {
     }
 
     var machineType = fileBuffer.readUint16(Endian.little);
+    info['machineType'] = machineType;
     _logEntry('machineType', machineType);
 
     fileBuffer.seek(fileBuffer.position + 2 + 4 + 4 + 4);
 
     var sizeOfOptionalHeader = fileBuffer.readUint16(Endian.little);
+    info['sizeOfOptionalHeader'] = sizeOfOptionalHeader;
     _logEntry('sizeOfOptionalHeader', sizeOfOptionalHeader);
 
     var characteristics = fileBuffer.readUint16(Endian.little);
+    info['characteristics'] = characteristics;
     _logEntry('characteristics', characteristics, flag: true);
 
     var isExecutable = (characteristics & 2) == 0;
@@ -70,29 +89,64 @@ class WindowPEFile {
     }
 
     var optionalHeaderOffset = fileBuffer.position;
+    info['optionalHeaderOffset'] = optionalHeaderOffset;
 
-    var magic = fileBuffer.readUint16(Endian.little);
-    _logEntry('magic', magic);
+    var optionalHeaderMagic = fileBuffer.readUint16(Endian.little);
+    info['optionalHeaderMagic'] = optionalHeaderMagic;
+    _logEntry('optionalHeaderMagic', optionalHeaderMagic);
 
-    if (magic != 0x010B && magic != 0x020B) {
+    if (optionalHeaderMagic != 0x010B && optionalHeaderMagic != 0x020B) {
       throw StateError(
           "Not a normal executable or a PE32+ executable: ${file.path}");
     }
 
     fileBuffer.seek(optionalHeaderOffset + 68);
 
-    var pos = fileBuffer.position;
+    var windowsSubsystemOffset = fileBuffer.position;
 
-    if (pos != (peHeaderOffset + 0x5C)) {
+    if (windowsSubsystemOffset != (peHeaderOffset + 0x5C)) {
       throw StateError(
           "Invalid Windows Subsystem offset: ${fileBuffer.position} != ${peHeaderOffset + 0x5C}");
     }
 
-    return pos;
+    info['windowsSubsystemOffset'] = windowsSubsystemOffset;
+
+    return info;
   }
 
+  /// Reads the basic PE information.
+  Map<String, int> readInformation() {
+    var info = _seekToWindowsSubsystemImpl();
+
+    var windowsSubsystem = fileBuffer.readUint16(Endian.little);
+    _logEntry('Windows Subsystem', windowsSubsystem);
+
+    info['windowsSubsystem'] = windowsSubsystem;
+
+    return info;
+  }
+
+  /// Returns the `machineType` of the executable.
+  int get machineType => readInformation()['machineType']!;
+
+  /// Returns `true` if [machineType] is `x64`.
+  bool get isMachineTypeX64 => machineType == 0x8664;
+
+  /// Returns `true` if [machineType] is `i386`.
+  bool get isMachineTypeI386 => machineType == 0x14c;
+
+  /// Returns `true` if [machineType] is `Intel Itanium`.
+  bool get isMachineTypeItanium => machineType == 0x200;
+
+  /// Returns `true` if [machineType] is `ARM little endian`.
+  bool get isMachineTypeARM => machineType == 0x1c0;
+
+  /// Returns `true` if [machineType] is `ARM64 little endian`.
+  bool get isMachineTypeARM64 => machineType == 0xaa64;
+
+  /// Reads the current Windows Subsystem value.
   int readWindowsSubsystem() {
-    seekToWindowsSubsystem();
+    _seekToWindowsSubsystemImpl();
 
     var subsystem = fileBuffer.readUint16(Endian.little);
     _logEntry('Windows Subsystem', subsystem);
@@ -100,12 +154,14 @@ class WindowPEFile {
     return subsystem;
   }
 
+  /// Writes the Windows Subsystem.
   void writeWindowsSubsystem(int subsystem) {
-    seekToWindowsSubsystem();
+    _seekToWindowsSubsystemImpl();
     fileBuffer.writeUint16(subsystem, Endian.little);
     fileBuffer.flush();
   }
 
+  /// Sets/writes the Windows Subsystem to `GUI` or `Console`.
   void setWindowsSubsystem({required bool gui}) {
     var currentSubsystem = readWindowsSubsystem();
     if (currentSubsystem != 2 && currentSubsystem != 3) {
@@ -117,10 +173,12 @@ class WindowPEFile {
     writeWindowsSubsystem(subsystem);
   }
 
+  /// Flushes the [fileBuffer].
   void flush() {
     fileBuffer.flush();
   }
 
+  /// Closes the [fileBuffer].
   void close() {
     fileBuffer.close();
   }
