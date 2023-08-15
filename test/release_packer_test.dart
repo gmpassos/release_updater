@@ -81,7 +81,7 @@ void main() {
       expect(releasePacker.version.toString(), equals(ReleaseUpdater.VERSION));
 
       var prepareCommands = releasePacker.prepareCommands!;
-      expect(prepareCommands.length, equals(3));
+      expect(prepareCommands.length, equals(4));
 
       {
         expect(prepareCommands[0], isA<ReleasePackerDartPubGet>());
@@ -90,11 +90,20 @@ void main() {
         expect((prepareCommands[1] as ReleasePackerDartCompileExe).args,
             equals(['exe', 'bin/foo.dart']));
 
-        expect(prepareCommands[2], isA<ReleasePackerProcessCommand>());
-        expect((prepareCommands[2] as ReleasePackerProcessCommand).command,
+        expect(prepareCommands[2], isA<ReleasePackerWindowsSubsystemCommand>());
+        expect(
+            (prepareCommands[2] as ReleasePackerWindowsSubsystemCommand)
+                .command,
+            equals('release_utility'));
+        expect(
+            (prepareCommands[2] as ReleasePackerWindowsSubsystemCommand).args,
+            equals(['--windows-gui', 'bin/foo.exe']));
+
+        expect(prepareCommands[3], isA<ReleasePackerProcessCommand>());
+        expect((prepareCommands[3] as ReleasePackerProcessCommand).command,
             equals('bin/foo.exe'));
         expect(
-            (prepareCommands[2] as ReleasePackerProcessCommand).stdoutFilePath,
+            (prepareCommands[3] as ReleasePackerProcessCommand).stdoutFilePath,
             equals('foo.out'));
       }
 

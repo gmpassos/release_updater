@@ -6,7 +6,7 @@ import 'package:data_serializer/data_serializer_io.dart';
 /// Window PE file handler.
 /// - PE Format:
 ///   https://learn.microsoft.com/en-gb/windows/win32/debug/pe-format?redirectedfrom=MSDN#characteristics
-class WindowPEFile {
+class WindowsPEFile {
   /// The file to read or modify.
   final File file;
 
@@ -16,7 +16,7 @@ class WindowPEFile {
   /// If `true` will [print] to the console each operation.
   final bool verbose;
 
-  WindowPEFile(this.file, {this.verbose = false}) {
+  WindowsPEFile(this.file, {this.verbose = false}) {
     var bytesIO = BytesFileIO.fromFile(file);
     fileBuffer = BytesBuffer.fromIO(bytesIO);
 
@@ -143,6 +143,17 @@ class WindowPEFile {
 
   /// Returns `true` if [machineType] is `ARM64 little endian`.
   bool get isMachineTypeARM64 => machineType == 0xaa64;
+
+  /// Returns `true` if [file] is a valid Windows executable in `GUI` or `Console` Subsystem.
+  bool get isValidExecutable {
+    try {
+      var info = _seekToWindowsSubsystemImpl();
+      var pos = info['windowsSubsystemOffset'];
+      return pos != null && pos > 128;
+    } catch (_) {
+      return false;
+    }
+  }
 
   /// Reads the current Windows Subsystem value.
   int readWindowsSubsystem() {

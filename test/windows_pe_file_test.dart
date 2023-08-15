@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 import 'package:release_updater/release_utility.dart';
 
 void main() {
-  group('WindowPEFile', () {
+  group('WindowsPEFile', () {
     test('info', () {
       var filePath = 'project-foo/bin/foo-windows64.exe';
       var filePossiblePaths = [filePath, 'test/$filePath', '../test/$filePath'];
@@ -13,24 +13,24 @@ void main() {
           .map((p) => File(p))
           .firstWhere((f) => f.existsSync());
 
-      var windowPEFile = WindowPEFile(file, verbose: true);
+      var windowsPEFile = WindowsPEFile(file, verbose: true);
 
-      var windowsSubsystem = windowPEFile.readWindowsSubsystem();
+      var windowsSubsystem = windowsPEFile.readWindowsSubsystem();
       // Expect `console` Windows Subsystem.
       expect(windowsSubsystem, 3);
 
-      var peInfo = windowPEFile.readInformation();
+      var peInfo = windowsPEFile.readInformation();
       print(peInfo);
 
       expect(peInfo['windowsSubsystem'], 3);
       expect(peInfo['machineType'], 0x8664);
 
-      expect(windowPEFile.isMachineTypeX64, isTrue);
+      expect(windowsPEFile.isMachineTypeX64, isTrue);
 
-      expect(windowPEFile.isMachineTypeI386, isFalse);
-      expect(windowPEFile.isMachineTypeItanium, isFalse);
-      expect(windowPEFile.isMachineTypeARM, isFalse);
-      expect(windowPEFile.isMachineTypeARM64, isFalse);
+      expect(windowsPEFile.isMachineTypeI386, isFalse);
+      expect(windowsPEFile.isMachineTypeItanium, isFalse);
+      expect(windowsPEFile.isMachineTypeARM, isFalse);
+      expect(windowsPEFile.isMachineTypeARM64, isFalse);
     });
 
     test('Set Windows Subsystem', () {
@@ -49,23 +49,25 @@ void main() {
       expect(file2.lengthSync(), equals(file.lengthSync()));
 
       try {
-        var windowPEFile = WindowPEFile(file2, verbose: true);
+        var windowsPEFile = WindowsPEFile(file2, verbose: true);
 
-        var windowsSubsystem = windowPEFile.readWindowsSubsystem();
+        expect(windowsPEFile.isValidExecutable, isTrue);
+
+        var windowsSubsystem = windowsPEFile.readWindowsSubsystem();
         // Expect `console` Windows Subsystem.
         expect(windowsSubsystem, 3);
 
-        expect(windowPEFile.isMachineTypeX64, isTrue);
+        expect(windowsPEFile.isMachineTypeX64, isTrue);
 
-        windowPEFile.setWindowsSubsystem(gui: true);
+        windowsPEFile.setWindowsSubsystem(gui: true);
 
-        var windowsSubsystem2 = windowPEFile.readWindowsSubsystem();
+        var windowsSubsystem2 = windowsPEFile.readWindowsSubsystem();
         // Expect `GUI` Windows Subsystem.
         expect(windowsSubsystem2, 2);
 
-        windowPEFile.setWindowsSubsystem(gui: false);
+        windowsPEFile.setWindowsSubsystem(gui: false);
 
-        var windowsSubsystem3 = windowPEFile.readWindowsSubsystem();
+        var windowsSubsystem3 = windowsPEFile.readWindowsSubsystem();
         // Expect `console` Windows Subsystem.
         expect(windowsSubsystem3, 3);
       } finally {

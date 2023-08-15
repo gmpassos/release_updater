@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:mercury_client/mercury_client.dart';
+import 'package:release_updater/release_utility.dart';
 import 'package:yaml/yaml.dart';
 import 'package:path/path.dart' as pack_path;
 
@@ -294,11 +295,15 @@ abstract class ReleasePackerEntry {
 
 abstract class ReleasePackerCommand extends ReleasePackerEntry {
   static List<ReleasePackerCommand>? toCommands(
-      {String? dartCompileExe, List? jsonList}) {
+      {String? dartCompileExe, String? windowsGUI, List? jsonList}) {
     var commands = <ReleasePackerCommand>[];
 
     if (dartCompileExe != null) {
       commands.add(ReleasePackerDartCompileExe(dartCompileExe));
+    }
+
+    if (windowsGUI != null) {
+      commands.add(ReleasePackerWindowsSubsystemCommand(true, windowsGUI));
     }
 
     if (jsonList != null) {
@@ -363,6 +368,11 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
       var dart = map.get('dart');
       if (dart != null) {
         return ReleasePackerDartCommand.from(dart);
+      }
+
+      var windowsGUI = map.get<String>('windows_gui');
+      if (windowsGUI != null && windowsGUI.isNotEmpty) {
+        return ReleasePackerWindowsSubsystemCommand(true, windowsGUI);
       }
 
       var rm = map.get<String>('rm') ?? map.get<String>('del');
@@ -875,6 +885,108 @@ class ReleasePackerDartCompileExe extends ReleasePackerDartCommand {
   }
 }
 
+class ReleasePackerWindowsSubsystemCommand
+    extends ReleasePackerCommandWithArgs {
+  ReleasePackerWindowsSubsystemCommand(bool gui, String executable)
+      : super('release_utility',
+            [gui ? '--windows-gui' : '--windows-console', executable]);
+
+  factory ReleasePackerWindowsSubsystemCommand.fromList(List list) {
+    var listStr = list.map((e) => '$e').toList();
+
+    if (listStr.first == 'release_utility') {
+      listStr.removeAt(0);
+    }
+
+    var argGuiIdx = listStr.indexOf('--windows-gui');
+    var argConsoleIdx = listStr.indexOf('--windows-console');
+
+    var argGUI = false;
+    if (argGuiIdx >= 0) {
+      listStr.removeAt(argGuiIdx);
+      argGUI = true;
+    }
+
+    if (argConsoleIdx >= 0) {
+      listStr.removeAt(argConsoleIdx);
+      argGUI = false;
+    }
+
+    var executable =
+        listStr.firstWhereOrNull((e) => e.endsWith('.exe')) ?? listStr.first;
+
+    return ReleasePackerWindowsSubsystemCommand(argGUI, executable);
+  }
+
+  factory ReleasePackerWindowsSubsystemCommand.from(Object command) {
+    if (command is String) {
+      var list = ReleasePackerCommand.parseInlineCommand(command);
+      return ReleasePackerWindowsSubsystemCommand.fromList(list);
+    } else if (command is List) {
+      return ReleasePackerWindowsSubsystemCommand.fromList(command);
+    } else {
+      throw ArgumentError("Unknown command type: $command");
+    }
+  }
+
+  @override
+  bool execute(ReleasePacker releasePacker, Directory rootDirectory,
+      {ReleaseBundle? releaseBundle, int expectedExitCode = 0}) {
+    var executablePath = args.last;
+
+    var filePath =
+        pack_path.normalize(pack_path.join(rootDirectory.path, executablePath));
+
+    var file = File(filePath);
+    if (!file.existsSync()) {
+      print("** Can't find Windows executable file: $filePath");
+      return false;
+    }
+
+    var argGUI = args.contains('--windows-gui');
+    var argConsole = args.contains('--windows-console');
+
+    bool gui;
+    if (argGUI && argConsole) {
+      print("** Ambiguous parameters: $args");
+      return false;
+    } else if (argGUI) {
+      gui = true;
+    } else if (argConsole) {
+      gui = false;
+    } else {
+      print("** No `--windows-gui` or `--windows-console` parameters: $args");
+      return false;
+    }
+
+    print(
+        '-- WindowsPEFile command> ${rootDirectory.path} -> GUI: $gui ; executable: $filePath');
+
+    try {
+      var windowsPEFile = WindowsPEFile(file);
+
+      if (!windowsPEFile.isValidExecutable) {
+        print(
+            "-- IGNORING Windows Subsystem command> Not a valid Windows Executable: $filePath");
+        return false;
+      }
+
+      windowsPEFile.setWindowsSubsystem(gui: gui);
+    } catch (e, s) {
+      print(e);
+      print(s);
+      return false;
+    }
+
+    return true;
+  }
+
+  @override
+  String toString() {
+    return 'ReleasePackerDartCommand[$command $args]';
+  }
+}
+
 abstract class ReleasePackerOperation extends ReleasePackerEntry {
   List<ReleasePackerCommand>? commands;
 
@@ -900,24 +1012,36 @@ class ReleasePackerFile extends ReleasePackerOperation {
   String destinyPath;
 
   ReleasePackerFile(this.sourcePath, String destinyPath,
-      {Object? platform, String? dartCompileExe})
+      {Object? platform, String? dartCompileExe, String? windowsGUI})
       : destinyPath = destinyPath == '.' ? sourcePath : destinyPath,
         super(
             platform: platform,
             commands: ReleasePackerCommand.toCommands(
-                dartCompileExe: dartCompileExe));
+                dartCompileExe: dartCompileExe, windowsGUI: windowsGUI));
 
   factory ReleasePackerFile.fromJson(Object json) {
     if (json is String) {
       return ReleasePackerFile(json, json);
     } else if (json is Map) {
       var platform = json['platform'];
-      var dartCompileExe = json['dart_compile_exe'];
+      var dartCompileExe = json['dart_compile_exe'] as String?;
+      var windowsGUI = json['windows_gui'];
+
       var entry = json.entries
-          .where((e) => e.key != 'platform' && e.key != 'dart_compile_exe')
+          .where((e) =>
+              e.key != 'platform' &&
+              e.key != 'dart_compile_exe' &&
+              e.key != 'windows_gui')
           .first;
+
+      if (windowsGUI is bool && windowsGUI) {
+        windowsGUI = dartCompileExe ?? entry.key;
+      }
+
       return ReleasePackerFile(entry.key, entry.value,
-          platform: platform, dartCompileExe: dartCompileExe);
+          platform: platform,
+          dartCompileExe: dartCompileExe,
+          windowsGUI: windowsGUI);
     } else {
       throw ArgumentError("Unknown type: $json");
     }

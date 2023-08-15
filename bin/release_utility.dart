@@ -55,23 +55,23 @@ void main(List<String> args) async {
 
   print('-- File: $filePath');
 
-  var windowPEFile = WindowPEFile(file, verbose: cmdVerbose);
+  var windowsPEFile = WindowsPEFile(file, verbose: cmdVerbose);
 
   if (cmdWindowConsole) {
     print('-- Setting executable Windows Subsystem to `console`...');
-    windowPEFile.setWindowsSubsystem(gui: false);
+    windowsPEFile.setWindowsSubsystem(gui: false);
   } else if (cmdWindowGUI) {
     print('-- Setting executable Windows Subsystem to `GUI`...');
-    windowPEFile.setWindowsSubsystem(gui: true);
+    windowsPEFile.setWindowsSubsystem(gui: true);
   } else {
     print('-- Showing Windows PE information:');
   }
 
-  windowPEFile.close();
+  windowsPEFile.close();
 
-  var windowPEFile2 = WindowPEFile(file, verbose: cmdVerbose);
+  var windowsPEFile2 = WindowsPEFile(file, verbose: cmdVerbose);
 
-  var windowsSubsystem = windowPEFile2.readWindowsSubsystem();
+  var windowsSubsystem = windowsPEFile2.readWindowsSubsystem();
 
   var windowsSubsystemName = switch (windowsSubsystem) {
     0 => 'unknown',

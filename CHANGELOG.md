@@ -2,6 +2,10 @@
 
 - New executable `release_utility`.
 - New `WindowPEFile`.
+- `release_packer.dart`:
+  - Added support for command `windows_gui`.
+
+- Dart CI: added job `build_windows`.
 - data_serializer: ^1.0.10
 
 ## 1.1.2
