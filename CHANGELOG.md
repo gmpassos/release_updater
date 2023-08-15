@@ -1,3 +1,9 @@
+## 1.1.3
+
+- New executable `release_utility`.
+- New `WindowPEFile`.
+- data_serializer: ^1.0.10
+
 ## 1.1.2
 
 - Fix packing of directory tree on Windows.
