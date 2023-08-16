@@ -998,6 +998,24 @@ class ReleasePackerWindowsSubsystemCommand
       }
 
       windowsPEFile.setWindowsSubsystem(gui: gui);
+
+      windowsPEFile.flush();
+      windowsPEFile.close();
+
+      // Re-open and test:
+      windowsPEFile = WindowsPEFile(file);
+
+      var windowsSubsystem = windowsPEFile.readWindowsSubsystem();
+      var expectedWindowsSubsystem = gui ? 2 : 3;
+
+      if (windowsSubsystem != expectedWindowsSubsystem) {
+        print(
+            "** Windows Subsystem Error> Value not set to `$expectedWindowsSubsystem`. Read value: $windowsSubsystem");
+        return false;
+      } else {
+        print(
+            "-- Windows Subsystem> Current value: $windowsSubsystem @ $filePath");
+      }
     } catch (e, s) {
       print(e);
       print(s);
@@ -1011,7 +1029,7 @@ class ReleasePackerWindowsSubsystemCommand
 
   @override
   String toString() {
-    return 'ReleasePackerDartCommand[$command $args]';
+    return 'ReleasePackerWindowsSubsystemCommand[$command $args]';
   }
 }
 
