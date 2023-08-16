@@ -98,7 +98,8 @@ Example of a `release_packer.json` file:
   "version_from": "pubspec.yaml",
   "prepare": [
     "dart_pub_get",
-    {"dart_compile_exe": "bin/foo.dart"}
+    {"dart_compile_exe": "bin/foo.dart"},
+    {"windows_gui": "bin/foo.exe"}
   ],
   "finalize": [
     {"rm": "bin/foo.exe"},
@@ -138,6 +139,7 @@ Example of a `release_packer.json` file:
   - `dart_pub_get`: performs a `dart pub get`.
   - `dart_compile_exe`: performs a `dart compile exe %dart_script`.
   - `dart`: performs a `dart %command`.
+  - `windows_gui`: Changes an executable Windows Subsistem to `GUI`.
   - `command`: performs a shell `%command`.
   - `rm`: Deletes a file.
   - `upload_release`: uploads the generated release.
@@ -167,6 +169,10 @@ Example of a `release_packer.json` file:
     - A file from a `dart_compile_exe` command:
       ```JSON
       {"bin/client.exe": "client.exe", "dart_compile_exe": "bin/client.dart"}
+      ```
+    - A Windows executable file with the Windows Subsistem set to `GUI`:
+      ```JSON
+      {"bin/client.exe": "client.exe", "windows_gui": true}
       ```
 
 [Release_class]: https://pub.dev/documentation/release_updater/latest/release_updater.io/Release-class.html  
