@@ -978,7 +978,7 @@ class ReleasePackerWindowsSubsystemCommand
     }
 
     print(
-        '-- WindowsPEFile command> ${rootDirectory.path} -> GUI: $gui ; executable: $filePath');
+        '-- Windows Subsystem command> ${rootDirectory.path} -> GUI: $gui ; executable: $filePath');
 
     WindowsPEFile windowsPEFile;
     try {
@@ -1009,12 +1009,14 @@ class ReleasePackerWindowsSubsystemCommand
       var expectedWindowsSubsystem = gui ? 2 : 3;
 
       if (windowsSubsystem != expectedWindowsSubsystem) {
-        print(
-            "** Windows Subsystem Error> Value not set to `$expectedWindowsSubsystem`. Read value: $windowsSubsystem");
+        print("** Windows Subsystem Error> "
+            "Value not set to `$expectedWindowsSubsystem` (${WindowsPEFile.windowsSubsystemName(expectedWindowsSubsystem)}). "
+            "Read value: `$windowsSubsystem` (${WindowsPEFile.windowsSubsystemName(windowsSubsystem)})");
         return false;
       } else {
-        print(
-            "-- Windows Subsystem> Current value: $windowsSubsystem @ $filePath");
+        print("-- Windows Subsystem> "
+            "Current value: `$windowsSubsystem` (${WindowsPEFile.windowsSubsystemName(windowsSubsystem)}) "
+            "@ $filePath");
       }
     } catch (e, s) {
       print(e);

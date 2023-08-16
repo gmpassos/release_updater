@@ -73,12 +73,8 @@ void main(List<String> args) async {
 
   var windowsSubsystem = windowsPEFile2.readWindowsSubsystem();
 
-  var windowsSubsystemName = switch (windowsSubsystem) {
-    0 => 'unknown',
-    2 => 'GUI',
-    3 => 'console',
-    _ => '?',
-  };
+  var windowsSubsystemName =
+      WindowsPEFile.windowsSubsystemName(windowsSubsystem);
 
   windowsPEFile2.close();
 

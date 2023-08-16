@@ -155,6 +155,15 @@ class WindowsPEFile {
     }
   }
 
+  /// Returns the [windowsSubsystem] value name.
+  static String windowsSubsystemName(int windowsSubsystem) =>
+      switch (windowsSubsystem) {
+        0 => 'unknown',
+        2 => 'GUI',
+        3 => 'console',
+        _ => '?',
+      };
+
   /// Reads the current Windows Subsystem value.
   int readWindowsSubsystem() {
     _seekToWindowsSubsystemImpl();
