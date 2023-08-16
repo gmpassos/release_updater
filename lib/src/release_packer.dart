@@ -348,7 +348,25 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
 
       return null;
     } else if (command is List) {
-      return ReleasePackerProcessCommand.fromList(command);
+      var cmd = ReleasePackerProcessCommand.fromList(command);
+      var args = cmd.args;
+
+      if (cmd.command == 'dart') {
+        if (args.equals(['pub', 'get'])) {
+          return ReleasePackerDartPubGet();
+        } else if (args.length == 3 &&
+            args[0] == 'compile' &&
+            args[1] == 'exe') {
+          return ReleasePackerDartCompileExe(args[2]);
+        }
+      } else if (cmd.command == 'release_utility' && args.length == 2) {
+        var gui = args[0].toLowerCase().contains('gui');
+        return ReleasePackerWindowsSubsystemCommand(gui, cmd.args[1]);
+      } else if (cmd.command == 'windows_gui' && args.length == 1) {
+        return ReleasePackerWindowsSubsystemCommand(true, cmd.args[0]);
+      }
+
+      return cmd;
     } else if (command is Map) {
       var map = command.asJsonMap;
 

@@ -63,6 +63,81 @@ void main() {
         expect(authorization.username, equals('userX'));
         expect(authorization.password, equals('pass123'));
       }
+
+      {
+        var cmd = ReleasePackerCommand.from({
+          'url': {
+            'url': 'http://foo/bar',
+            'authorization': {'user': 'userX', 'pass': 'pass123'},
+            'parameters': {'a': 123},
+            'body': 'Data'
+          }
+        });
+
+        expect(cmd, isA<ReleasePackerCommandURL>());
+
+        var cmdURL = cmd as ReleasePackerCommandURL;
+
+        expect(cmdURL.url, equals('http://foo/bar'));
+
+        var authorization = cmdURL.authorization as BasicCredential;
+        expect(authorization.username, equals('userX'));
+        expect(authorization.password, equals('pass123'));
+      }
+
+      {
+        var cmd = ReleasePackerCommand.from('dart_pub_get');
+
+        expect(cmd, isA<ReleasePackerDartPubGet>());
+      }
+
+      {
+        var cmd =
+            ReleasePackerCommand.from({'dart_compile_exe': 'bin/foo.dart'});
+
+        expect(cmd, isA<ReleasePackerDartCompileExe>());
+
+        var cmdWinGUI = cmd as ReleasePackerDartCompileExe;
+
+        expect(cmdWinGUI.args, equals(['exe', 'bin/foo.dart']));
+      }
+
+      {
+        var cmd = ReleasePackerCommand.from({'windows_gui': 'bin/foo.exe'});
+
+        expect(cmd, isA<ReleasePackerWindowsSubsystemCommand>());
+
+        var cmdWinGUI = cmd as ReleasePackerWindowsSubsystemCommand;
+
+        expect(cmdWinGUI.args, equals(['--windows-gui', 'bin/foo.exe']));
+      }
+
+      {
+        var cmd = ReleasePackerCommand.from(['dart', 'pub', 'get']);
+
+        expect(cmd, isA<ReleasePackerDartPubGet>());
+      }
+
+      {
+        var cmd = ReleasePackerCommand.from(
+            ['dart', 'compile', 'exe', 'bin/foo.dart']);
+
+        expect(cmd, isA<ReleasePackerDartCompileExe>());
+
+        var cmdDartExe = cmd as ReleasePackerDartCompileExe;
+
+        expect(cmdDartExe.args, equals(['exe', 'bin/foo.dart']));
+      }
+
+      {
+        var cmd = ReleasePackerCommand.from(['windows_gui', 'bin/foo.exe']);
+
+        expect(cmd, isA<ReleasePackerWindowsSubsystemCommand>());
+
+        var cmdWinGUI = cmd as ReleasePackerWindowsSubsystemCommand;
+
+        expect(cmdWinGUI.args, equals(['--windows-gui', 'bin/foo.exe']));
+      }
     });
 
     test('buildFromDirectory', () async {
