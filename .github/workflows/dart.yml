@@ -45,7 +45,7 @@ jobs:
       - name: dart pub publish --dry-run
         run: dart pub publish --dry-run
 
-  build_windows:
+  test_windows:
     runs-on: windows-latest
     timeout-minutes: 5
 
@@ -60,3 +60,20 @@ jobs:
         run: dart pub get
       - name: Run tests (VM)
         run: dart test --platform vm
+
+  test_macos:
+    runs-on: macos-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dart-lang/setup-dart@v1
+      - name: Dart version
+        run: |
+          dart --version
+          uname -a
+      - name: Install dependencies
+        run: dart pub get
+      - name: Run tests (VM)
+        run: dart test --platform vm
+
