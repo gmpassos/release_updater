@@ -103,13 +103,16 @@ void main() {
       }
 
       {
-        var cmd = ReleasePackerCommand.from({'windows_gui': 'bin/foo.exe'});
+        var cmd = ReleasePackerCommand.from({
+          'windows_gui': ['bin/foo.exe', 'bin/foo-gui.exe']
+        });
 
         expect(cmd, isA<ReleasePackerWindowsSubsystemCommand>());
 
         var cmdWinGUI = cmd as ReleasePackerWindowsSubsystemCommand;
 
-        expect(cmdWinGUI.args, equals(['--windows-gui', 'bin/foo.exe']));
+        expect(cmdWinGUI.args,
+            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']));
       }
 
       {
@@ -130,13 +133,26 @@ void main() {
       }
 
       {
+        var cmd = ReleasePackerCommand.from(
+            ['windows_gui', 'bin/foo.exe', 'bin/foo-gui.exe']);
+
+        expect(cmd, isA<ReleasePackerWindowsSubsystemCommand>());
+
+        var cmdWinGUI = cmd as ReleasePackerWindowsSubsystemCommand;
+
+        expect(cmdWinGUI.args,
+            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']));
+      }
+
+      {
         var cmd = ReleasePackerCommand.from(['windows_gui', 'bin/foo.exe']);
 
         expect(cmd, isA<ReleasePackerWindowsSubsystemCommand>());
 
         var cmdWinGUI = cmd as ReleasePackerWindowsSubsystemCommand;
 
-        expect(cmdWinGUI.args, equals(['--windows-gui', 'bin/foo.exe']));
+        expect(cmdWinGUI.args,
+            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo.exe']));
       }
     });
 
@@ -172,7 +188,7 @@ void main() {
             equals('release_utility'));
         expect(
             (prepareCommands[2] as ReleasePackerWindowsSubsystemCommand).args,
-            equals(['--windows-gui', 'bin/foo.exe']));
+            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo.exe']));
 
         expect(prepareCommands[3], isA<ReleasePackerProcessCommand>());
         expect((prepareCommands[3] as ReleasePackerProcessCommand).command,

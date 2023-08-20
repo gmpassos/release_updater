@@ -295,7 +295,10 @@ abstract class ReleasePackerEntry {
 
 abstract class ReleasePackerCommand extends ReleasePackerEntry {
   static List<ReleasePackerCommand>? toCommands(
-      {String? dartCompileExe, String? windowsGUI, List? jsonList}) {
+      {String? sourcePath,
+      String? dartCompileExe,
+      String? windowsGUI,
+      List? jsonList}) {
     var commands = <ReleasePackerCommand>[];
 
     if (dartCompileExe != null) {
@@ -303,7 +306,39 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
     }
 
     if (windowsGUI != null) {
-      commands.add(ReleasePackerWindowsSubsystemCommand(true, windowsGUI));
+      String? inputFile;
+      String? outputFile;
+
+      if (dartCompileExe != null) {
+        if (dartCompileExe != windowsGUI) {
+          inputFile = dartCompileExe;
+          outputFile = windowsGUI;
+        } else {
+          inputFile = dartCompileExe;
+          outputFile = sourcePath ?? windowsGUI;
+        }
+      } else if (sourcePath != null) {
+        if (sourcePath != windowsGUI) {
+          inputFile = windowsGUI;
+          outputFile = sourcePath;
+        } else {
+          inputFile = sourcePath;
+          outputFile = windowsGUI;
+        }
+      } else if (sourcePath is String) {
+        inputFile = sourcePath;
+        outputFile = sourcePath;
+      }
+
+      if (inputFile == null || outputFile == null) {
+        throw StateError(
+            "Can't define input and output files for `windows_gui` command> "
+            "inputFile: $inputFile ; outputFile: $outputFile ; "
+            "dartCompileExe: $dartCompileExe ; windowsGUI: $windowsGUI ; sourcePath: $sourcePath");
+      }
+
+      commands.add(
+          ReleasePackerWindowsSubsystemCommand(true, inputFile, outputFile));
     }
 
     if (jsonList != null) {
@@ -359,11 +394,15 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
             args[1] == 'exe') {
           return ReleasePackerDartCompileExe(args[2]);
         }
-      } else if (cmd.command == 'release_utility' && args.length == 2) {
+      } else if (cmd.command == 'release_utility' && args.length >= 2) {
         var gui = args[0].toLowerCase().contains('gui');
-        return ReleasePackerWindowsSubsystemCommand(gui, cmd.args[1]);
-      } else if (cmd.command == 'windows_gui' && args.length == 1) {
-        return ReleasePackerWindowsSubsystemCommand(true, cmd.args[0]);
+        var input = cmd.args[1];
+        var output = cmd.args.length > 2 ? cmd.args[2] : input;
+        return ReleasePackerWindowsSubsystemCommand(gui, input, output);
+      } else if (cmd.command == 'windows_gui' && args.isNotEmpty) {
+        var input = cmd.args[0];
+        var output = cmd.args.length > 1 ? cmd.args[1] : input;
+        return ReleasePackerWindowsSubsystemCommand(true, input, output);
       }
 
       return cmd;
@@ -388,9 +427,28 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
         return ReleasePackerDartCommand.from(dart);
       }
 
-      var windowsGUI = map.get<String>('windows_gui');
-      if (windowsGUI != null && windowsGUI.isNotEmpty) {
-        return ReleasePackerWindowsSubsystemCommand(true, windowsGUI);
+      var windowsGUI = map.get('windows_gui');
+      if (windowsGUI != null) {
+        String? input;
+        String? output;
+
+        if (windowsGUI is List && windowsGUI.isNotEmpty) {
+          input = windowsGUI[0];
+          output = windowsGUI.length > 1 ? windowsGUI[1] : input;
+        } else if (windowsGUI is Map && windowsGUI.isNotEmpty) {
+          input = windowsGUI['input'];
+          output = windowsGUI['output'] ?? input;
+        } else if (windowsGUI is String) {
+          input = output = windowsGUI;
+        }
+
+        if (input == null || output == null) {
+          throw StateError(
+              "Can't define `windows_gui` input and output: $windowsGUI");
+        }
+
+        return ReleasePackerWindowsSubsystemCommand(
+            true, input.toString(), output.toString());
       }
 
       var rm = map.get<String>('rm') ?? map.get<String>('del');
@@ -905,9 +963,13 @@ class ReleasePackerDartCompileExe extends ReleasePackerDartCommand {
 
 class ReleasePackerWindowsSubsystemCommand
     extends ReleasePackerCommandWithArgs {
-  ReleasePackerWindowsSubsystemCommand(bool gui, String executable)
-      : super('release_utility',
-            [gui ? '--windows-gui' : '--windows-console', executable]);
+  ReleasePackerWindowsSubsystemCommand(
+      bool gui, String executableFile, String outputFile)
+      : super('release_utility', [
+          gui ? '--windows-gui' : '--windows-console',
+          executableFile,
+          outputFile
+        ]);
 
   factory ReleasePackerWindowsSubsystemCommand.fromList(List list) {
     var listStr = list.map((e) => '$e').toList();
@@ -933,7 +995,10 @@ class ReleasePackerWindowsSubsystemCommand
     var executable =
         listStr.firstWhereOrNull((e) => e.endsWith('.exe')) ?? listStr.first;
 
-    return ReleasePackerWindowsSubsystemCommand(argGUI, executable);
+    var output =
+        listStr.lastWhereOrNull((e) => e.endsWith('.exe')) ?? listStr.last;
+
+    return ReleasePackerWindowsSubsystemCommand(argGUI, executable, output);
   }
 
   factory ReleasePackerWindowsSubsystemCommand.from(Object command) {
@@ -950,14 +1015,24 @@ class ReleasePackerWindowsSubsystemCommand
   @override
   bool execute(ReleasePacker releasePacker, Directory rootDirectory,
       {ReleaseBundle? releaseBundle, int expectedExitCode = 0}) {
-    var executablePath = args.last;
+    var executablePath = args[args.length - 2];
+    var executableOutputPath = args.last;
 
-    var filePath =
+    var inputPath =
         pack_path.normalize(pack_path.join(rootDirectory.path, executablePath));
 
-    var file = File(filePath);
-    if (!file.existsSync()) {
-      print("** Can't find Windows executable file: $filePath");
+    var outputPath = pack_path
+        .normalize(pack_path.join(rootDirectory.path, executableOutputPath));
+
+    var inputFile = File(inputPath);
+    if (!inputFile.existsSync()) {
+      print("** Can't find Windows executable file: $inputPath");
+      return false;
+    }
+
+    var outputFile = File(outputPath);
+    if (outputFile.existsSync() && inputFile.path != outputFile.path) {
+      print("** Can't overwrite output file: $outputPath");
       return false;
     }
 
@@ -978,13 +1053,13 @@ class ReleasePackerWindowsSubsystemCommand
     }
 
     print(
-        '-- Windows Subsystem command> ${rootDirectory.path} -> GUI: $gui ; executable: $filePath');
+        '-- Windows Subsystem command> ${rootDirectory.path} -> GUI: $gui ; executable: $inputPath');
 
     WindowsPEFile windowsPEFile;
     try {
-      windowsPEFile = WindowsPEFile(file);
+      windowsPEFile = WindowsPEFile(inputFile);
     } catch (e, s) {
-      print("** Error opening Windows Executable: $filePath");
+      print("** Error opening Windows Executable: $inputPath");
       print(e);
       print(s);
       return false;
@@ -993,17 +1068,37 @@ class ReleasePackerWindowsSubsystemCommand
     try {
       if (!windowsPEFile.isValidExecutable) {
         print(
-            "-- IGNORING Windows Subsystem command> Not a valid Windows Executable: $filePath");
+            "-- IGNORING Windows Subsystem command> Not a valid Windows Executable: $inputPath");
         return false;
       }
 
       windowsPEFile.setWindowsSubsystem(gui: gui);
 
-      windowsPEFile.flush();
-      windowsPEFile.close();
+      if (inputFile.path == outputFile.path) {
+        var inputFileCp = _resolveInputFileCopy(inputFile);
+
+        if (inputFileCp != null) {
+          inputFile.renameSync(inputFileCp.path);
+          windowsPEFile.save(outputFile);
+
+          if (!outputFile.existsSync() ||
+              outputFile.lengthSync() != windowsPEFile.fileBuffer.length) {
+            print(
+                '** Error saving executable file: ${outputFile.path} (copy: ${inputFileCp.path})');
+            return false;
+          }
+
+          inputFileCp.deleteSync();
+
+          print('-- Executable saved: ${outputFile.path}');
+        }
+      } else {
+        windowsPEFile.save(outputFile);
+        print('-- New executable saved: ${outputFile.path}');
+      }
 
       // Re-open and test:
-      windowsPEFile = WindowsPEFile(file);
+      windowsPEFile = WindowsPEFile(outputFile);
 
       var windowsSubsystem = windowsPEFile.readWindowsSubsystem();
       var expectedWindowsSubsystem = gui ? 2 : 3;
@@ -1016,17 +1111,30 @@ class ReleasePackerWindowsSubsystemCommand
       } else {
         print("-- Windows Subsystem> "
             "Current value: `$windowsSubsystem` (${WindowsPEFile.windowsSubsystemName(windowsSubsystem)}) "
-            "@ $filePath");
+            "@ $outputFile");
       }
     } catch (e, s) {
       print(e);
       print(s);
       return false;
-    } finally {
-      windowsPEFile.close();
     }
 
     return true;
+  }
+
+  File? _resolveInputFileCopy(File inputFile) {
+    var inputFileName = pack_path.withoutExtension(inputFile.path);
+    var inputFileExt = pack_path.extension(inputFile.path);
+
+    for (var i = 1; i <= 1000; ++i) {
+      var fCp = '$inputFileName-copy$i$inputFileExt';
+      var f = File(fCp);
+      if (!f.existsSync()) {
+        return f;
+      }
+    }
+
+    return null;
   }
 
   @override
@@ -1065,7 +1173,10 @@ class ReleasePackerFile extends ReleasePackerOperation {
         super(
             platform: platform,
             commands: ReleasePackerCommand.toCommands(
-                dartCompileExe: dartCompileExe, windowsGUI: windowsGUI));
+              sourcePath: sourcePath,
+              dartCompileExe: dartCompileExe,
+              windowsGUI: windowsGUI,
+            ));
 
   factory ReleasePackerFile.fromJson(Object json) {
     if (json is String) {
