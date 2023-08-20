@@ -325,16 +325,8 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
           inputFile = sourcePath;
           outputFile = windowsGUI;
         }
-      } else if (sourcePath is String) {
-        inputFile = sourcePath;
-        outputFile = sourcePath;
-      }
-
-      if (inputFile == null || outputFile == null) {
-        throw StateError(
-            "Can't define input and output files for `windows_gui` command> "
-            "inputFile: $inputFile ; outputFile: $outputFile ; "
-            "dartCompileExe: $dartCompileExe ; windowsGUI: $windowsGUI ; sourcePath: $sourcePath");
+      } else {
+        inputFile = outputFile = windowsGUI;
       }
 
       commands.add(

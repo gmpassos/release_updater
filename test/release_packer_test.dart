@@ -154,6 +154,68 @@ void main() {
         expect(cmdWinGUI.args,
             equals(['--windows-gui', 'bin/foo.exe', 'bin/foo.exe']));
       }
+
+      {
+        var cmds = ReleasePackerCommand.toCommands(
+            dartCompileExe: 'bin/foo.exe', windowsGUI: 'bin/foo-gui.exe');
+
+        expect(cmds!.length, equals(2));
+        expect(cmds[0], isA<ReleasePackerDartCompileExe>());
+        expect(cmds[1], isA<ReleasePackerWindowsSubsystemCommand>());
+
+        var cmdDartCompile = cmds[0] as ReleasePackerDartCompileExe;
+        expect(cmdDartCompile.args, equals(['exe', 'bin/foo.exe']));
+
+        var cmdWinGUI = cmds[1] as ReleasePackerWindowsSubsystemCommand;
+
+        expect(cmdWinGUI.args,
+            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']));
+      }
+
+      {
+        var cmds = ReleasePackerCommand.toCommands(
+            sourcePath: 'bin/foo-gui.exe',
+            dartCompileExe: 'bin/foo.exe',
+            windowsGUI: 'bin/foo.exe');
+
+        expect(cmds!.length, equals(2));
+        expect(cmds[0], isA<ReleasePackerDartCompileExe>());
+        expect(cmds[1], isA<ReleasePackerWindowsSubsystemCommand>());
+
+        var cmdDartCompile = cmds[0] as ReleasePackerDartCompileExe;
+        expect(cmdDartCompile.args, equals(['exe', 'bin/foo.exe']));
+
+        var cmdWinGUI = cmds[1] as ReleasePackerWindowsSubsystemCommand;
+
+        expect(cmdWinGUI.args,
+            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']));
+      }
+
+      {
+        var cmds = ReleasePackerCommand.toCommands(
+            sourcePath: 'bin/foo-gui.exe', windowsGUI: 'bin/foo.exe');
+
+        expect(cmds!.length, equals(1));
+        expect(cmds[0], isA<ReleasePackerWindowsSubsystemCommand>());
+
+        var cmdWinGUI = cmds[0] as ReleasePackerWindowsSubsystemCommand;
+
+        expect(cmdWinGUI.args,
+            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']));
+      }
+
+      {
+        var cmds = ReleasePackerCommand.toCommands(
+            sourcePath: 'bin/foo.exe', windowsGUI: 'bin/foo.exe');
+
+        expect(cmds!.length, equals(1));
+        expect(cmds[0], isA<ReleasePackerWindowsSubsystemCommand>());
+
+        var cmdWinGUI = cmds[0] as ReleasePackerWindowsSubsystemCommand;
+
+        expect(cmdWinGUI.args,
+            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo.exe']));
+      }
     });
 
     test('buildFromDirectory', () async {
