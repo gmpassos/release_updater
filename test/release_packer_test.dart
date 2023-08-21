@@ -156,6 +156,46 @@ void main() {
       }
 
       {
+        var cmd = ReleasePackerWindowsSubsystemCommand.fromList(
+            ['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']);
+
+        expect(cmd, isA<ReleasePackerWindowsSubsystemCommand>());
+
+        expect(cmd.args,
+            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']));
+      }
+
+      {
+        var cmd = ReleasePackerWindowsSubsystemCommand.fromList([
+          'release_utility',
+          '--windows-gui',
+          'bin/foo.exe',
+          'bin/foo-gui.exe'
+        ]);
+
+        expect(cmd, isA<ReleasePackerWindowsSubsystemCommand>());
+
+        expect(cmd.args,
+            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']));
+      }
+
+      {
+        var cmd = ReleasePackerWindowsSubsystemCommand.fromList([
+          'release_utility',
+          '--windows-console',
+          'bin/foo.exe',
+          'bin/foo-console.exe'
+        ]);
+
+        expect(cmd, isA<ReleasePackerWindowsSubsystemCommand>());
+
+        expect(
+            cmd.args,
+            equals(
+                ['--windows-console', 'bin/foo.exe', 'bin/foo-console.exe']));
+      }
+
+      {
         var cmds = ReleasePackerCommand.toCommands(
             dartCompileExe: 'bin/foo.exe', windowsGUI: 'bin/foo-gui.exe');
 
