@@ -1,3 +1,9 @@
+## 1.1.4
+
+- `WindowsPEFile`:
+  - Not modifying original executable anymore to avoid OS security warnings. 
+  - Added `save` method.
+
 ## 1.1.3
 
 - New executable `release_utility`.

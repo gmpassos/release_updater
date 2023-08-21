@@ -10,14 +10,16 @@ class WindowsPEFile {
   /// The file to read or modify.
   final File file;
 
-  /// The [file] buffer.
+  /// The in-memory [file] buffer (loaded using [BytesUint8ListIO]).
   late final BytesBuffer fileBuffer;
 
   /// If `true` will [print] to the console each operation.
   final bool verbose;
 
   WindowsPEFile(this.file, {this.verbose = false}) {
-    var bytesIO = BytesFileIO.fromFile(file);
+    var exeBytes = file.readAsBytesSync();
+    var bytesIO = BytesUint8ListIO.from(exeBytes);
+
     fileBuffer = BytesBuffer.fromIO(bytesIO);
 
     _log('Opened: ${file.path}');
@@ -100,7 +102,16 @@ class WindowsPEFile {
           "Not a normal executable or a PE32+ executable: ${file.path}");
     }
 
-    fileBuffer.seek(optionalHeaderOffset + 68);
+    // Jump to checkSum:
+    fileBuffer.seek(optionalHeaderOffset + 64);
+
+    var checkSum = fileBuffer.readUint32();
+
+    info['checkSum'] = checkSum;
+    _logEntry('checkSum', checkSum);
+
+    // windowsSubsystemOffset:
+    assert(fileBuffer.position == optionalHeaderOffset + 68);
 
     var windowsSubsystemOffset = fileBuffer.position;
 
@@ -178,7 +189,6 @@ class WindowsPEFile {
   void writeWindowsSubsystem(int subsystem) {
     _seekToWindowsSubsystemImpl();
     fileBuffer.writeUint16(subsystem, Endian.little);
-    fileBuffer.flush();
   }
 
   /// Sets/writes the Windows Subsystem to `GUI` or `Console`.
@@ -193,13 +203,13 @@ class WindowsPEFile {
     writeWindowsSubsystem(subsystem);
   }
 
-  /// Flushes the [fileBuffer].
-  void flush() {
-    fileBuffer.flush();
-  }
+  /// Saves the current [fileBuffer] to [outputFile].
+  void save(File outputFile, {bool overwrite = false}) {
+    if (!overwrite && outputFile.existsSync()) {
+      throw StateError("Can't overwrite output file: ${outputFile.path}");
+    }
 
-  /// Closes the [fileBuffer].
-  void close() {
-    fileBuffer.close();
+    var exeBytes = fileBuffer.toBytes();
+    outputFile.writeAsBytesSync(exeBytes);
   }
 }
