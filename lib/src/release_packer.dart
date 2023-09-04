@@ -851,7 +851,8 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
     var ok = exitCode == expectedExitCode;
 
     if (!ok) {
-      print('  ▒  Command error! exitCode: $exitCode ; command: $command $args');
+      print(
+          '  ▒  Command error! exitCode: $exitCode ; command: $command $args');
       print(result.stdout);
       print(result.stderr);
     }
@@ -918,7 +919,8 @@ class ReleasePackerDartCommand extends ReleasePackerCommandWithArgs {
       {ReleaseBundle? releaseBundle, int expectedExitCode = 0}) {
     var dartPath = whichExecutablePath('dart');
 
-    print('   »  Dart command> ${rootDirectory.path} -> $dartPath $command $args');
+    print(
+        '   »  Dart command> ${rootDirectory.path} -> $dartPath $command $args');
 
     var result = Process.runSync(dartPath, [command, ...args],
         workingDirectory: rootDirectory.path);
