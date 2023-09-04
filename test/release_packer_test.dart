@@ -267,7 +267,7 @@ void main() {
 
       print(releasePacker);
       for (var f in releasePacker.files) {
-        print('-- $f');
+        print('»  $f');
       }
 
       expect(releasePacker.name, equals('foo'));

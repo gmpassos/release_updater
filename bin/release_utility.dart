@@ -4,8 +4,11 @@ import 'package:release_updater/release_updater.dart';
 import 'package:release_updater/release_utility.dart';
 import 'package:path/path.dart' as pack_path;
 
+const _hr =
+    '────────────────────────────────────────────────────────────────────';
+
 void printTitle() {
-  print('--------------------------------------------------------------------');
+  print(_hr);
   print('[ release_utility/${ReleaseUpdater.VERSION} ]\n');
 }
 
@@ -40,7 +43,7 @@ void main(List<String> args) async {
   var cmdVerbose = _removeArgsCmd(args, '--verbose');
 
   if (cmdWindowConsole && cmdWindowGUI) {
-    print('** Ambiguous commands: $argsOrig');
+    print('▒  Ambiguous commands: $argsOrig');
     exit(1);
   }
 
@@ -48,7 +51,7 @@ void main(List<String> args) async {
   var inputFile = File(filePath);
 
   if (!inputFile.existsSync()) {
-    print("** File does NOT exist: $filePath");
+    print("▒  File does NOT exist: $filePath");
     exit(1);
   }
 
@@ -61,25 +64,25 @@ void main(List<String> args) async {
 
   printTitle();
 
-  print('-- Input File: ${inputFile.path}');
+  print('»  Input File: ${inputFile.path}');
 
   var windowsPEFile = WindowsPEFile(inputFile, verbose: cmdVerbose);
 
   if (cmdWindowConsole || cmdWindowGUI) {
-    print('-- Output File: ${outputFile.path}');
+    print('»  Output File: ${outputFile.path}');
 
     if (cmdWindowGUI) {
-      print('-- Setting executable Windows Subsystem to `GUI`...');
+      print('»  Setting executable Windows Subsystem to `GUI`...');
       windowsPEFile.setWindowsSubsystem(gui: true);
     } else {
-      print('-- Setting executable Windows Subsystem to `console`...');
+      print('»  Setting executable Windows Subsystem to `console`...');
       windowsPEFile.setWindowsSubsystem(gui: false);
     }
 
     windowsPEFile.save(outputFile);
     _showCurrentWindowsSubsystem(outputFile, cmdVerbose);
   } else {
-    print('-- Showing Windows PE information:');
+    print('»  Showing Windows PE information:');
     _showCurrentWindowsSubsystem(inputFile, cmdVerbose);
   }
 }
@@ -93,7 +96,7 @@ void _showCurrentWindowsSubsystem(File file, bool cmdVerbose) {
       WindowsPEFile.windowsSubsystemName(windowsSubsystem);
 
   print(
-      '-- Current Windows Subsystem: $windowsSubsystem ($windowsSubsystemName) @ ${file.path}');
+      '»  Current Windows Subsystem: $windowsSubsystem ($windowsSubsystemName) @ ${file.path}');
 }
 
 File? _resolveDefaultOutputFile(List<String> args, File file) {

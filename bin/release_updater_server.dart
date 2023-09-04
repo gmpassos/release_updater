@@ -12,6 +12,9 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_gzip/shelf_gzip.dart';
 import 'package:shelf_static/shelf_static.dart';
 
+const _hr =
+    '────────────────────────────────────────────────────────────────────';
+
 String? parseUploadUsername(Map<String, Object?> config) =>
     config.get<String>('upload-username') ?? config.get<String>('upload-user');
 
@@ -21,7 +24,7 @@ String? parseUploadPassword(Map<String, Object?> config) =>
 void main(List<String> args) async {
   args = args.toList();
 
-  print('--------------------------------------------------------------------');
+  print(_hr);
   print('[ release_updater_server/${ReleaseUpdater.VERSION} ]\n');
 
   var config = parseConfig(args);
@@ -38,7 +41,7 @@ void main(List<String> args) async {
 
   if (uploadPassword != null && uploadPassword.length < 6) {
     print(
-        '** Upload password too short (length: ${uploadPassword.length} < 6)!');
+        '▒  Upload password too short (length: ${uploadPassword.length} < 6)!');
     uploadPassword = null;
   }
 
@@ -47,20 +50,20 @@ void main(List<String> args) async {
       uploadPassword != null &&
       uploadPassword.isNotEmpty;
 
-  print('-- Releases Directory: ${releasesDir.path}');
-  print('-- Address: $address');
-  print('-- Port: $port');
+  print('»  Releases Directory: ${releasesDir.path}');
+  print('»  Address: $address');
+  print('»  Port: $port');
 
   if (allowUpload) {
-    print('-- Upload: enabled');
-    print('-- Upload username: $uploadUsername');
-    print('-- Upload password: ******');
+    print('»  Upload: enabled');
+    print('»  Upload username: $uploadUsername');
+    print('»  Upload password: ******');
   } else {
-    print('-- Upload: disabled');
+    print('»  Upload: disabled');
   }
 
   if (!releasesDir.existsSync()) {
-    print("\n** Directory doesn't exists: $releasesDir\n");
+    print("\n▒  Directory doesn't exists: $releasesDir\n");
     exit(1);
   }
 
@@ -81,7 +84,7 @@ void main(List<String> args) async {
 
     await shelf_io.serve(handler, address, port);
 
-    print("\n** Serving $releasesDir on $address:$port");
+    print("\n»» Serving $releasesDir on $address:$port");
     print('URL: http://$address:$port/\n');
   }, (e, stackTrace) => print('Server error: $e $stackTrace'));
 }

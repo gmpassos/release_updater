@@ -10,19 +10,19 @@ void main() async {
 
   var releaseUpdater = ReleaseUpdater(storage, provider);
 
-  print('-- Updating...');
+  print('»  Updating...');
   var updatedToVersion = await releaseUpdater.update(verbose: true);
 
   if (updatedToVersion != null) {
-    print('-- Updated to version: $updatedToVersion');
+    print('»  Updated to version: $updatedToVersion');
   }
 
   var runResult = await releaseUpdater.runReleaseProcess('run.exe', ['-a']);
 
   var exitCode = runResult!.exitCode;
 
-  print('-- Exit code: $exitCode');
-  print('-- Result: ${runResult.stdout}');
+  print('»  Exit code: $exitCode');
+  print('»  Result: ${runResult.stdout}');
 
   exit(exitCode);
 }

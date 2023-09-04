@@ -59,7 +59,7 @@ abstract class ReleaseStorage implements Copiable<ReleaseStorage>, Spawnable {
 
     if (files.isNotEmpty) {
       if (verbose) {
-        print('-- Saving release `$release` files (${files.length}):');
+        print('»  Saving release `$release` files (${files.length}):');
       }
 
       for (var f in files) {
@@ -69,7 +69,7 @@ abstract class ReleaseStorage implements Copiable<ReleaseStorage>, Spawnable {
           var storedFileEquals = await isFileEquals(release, f, manifestFile);
           if (storedFileEquals) {
             if (verbose) {
-              print('  -- Skipping unchanged file: ${f.filePath}');
+              print('   »  Skipping unchanged file: ${f.filePath}');
             }
             continue;
           }

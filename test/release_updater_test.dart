@@ -30,9 +30,9 @@ void main() {
         expect(storage.currentReleaseDirectory!.path, endsWith('--1.0.3'));
       } finally {
         tmp.deleteSync(recursive: true);
-        print('-- Deleted: $tmp');
+        print('»  Deleted: $tmp');
         if (tmp.existsSync()) {
-          print('** Files at: $tmp');
+          print('▒  Files at: $tmp');
           print(tmp
               .listSync(recursive: true)
               .map((e) => e.path)
@@ -75,9 +75,9 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
 
   var updateResult =
       await releaseUpdater.update(targetVersion: lastRelease!.version);
-  print('-- Updated: $updateResult');
+  print('»  Updated: $updateResult');
   for (var f in updateResult!.savedFiles) {
-    print('  -- $f');
+    print('   »  $f');
   }
 
   expect(updateResult.release,
@@ -123,12 +123,12 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
 
   var notifiedNewReleases = <Release>[];
 
-  print('-- spawnPeriodicUpdateCheckerIsolate');
+  print('»  spawnPeriodicUpdateCheckerIsolate');
 
   var spawned = await releaseUpdater.spawnPeriodicUpdateCheckerIsolate(
     (release) {
       if (!notifiedNewReleases.contains(release)) {
-        print('** Periodic Checker> new release: $release');
+        print('»  Periodic Checker> new release: $release');
         notifiedNewReleases.add(release);
       }
     },
@@ -152,7 +152,7 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
     expect(lastVersion2.toString(), equals('foo/1.0.3/$currentPlatform'));
   }
 
-  print('-- Sleeping for new release...');
+  print('»  Sleeping for new release...');
   await Future.delayed(Duration(seconds: 4));
 
   expect(notifiedNewReleases.isNotEmpty, isTrue);
@@ -170,9 +170,9 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
   var updateResult2 = await releaseUpdater.update(
       platform: currentPlatform, exactPlatform: true);
 
-  print('-- Updated: $updateResult2');
+  print('»  Updated: $updateResult2');
   for (var f in updateResult2!.savedFiles) {
-    print('  -- $f');
+    print('   »  $f');
   }
 
   expect(
@@ -264,7 +264,7 @@ class _MyStorageMemory extends ReleaseStorage {
   Future<bool> checkManifest(ReleaseManifest manifest,
       {bool verbose = false}) async {
     if (verbose) {
-      print('-- Checking manifest (${manifest.release}):');
+      print('»  Checking manifest (${manifest.release}):');
     }
 
     var checkOK = true;
@@ -273,7 +273,7 @@ class _MyStorageMemory extends ReleaseStorage {
       var file = _files[f.filePath];
       if (file == null) {
         if (verbose) {
-          print("  ** Can't find file: ${f.filePath}");
+          print("  ▒  Can't find file: ${f.filePath}");
         }
         checkOK = false;
         continue;
@@ -282,7 +282,7 @@ class _MyStorageMemory extends ReleaseStorage {
       var ok = await f.checkReleaseFile(file);
       if (!ok) {
         if (verbose) {
-          print("  ** Error checking file: ${f.filePath}");
+          print("  ▒  Error checking file: ${f.filePath}");
         }
         checkOK = false;
         continue;
@@ -322,7 +322,7 @@ class _MyProvider extends ReleaseProvider {
 
   @override
   bool onSpawned() {
-    print('** onSpawned> $this');
+    print('»  onSpawned> $this');
 
     Future.delayed(Duration(seconds: 3), () {
       var platform = _releases.last.platform;

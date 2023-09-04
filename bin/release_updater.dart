@@ -4,6 +4,9 @@ import 'package:path/path.dart' as pack_path;
 import 'package:release_updater/release_updater_io.dart';
 import 'package:release_updater/src/release_updater_config.dart';
 
+const _hr =
+    '────────────────────────────────────────────────────────────────────';
+
 Directory parseReleaseDirectory(Map<String, Object?> config) {
   var executable = File(Platform.resolvedExecutable);
   var executableDir = executable.parent;
@@ -19,7 +22,7 @@ Directory parseReleaseDirectory(Map<String, Object?> config) {
 void main(List<String> args) async {
   args = args.toList();
 
-  print('--------------------------------------------------------------------');
+  print(_hr);
   print('[ release_updater/${ReleaseUpdater.VERSION} ]\n');
 
   if (args.isEmpty) {
@@ -35,12 +38,12 @@ void main(List<String> args) async {
   var releasesDir = parseReleaseDirectory(config);
   var baseURL = parseBaseURL(config);
 
-  print('-- App Name: $appName');
-  print('-- Base URL: $baseURL');
-  print('-- Releases Directory: ${releasesDir.path}');
+  print('»  App Name: $appName');
+  print('»  Base URL: $baseURL');
+  print('»  Releases Directory: ${releasesDir.path}');
 
   if (!releasesDir.existsSync()) {
-    print("\n** Directory doesn't exists: $releasesDir\n");
+    print("\n▒  Directory doesn't exists: $releasesDir\n");
     exit(1);
   }
 
@@ -60,31 +63,31 @@ Future<void> updateRelease(
     ReleaseUpdater releaseUpdater, ReleaseStorageDirectory storage) async {
   var name = releaseUpdater.name;
 
-  print('\n** [$name] Updating...');
+  print('\n»» [$name] Updating...');
 
   var currentRelease = storage.currentRelease;
-  print('-- [$name] Current release: $currentRelease');
+  print('»  [$name] Current release: $currentRelease');
 
   var currentReleasePath = storage.currentReleasePath;
 
   if (currentReleasePath != null) {
     var releaseDirectory = Directory(currentReleasePath).absolute;
-    print('-- [$name] Current Release directory: ${releaseDirectory.path}');
+    print('»  [$name] Current Release directory: ${releaseDirectory.path}');
   }
 
   var updatedRelease = await releaseUpdater.update(verbose: true);
 
   if (updatedRelease != null) {
-    print('-- [$name] Updated to: $updatedRelease');
+    print('»  [$name] Updated to: $updatedRelease');
 
     currentReleasePath = storage.currentReleasePath;
 
     if (currentReleasePath != null) {
       var releaseDirectory = Directory(currentReleasePath).absolute;
-      print('-- [$name] Release directory: ${releaseDirectory.path}');
+      print('»  [$name] Release directory: ${releaseDirectory.path}');
     }
   } else {
-    print('-- [$name] Nothing to update!');
+    print('»  [$name] Nothing to update!');
   }
 
   print('');
@@ -102,42 +105,42 @@ Future<void> processCommand(
   switch (cmd) {
     case 'check':
       {
-        print('** [$name] Checking for update...');
+        print('»» [$name] Checking for update...');
         var currentRelease = await releaseUpdater.currentRelease;
-        print('-- [$name] Current release: $currentRelease');
+        print('»  [$name] Current release: $currentRelease');
         var toUpdate = await releaseUpdater.checkForUpdate();
         if (toUpdate != null) {
-          print('-- [$name] New release to update: $toUpdate');
+          print('»  [$name] New release to update: $toUpdate');
         } else {
-          print('-- [$name] NO new release!');
+          print('»  [$name] NO new release!');
         }
         break;
       }
     case 'last':
       {
-        print('** [$name] Getting last release...');
+        print('»» [$name] Getting last release...');
         var currentRelease = await releaseUpdater.currentRelease;
-        print('-- [$name] Current release: $currentRelease');
+        print('»  [$name] Current release: $currentRelease');
         var lastRelease = releaseUpdater.lastRelease;
-        print('-- [$name] Last release: $lastRelease');
+        print('»  [$name] Last release: $lastRelease');
         break;
       }
     case 'list':
       {
-        print('** [$name] Listing releases...');
+        print('»» [$name] Listing releases...');
         var currentRelease = await releaseUpdater.currentRelease;
-        print('-- [$name] Current release: $currentRelease');
+        print('»  [$name] Current release: $currentRelease');
 
         var releases = await releaseUpdater.listReleases();
-        print('-- [$name] Releases:');
+        print('»  [$name] Releases:');
         for (var r in releases) {
-          print('    -- $r');
+          print('    »  $r');
         }
         break;
       }
     default:
       {
-        print('** Unknown CMD: $args');
+        print('▒  Unknown CMD: $args');
         exit(1);
       }
   }
