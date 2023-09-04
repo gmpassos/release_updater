@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert' as dart_convert;
 import 'dart:typed_data';
+import 'package:ascii_art_tree/ascii_art_tree.dart';
 
 import 'package:archive/archive.dart';
 import 'package:base_codecs/base_codecs.dart';
@@ -56,6 +57,35 @@ abstract class ReleaseBundle {
     manifest.addFiles(manifestFiles);
 
     return manifest;
+  }
+
+  /// Generates a [ASCIIArtTree] from this [ReleaseBundle] [files].
+  Future<ASCIIArtTree> toASCIIArtTree() async {
+    var files = await this.files;
+    var paths = files.map((f) => f.filePath).toList();
+    var asciiArtTree = ASCIIArtTree.fromStringPaths(paths);
+
+    var filesPaths = Map.fromEntries(files.map((f) => MapEntry(f.filePath, f)));
+
+    var filesLengths = <ReleaseFile, int>{};
+    for (var f in files) {
+      filesLengths[f] = await f.length;
+    }
+
+    asciiArtTree.pathInfoProvider = (parents, node, path) {
+      var fullPath = [...parents, path].join('/');
+
+      var file = filesPaths[fullPath];
+      if (file == null) return null;
+
+      var execStr = file.executable ? ' (EXEC)' : '';
+      var fileLength = filesLengths[file];
+
+      var info = '- ($fileLength bytes)$execStr';
+      return info;
+    };
+
+    return asciiArtTree;
   }
 }
 

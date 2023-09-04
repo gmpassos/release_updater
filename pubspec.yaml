@@ -1,6 +1,6 @@
 name: release_updater
 description: A simple way to automatically update release/installation files in a local directory.
-version: 1.1.4
+version: 1.1.5
 homepage: https://github.com/gmpassos/release_updater
 
 environment:
@@ -14,8 +14,8 @@ executables:
 
 
 dependencies:
-  archive: ^3.3.7
-  mercury_client: ^2.1.8
+  archive: ^3.3.8
+  mercury_client: ^2.2.0
   path: ^1.8.3
   pub_semver: ^2.1.4
   shelf: ^1.4.1
@@ -26,6 +26,7 @@ dependencies:
   data_serializer: ^1.0.10
   collection: ^1.17.1
   yaml: ^3.1.2
+  ascii_art_tree: ^1.0.4
 
 dev_dependencies:
   lints: ^2.1.1
@@ -33,3 +34,7 @@ dev_dependencies:
   dependency_validator: ^3.2.2
   coverage: ^1.6.3
   pubspec: ^2.3.0
+
+#dependency_overrides:
+#  ascii_art_tree:
+#    path: ../ascii_art_tree

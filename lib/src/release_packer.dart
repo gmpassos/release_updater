@@ -73,7 +73,10 @@ class ReleasePacker {
 
   factory ReleasePacker.fromFile(File file,
       {Map<String, String>? properties, Directory? rootDirectory}) {
-    var json = _readFile(file);
+    var json = _readFile(file, expected: true);
+    if (json == null) {
+      throw StateError("Can't read JSON from file: $file");
+    }
     return ReleasePacker.fromJson(json,
         properties: properties, rootDirectory: rootDirectory ?? file.parent);
   }
@@ -88,8 +91,13 @@ class ReleasePacker {
     return _readFile(file);
   }
 
-  static _readFile(File file) {
-    if (!file.existsSync()) return null;
+  static _readFile(File file, {bool expected = false}) {
+    if (!file.existsSync()) {
+      if (expected) {
+        throw StateError("File does NOT exists: ${file.path}");
+      }
+      return null;
+    }
 
     var content = file.readAsStringSync();
 
@@ -132,7 +140,7 @@ class ReleasePacker {
       {String? platform}) {
     var prepareCommands = this.prepareCommands;
     if (prepareCommands != null && prepareCommands.isNotEmpty) {
-      print('\n-- Running prepare commands (${prepareCommands.length})...');
+      print('\n»  Running prepare commands (${prepareCommands.length})...');
     }
 
     return ReleasePackerCommand.executeCommands(
@@ -144,7 +152,7 @@ class ReleasePacker {
       {ReleaseBundle? releaseBundle, String? platform}) {
     var finalizeCommands = this.finalizeCommands;
     if (finalizeCommands != null && finalizeCommands.isNotEmpty) {
-      print('\n-- Running finalize commands (${finalizeCommands.length})...');
+      print('\n»  Running finalize commands (${finalizeCommands.length})...');
     }
 
     return ReleasePackerCommand.executeCommands(
@@ -174,7 +182,7 @@ class ReleasePacker {
         getFiles(platform: platform).where((e) => e.hasCommands).toList();
 
     if (filesWithCommand.isNotEmpty) {
-      print('-- Running files commands (${filesWithCommand.length}):');
+      print('»  Running files commands (${filesWithCommand.length}):');
       for (var f in filesWithCommand) {
         await f.executeCommands(this, rootDirectory, platform: platform);
       }
@@ -184,7 +192,7 @@ class ReleasePacker {
 
     var rootPath = rootDirectory.path;
 
-    print('-- Loading release bundle files from: $rootPath');
+    print('»  Loading release bundle files from: $rootPath');
 
     var list = files
         .map((e) {
@@ -519,9 +527,9 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
       results[c] = ok;
     }
 
-    print('-- Commands results:');
+    print('   »  Commands results:');
     for (var e in results.entries) {
-      print('  -- ${e.key} -> ${e.value}');
+      print('     -  ${e.key} »  ${e.value}');
     }
     print('');
 
@@ -559,7 +567,7 @@ class ReleasePackerCommandDelete extends ReleasePackerCommand {
     var file = File(filePath);
 
     if (file.existsSync()) {
-      print('-- Deleting file: $filePath');
+      print('   »  Deleting file: $filePath');
       file.deleteSync();
       return true;
     }
@@ -660,10 +668,10 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
 
     if (this.body == '%RELEASE_BUNDLE%') {
       if (releaseBundle == null) {
-        print('** Release bundle not provided for body: $this');
+        print('  ▒  Release bundle not provided for body: $this');
         return false;
       } else {
-        print('-- Using `ReleaseBundle` as body.');
+        print('   »  Using `ReleaseBundle` as body.');
 
         var file = parameters?['file'] as String?;
         if (file != null) {
@@ -672,7 +680,7 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
               file, release.name, release.version, release.platform);
           parameters!['file'] = fileFormatted;
 
-          print('-- Parameter `file`: $fileFormatted');
+          print('   »  Parameter `file`: $fileFormatted');
         }
 
         var release = parameters?['release'] as String?;
@@ -691,7 +699,7 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
     HttpResponse response;
 
     if (body != null) {
-      print('-- Requesting URL[POS]: $url');
+      print('   »  Requesting URL[POS]: $url');
 
       String bodyStr;
       if (body is List<int>) {
@@ -700,17 +708,17 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
         bodyStr = '<<$body>>';
       }
 
-      print('-- Body: $bodyStr');
+      print('   »  Body: $bodyStr');
 
       try {
         response = await httpClient.post('',
             parameters: parameters, authorization: authorization, body: body);
       } catch (e) {
-        print('** Error requesting: $url > $e');
+        print('  ▒  Error requesting: $url > $e');
         return false;
       }
     } else {
-      print('-- Requesting URL[GET]: $url');
+      print('   »  Requesting URL[GET]: $url');
 
       try {
         response = await httpClient.get(
@@ -719,13 +727,13 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
           authorization: authorization,
         );
       } catch (e) {
-        print('** Error requesting: $url > $e');
+        print('  ▒  Error requesting: $url > $e');
         return false;
       }
     }
 
     print(
-        '-- Request response> status: ${response.status} ; body: ${response.bodyAsString}');
+        '   »  Request response> status: ${response.status} ; body: ${response.bodyAsString}');
 
     return response.isOK;
   }
@@ -831,7 +839,7 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
     var fullCommandPath = joinPaths(rootDirectory.path, commandPath);
 
     print(
-        '-- Process command> ${rootDirectory.path} -> $fullCommandPath $args');
+        '   »  Process command> ${rootDirectory.path} -> $fullCommandPath $args');
 
     var result = Process.runSync(fullCommandPath, args,
         workingDirectory: rootDirectory.path);
@@ -843,7 +851,7 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
     var ok = exitCode == expectedExitCode;
 
     if (!ok) {
-      print('** Command error! exitCode: $exitCode ; command: $command $args');
+      print('  ▒  Command error! exitCode: $exitCode ; command: $command $args');
       print(result.stdout);
       print(result.stderr);
     }
@@ -863,7 +871,7 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
 
     var fullPath = joinPaths(rootDirectory.path, filePath);
 
-    print('-- Saving $type to: $fullPath');
+    print('   »  Saving $type to: $fullPath');
 
     var outFile = File(fullPath);
 
@@ -910,7 +918,7 @@ class ReleasePackerDartCommand extends ReleasePackerCommandWithArgs {
       {ReleaseBundle? releaseBundle, int expectedExitCode = 0}) {
     var dartPath = whichExecutablePath('dart');
 
-    print('-- Dart command> ${rootDirectory.path} -> $dartPath $command $args');
+    print('   »  Dart command> ${rootDirectory.path} -> $dartPath $command $args');
 
     var result = Process.runSync(dartPath, [command, ...args],
         workingDirectory: rootDirectory.path);
@@ -920,7 +928,7 @@ class ReleasePackerDartCommand extends ReleasePackerCommandWithArgs {
 
     if (!ok) {
       print(
-          '** Dart command error! exitCode: $exitCode ; command: $command $args');
+          '  ▒  Dart command error! exitCode: $exitCode ; command: $command $args');
       print(result.stdout);
       print(result.stderr);
     }
@@ -1018,13 +1026,13 @@ class ReleasePackerWindowsSubsystemCommand
 
     var inputFile = File(inputPath);
     if (!inputFile.existsSync()) {
-      print("** Can't find Windows executable file: $inputPath");
+      print("  ▒  Can't find Windows executable file: $inputPath");
       return false;
     }
 
     var outputFile = File(outputPath);
     if (outputFile.existsSync() && inputFile.path != outputFile.path) {
-      print("** Can't overwrite output file: $outputPath");
+      print("  ▒  Can't overwrite output file: $outputPath");
       return false;
     }
 
@@ -1033,25 +1041,25 @@ class ReleasePackerWindowsSubsystemCommand
 
     bool gui;
     if (argGUI && argConsole) {
-      print("** Ambiguous parameters: $args");
+      print("  ▒  Ambiguous parameters: $args");
       return false;
     } else if (argGUI) {
       gui = true;
     } else if (argConsole) {
       gui = false;
     } else {
-      print("** No `--windows-gui` or `--windows-console` parameters: $args");
+      print("  ▒  No `--windows-gui` or `--windows-console` parameters: $args");
       return false;
     }
 
     print(
-        '-- Windows Subsystem command> ${rootDirectory.path} -> GUI: $gui ; executable: $inputPath');
+        '   »  Windows Subsystem command> ${rootDirectory.path} -> GUI: $gui ; executable: $inputPath');
 
     WindowsPEFile windowsPEFile;
     try {
       windowsPEFile = WindowsPEFile(inputFile);
     } catch (e, s) {
-      print("** Error opening Windows Executable: $inputPath");
+      print("  ▒  Error opening Windows Executable: $inputPath");
       print(e);
       print(s);
       return false;
@@ -1060,7 +1068,7 @@ class ReleasePackerWindowsSubsystemCommand
     try {
       if (!windowsPEFile.isValidExecutable) {
         print(
-            "-- IGNORING Windows Subsystem command> Not a valid Windows Executable: $inputPath");
+            "   »  IGNORING Windows Subsystem command> Not a valid Windows Executable: $inputPath");
         return false;
       }
 
@@ -1076,17 +1084,17 @@ class ReleasePackerWindowsSubsystemCommand
           if (!outputFile.existsSync() ||
               outputFile.lengthSync() != windowsPEFile.fileBuffer.length) {
             print(
-                '** Error saving executable file: ${outputFile.path} (copy: ${inputFileCp.path})');
+                '  ▒  Error saving executable file: ${outputFile.path} (copy: ${inputFileCp.path})');
             return false;
           }
 
           inputFileCp.deleteSync();
 
-          print('-- Executable saved: ${outputFile.path}');
+          print('   »  Executable saved: ${outputFile.path}');
         }
       } else {
         windowsPEFile.save(outputFile);
-        print('-- New executable saved: ${outputFile.path}');
+        print('   »  New executable saved: ${outputFile.path}');
       }
 
       // Re-open and test:
@@ -1096,12 +1104,12 @@ class ReleasePackerWindowsSubsystemCommand
       var expectedWindowsSubsystem = gui ? 2 : 3;
 
       if (windowsSubsystem != expectedWindowsSubsystem) {
-        print("** Windows Subsystem Error> "
+        print("  ▒  Windows Subsystem Error> "
             "Value not set to `$expectedWindowsSubsystem` (${WindowsPEFile.windowsSubsystemName(expectedWindowsSubsystem)}). "
             "Read value: `$windowsSubsystem` (${WindowsPEFile.windowsSubsystemName(windowsSubsystem)})");
         return false;
       } else {
-        print("-- Windows Subsystem> "
+        print("   »  Windows Subsystem> "
             "Current value: `$windowsSubsystem` (${WindowsPEFile.windowsSubsystemName(windowsSubsystem)}) "
             "@ $outputFile");
       }

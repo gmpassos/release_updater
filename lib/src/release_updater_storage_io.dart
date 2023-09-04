@@ -179,7 +179,7 @@ class ReleaseStorageDirectory extends ReleaseStorage {
     }
 
     if (verbose) {
-      print('  -- ${file.toInfo()} > ${localFile.path}');
+      print('   »  ${file.toInfo()} > ${localFile.path}');
     }
 
     return true;
@@ -230,11 +230,11 @@ class ReleaseStorageDirectory extends ReleaseStorage {
 
     if (verbose) {
       print(
-          '-- Checking manifest (${manifest.release}) with release at: ${dir.path}');
+          '»  Checking manifest (${manifest.release}) with release at: ${dir.path}');
     }
 
     if (!dir.existsSync()) {
-      print("  ** Can't find release directory: ${dir.path}");
+      print("  ▒  Can't find release directory: ${dir.path}");
       return false;
     }
 
@@ -255,7 +255,7 @@ class ReleaseStorageDirectory extends ReleaseStorage {
       ok ??= await f.checkFile(localFile);
 
       if (!ok) {
-        print("  ** Error checking file: ${localFile.path}");
+        print("  ▒  Error checking file: ${localFile.path}");
         checkOK = false;
         continue;
       }
@@ -286,7 +286,7 @@ class ReleaseStorageDirectory extends ReleaseStorage {
       var json = dart_convert.json.decode(jsonEncoded);
       return ReleaseManifest.fromJson(json);
     } catch (e, s) {
-      print('** Error loading manifest file: ${file.path}');
+      print('▒  Error loading manifest file: ${file.path}');
       print(e);
       print(s);
       return null;

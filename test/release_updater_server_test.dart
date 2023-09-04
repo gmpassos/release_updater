@@ -21,7 +21,7 @@ void main() {
         now = now.add(Duration(seconds: 1));
 
         var blocked = requestInfo.isBlocked(now: now);
-        print('-- $requestI > $now > $requestInfo > blocked: $blocked');
+        print('»  $requestI > $now > $requestInfo > blocked: $blocked');
 
         expect(blocked, isFalse);
 
@@ -35,7 +35,7 @@ void main() {
         now = now.add(Duration(seconds: 1));
 
         var blocked = requestInfo.isBlocked(now: now);
-        print('-- $requestI > $now > $requestInfo > blocked: $blocked');
+        print('»  $requestI > $now > $requestInfo > blocked: $blocked');
 
         expect(blocked, requestI > 20 ? isTrue : isFalse);
 
@@ -61,7 +61,7 @@ void main() {
         now = now.add(Duration(seconds: 1));
 
         var blocked = requestInfo.isBlocked(now: now);
-        print('-- $requestI > $now > $requestInfo > blocked: $blocked');
+        print('»  $requestI > $now > $requestInfo > blocked: $blocked');
 
         expect(blocked, requestI > 80 ? isTrue : isFalse);
 

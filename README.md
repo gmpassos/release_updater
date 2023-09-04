@@ -51,14 +51,14 @@ void main() async {
 
   var version = await releaseUpdater.update();
 
-  print('-- Updated to version: $version');
+  print('»  Updated to version: $version');
 
   var runResult = await releaseUpdater.runReleaseProcess('run.exe', ['-a']);
 
   var exitCode = runResult!.exitCode;
   
-  print('-- Exit code: $exitCode');
-  print('-- Result: ${runResult.stdout}');
+  print('»  Exit code: $exitCode');
+  print('»  Result: ${runResult.stdout}');
 
   exit(exitCode);
 }

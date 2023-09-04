@@ -1,3 +1,14 @@
+## 1.1.5
+
+- Improved console output of CLI tools.
+  - Using `ASCIIArtTree` to show release bundle tree.
+- `ReleaseBundle`:
+  - Added `toASCIIArtTree`.
+
+- archive: ^3.3.8
+- mercury_client: ^2.2.0
+- ascii_art_tree: ^1.0.4
+
 ## 1.1.4
 
 - `WindowsPEFile`:

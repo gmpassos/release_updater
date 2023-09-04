@@ -189,7 +189,7 @@ FutureOr<shelf.Response>? _processUpLoad(
 
   if (credential.username != requestCredential.username ||
       credential.password != requestCredential.password) {
-    print("** Upload ERROR[$address]> Invalid authentication!");
+    print("▒  Upload ERROR[$address]> Invalid authentication!");
     requestInfo.markError();
     return shelf.Response.forbidden('Authentication error.');
   }
@@ -231,7 +231,7 @@ final _regExpNonWord = RegExp(r'\W');
 Map<String, Object?>? _saveUploadedFile(Directory releasesDir, String paramFile,
     Uint8List bytes, File releasesFile, String? release, String address) {
   if (bytes.isEmpty) {
-    print("** Upload ERROR[$address]> Empty release file: $paramFile");
+    print("▒  Upload ERROR[$address]> Empty release file: $paramFile");
     return null;
   }
 
@@ -241,7 +241,7 @@ Map<String, Object?>? _saveUploadedFile(Directory releasesDir, String paramFile,
   if (fileName.isEmpty ||
       fileName.startsWith('.') ||
       fileName.replaceAll(_regExpNonWord, '').isEmpty) {
-    print("** Upload ERROR[$address]> Invalid release file: $paramFile");
+    print("▒  Upload ERROR[$address]> Invalid release file: $paramFile");
     return null;
   }
 
@@ -251,7 +251,7 @@ Map<String, Object?>? _saveUploadedFile(Directory releasesDir, String paramFile,
 
   if (file.existsSync()) {
     print(
-        "** Upload ERROR[$address]> Can't overwrite release file: ${file.path}");
+        "▒  Upload ERROR[$address]> Can't overwrite release file: ${file.path}");
     return null;
   }
 
@@ -260,7 +260,7 @@ Map<String, Object?>? _saveUploadedFile(Directory releasesDir, String paramFile,
   var savedBytes = file.lengthSync();
 
   print(
-      '-- Upload[$address]> Saved release file: ${file.path} ($savedBytes bytes)');
+      '»  Upload[$address]> Saved release file: ${file.path} ($savedBytes bytes)');
 
   var result = {'file': fileName, 'bytes': savedBytes};
 
@@ -287,7 +287,7 @@ bool appendToReleasesFile(File releasesFile, String release) {
 
   releasesFile.writeAsStringSync(content);
 
-  print('-- Appended `$release` to releases file: ${releasesFile.path}');
+  print('»  Appended `$release` to releases file: ${releasesFile.path}');
 
   showReleasesFile(releasesFile);
   print('');
@@ -300,9 +300,9 @@ void showReleasesFile(File releasesFile) {
 
   var lines = readReleasesFileLines(releasesFile);
 
-  var content = '  -- ${lines.join('\n  -- ')}';
+  var content = '   »  ${lines.join('\n   »  ')}';
 
-  print('\n-- Releases File: ${releasesFile.path}');
+  print('\n»  Releases File: ${releasesFile.path}');
   print(content);
 }
 
