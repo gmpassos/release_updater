@@ -3,9 +3,11 @@
 - New `ReleasePackerCommandGCS`.
 - `ReleasePackerCommandUploadReleaseBundle`:
   - Added `byURL` and `byGSC` constructors.
-
 - `ReleaseBundle`:
   - Added `contentType`.
+
+- `bin/release_packer`
+  - New option `--allow-env`: allow config properties from environment variables.
 
 - gcloud: ^0.8.11
 - googleapis_auth: ^1.4.1

@@ -26,52 +26,66 @@ Map<String, String> parseProperties(List<String> args) {
 
 final RegExp _propertyPlaceHolder = RegExp(r'^%(\w+)%$');
 
-String? resolvePropertyValue(Map<String, String> properties, String? value) {
+String? resolvePropertyValue(Map<String, String>? properties, String? value,
+    {bool allowEnv = false}) {
   if (value == null) return null;
 
   var match = _propertyPlaceHolder.firstMatch(value);
   if (match == null) return value;
 
   var key = match.group(1)!;
-  var propertyValue = properties.get(key);
+  var propertyValue = properties?.get(key);
+
+  if (allowEnv && propertyValue == null) {
+    propertyValue = Platform.environment[key];
+  }
+
   return propertyValue;
 }
 
-Object? resolveJsonProperties(Object? json, Map<String, String>? properties) {
-  if (json == null || properties == null || properties.isEmpty) {
+Object? resolveJsonProperties(Object? json, Map<String, String>? properties,
+    {bool allowEnv = false}) {
+  if (json == null ||
+      (!allowEnv && (properties == null || properties.isEmpty))) {
     return json;
   }
 
   if (json is String) {
-    return resolvePropertyValue(properties, json);
+    return resolvePropertyValue(properties, json, allowEnv: allowEnv);
   } else if (json is List) {
-    return resolveJsonListProperties(json, properties);
+    return resolveJsonListProperties(json, properties, allowEnv: allowEnv);
   } else if (json is Map) {
-    return resolveJsonMapProperties(json, properties);
+    return resolveJsonMapProperties(json, properties, allowEnv: allowEnv);
   } else {
     return null;
   }
 }
 
 List<Object?> resolveJsonListProperties(
-    List<Object?> jsonList, Map<String, String>? properties) {
-  if (jsonList.isEmpty || properties == null || properties.isEmpty) {
+    List<Object?> jsonList, Map<String, String>? properties,
+    {bool allowEnv = false}) {
+  if (jsonList.isEmpty ||
+      (!allowEnv && (properties == null || properties.isEmpty))) {
     return jsonList;
   }
 
-  var list = jsonList.map((e) => resolveJsonProperties(e, properties)).toList();
+  var list = jsonList
+      .map((e) => resolveJsonProperties(e, properties, allowEnv: allowEnv))
+      .toList();
 
   return list;
 }
 
 Map<String, Object?> resolveJsonMapProperties(
-    Map<Object?, Object?> jsonMap, Map<String, String>? properties) {
-  if (jsonMap.isEmpty || properties == null || properties.isEmpty) {
+    Map<Object?, Object?> jsonMap, Map<String, String>? properties,
+    {bool allowEnv = false}) {
+  if (jsonMap.isEmpty ||
+      (!allowEnv && (properties == null || properties.isEmpty))) {
     return jsonMap.asJsonMap;
   }
 
-  var map = jsonMap.map((key, value) =>
-      MapEntry('$key', resolveJsonProperties(value, properties)));
+  var map = jsonMap.map((key, value) => MapEntry(
+      '$key', resolveJsonProperties(value, properties, allowEnv: allowEnv)));
 
   return map;
 }

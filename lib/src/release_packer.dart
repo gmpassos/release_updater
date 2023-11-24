@@ -32,9 +32,14 @@ class ReleasePacker {
       this.configDirectory})
       : properties = properties ?? <String, String>{};
 
-  factory ReleasePacker.fromJson(Map<String, Object?> json,
-      {Map<String, String>? properties, Directory? rootDirectory}) {
-    json = resolveJsonMapProperties(json, properties);
+  factory ReleasePacker.fromJson(
+    Map<String, Object?> json, {
+    Map<String, String>? properties,
+    Directory? rootDirectory,
+    bool allowPropertiesFromEnv = false,
+  }) {
+    json = resolveJsonMapProperties(json, properties,
+        allowEnv: allowPropertiesFromEnv);
 
     var name = json.get<String>('name') ?? 'app';
     var versionStr = json.get<String>('version');
@@ -65,21 +70,33 @@ class ReleasePacker {
         configDirectory: rootDirectory);
   }
 
-  factory ReleasePacker.fromFilePath(String filePath,
-      {Map<String, String>? properties, Directory? rootDirectory}) {
+  factory ReleasePacker.fromFilePath(
+    String filePath, {
+    Map<String, String>? properties,
+    Directory? rootDirectory,
+    bool allowPropertiesFromEnv = false,
+  }) {
     var file = _toFile(filePath, rootDirectory);
     return ReleasePacker.fromFile(file,
-        properties: properties, rootDirectory: rootDirectory);
+        properties: properties,
+        rootDirectory: rootDirectory,
+        allowPropertiesFromEnv: allowPropertiesFromEnv);
   }
 
-  factory ReleasePacker.fromFile(File file,
-      {Map<String, String>? properties, Directory? rootDirectory}) {
+  factory ReleasePacker.fromFile(
+    File file, {
+    Map<String, String>? properties,
+    Directory? rootDirectory,
+    bool allowPropertiesFromEnv = false,
+  }) {
     var json = _readFile(file, expected: true);
     if (json == null) {
       throw StateError("Can't read JSON from file: $file");
     }
     return ReleasePacker.fromJson(json,
-        properties: properties, rootDirectory: rootDirectory ?? file.parent);
+        properties: properties,
+        rootDirectory: rootDirectory ?? file.parent,
+        allowPropertiesFromEnv: allowPropertiesFromEnv);
   }
 
   static File _toFile(String filePath, Directory? rootDirectory) {

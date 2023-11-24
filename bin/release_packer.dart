@@ -38,6 +38,7 @@ void main(List<String> args) async {
   args = args.toList();
 
   var releasePackerJsonPath = args.removeAt(0);
+  var allowEnv = args.remove('--allow-env');
   var properties = parseProperties(args);
 
   var cmd = args.removeAt(0).toLowerCase();
@@ -45,8 +46,11 @@ void main(List<String> args) async {
   print('»  Current directory: ${Directory.current.path}');
 
   print('»  Loading `ReleasePacker` from: $releasePackerJsonPath');
-  var releasePacker =
-      ReleasePacker.fromFilePath(releasePackerJsonPath, properties: properties);
+  var releasePacker = ReleasePacker.fromFilePath(
+    releasePackerJsonPath,
+    properties: properties,
+    allowPropertiesFromEnv: allowEnv,
+  );
 
   if (cmd == 'info') {
     var sourcePath = args.isNotEmpty ? args[0] : './';
@@ -133,7 +137,7 @@ Future<ReleaseBundleZip> _buildReleaseBundle(
   print('\n»»  Generating release bundle...\n');
 
   print(
-      '» Building release from `$sourcePath`${releasesPath != null ? ' to `$releasesPath`' : ''}');
+      '»  Building release from `$sourcePath`${releasesPath != null ? ' to `$releasesPath`' : ''}');
 
   var platform = ReleasePlatform.platform;
 

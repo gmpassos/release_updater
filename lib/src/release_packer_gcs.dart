@@ -164,6 +164,7 @@ class ReleasePackerCommandGCS extends ReleasePackerCommand {
     }
 
     print('   »  Parsing Google Cloud Storage credential...');
+
     var client = await createGCSClient(credential);
 
     print(
