@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:collection/collection.dart';
 import 'package:release_updater/src/release_updater_config.dart';
 import 'package:test/test.dart';
 
@@ -45,6 +48,53 @@ void main() {
 
       expect(args, equals(['file']));
       expect(config, equals({'k1': 'v1', 'k2': 'v2'}));
+    });
+
+    test('resolveJsonProperties', () {
+      expect(
+          resolveJsonProperties(
+            {
+              'params': [
+                {'id': '%FOO%'},
+              ]
+            },
+            {'FOO': 'bar'},
+          ),
+          equals({
+            'params': [
+              {'id': 'bar'},
+            ]
+          }));
+    });
+
+    test('resolveJsonProperties (allowEnv)', () {
+      var envEntry = Platform.environment.entries
+          .firstWhereOrNull((e) => e.key.length >= 2 && e.value.isNotEmpty);
+
+      var envKey = envEntry?.key ?? 'ENVx';
+      var envVal = envEntry?.value ?? 'VALy';
+
+      var properties = envEntry != null ? null : {envKey: envVal};
+
+      print("-- envKey: $envKey");
+      print("-- envVal: $envVal");
+      print("-- properties: $properties");
+
+      expect(
+          resolveJsonProperties(
+            {
+              'params': [
+                {'id': '%$envKey%'},
+              ]
+            },
+            properties,
+            allowEnv: true,
+          ),
+          equals({
+            'params': [
+              {'id': envVal},
+            ]
+          }));
     });
   });
 }
