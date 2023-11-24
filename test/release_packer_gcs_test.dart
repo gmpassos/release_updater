@@ -1,4 +1,5 @@
 @TestOn('vm')
+import 'package:path/path.dart' as pack_path;
 import 'package:release_updater/release_packer_gcs.dart';
 //import 'package:pub_semver/pub_semver.dart' ;
 import 'package:release_updater/release_updater.dart';
@@ -78,7 +79,8 @@ void main() {
             equals((
               bodyBytes: bundleBytes,
               contentType: 'application/bundle',
-              filePath: 'foo-app/releases/foo-app-1.0.0.zip',
+              filePath:
+                  pack_path.normalize('foo-app/releases/foo-app-1.0.0.zip'),
               release: 'foo-app/1.0.0',
             )));
       }
