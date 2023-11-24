@@ -22,6 +22,9 @@ abstract class ReleaseBundle {
   /// Converts this bundle to bytes.
   FutureOr<Uint8List> toBytes();
 
+  /// Returns the MIME-Type of [toBytes].
+  String get contentType;
+
   static const String defaultReleasesBundleFileFormat =
       '%NAME%-%VER%%[-]PLATFORM%.zip';
 
@@ -182,6 +185,9 @@ class ReleaseBundleZip extends ReleaseBundle {
 
     return releaseFile;
   }
+
+  @override
+  String get contentType => 'application/zip';
 
   @override
   FutureOr<Uint8List> toBytes() => zipBytes;

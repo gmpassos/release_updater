@@ -4,6 +4,8 @@
 - `ReleasePackerCommandUploadReleaseBundle`:
   - Added `byURL` and `byGSC` constructors.
 
+- `ReleaseBundle`:
+  - Added `contentType`.
 
 - gcloud: ^0.8.11
 - googleapis_auth: ^1.4.1

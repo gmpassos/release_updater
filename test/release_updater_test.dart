@@ -377,6 +377,9 @@ class _MyReleaseBundle extends ReleaseBundle {
   FutureOr<Set<ReleaseFile>> get files => _files.toSet();
 
   @override
+  String get contentType => 'application/octet-stream';
+
+  @override
   FutureOr<Uint8List> toBytes() {
     throw UnimplementedError();
   }

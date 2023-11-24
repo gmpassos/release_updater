@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:data_serializer/data_serializer_io.dart';
 import 'package:gcloud/storage.dart' as gcs;
 import 'package:googleapis_auth/auth_io.dart' as auth;
+import 'package:path/path.dart' as pack_path;
 
 import 'release_packer.dart';
 import 'release_updater_bundle.dart';
@@ -63,17 +64,24 @@ class ReleasePackerCommandGCS extends ReleasePackerCommand {
     }
   }
 
-  @override
-  Future<bool> execute(ReleasePacker releasePacker, Directory rootDirectory,
-      {ReleaseBundle? releaseBundle}) async {
+  Future<
+      ({
+        String filePath,
+        Uint8List bodyBytes,
+        String contentType,
+        String? release
+      })?> resolveUploadParameters({ReleaseBundle? releaseBundle}) async {
+    String? directory;
     String? file;
     String? release;
     Object? body;
 
+    var contentType = parameters?['contentType'] as String?;
+
     if (this.body == '%RELEASE_BUNDLE%') {
       if (releaseBundle == null) {
         print('  ▒  Release bundle not provided for body: $this');
-        return false;
+        return null;
       } else {
         print('   »  Using `ReleaseBundle` as body.');
 
@@ -93,12 +101,18 @@ class ReleasePackerCommandGCS extends ReleasePackerCommand {
           release = release;
         }
       }
+
       body = await releaseBundle.toBytes();
+      contentType ??= releaseBundle.contentType;
     } else {
       file = parameters?['file'] as String?;
       release = parameters?['release'] as String?;
       body = this.body;
     }
+
+    contentType ??= 'application/octet-stream';
+
+    directory = parameters?['directory'] as String?;
 
     if (file == null) {
       throw ArgumentError.notNull("file");
@@ -108,8 +122,12 @@ class ReleasePackerCommandGCS extends ReleasePackerCommand {
       throw ArgumentError.notNull("body");
     }
 
-    var contentType = parameters?['contentType'] as String?;
-    contentType ??= 'application/octet-stream';
+    String filePath;
+    if (directory != null && directory.isNotEmpty) {
+      filePath = pack_path.normalize(pack_path.join(directory, file));
+    } else {
+      filePath = file;
+    }
 
     Uint8List bodyBytes;
     if (body is String) {
@@ -120,12 +138,27 @@ class ReleasePackerCommandGCS extends ReleasePackerCommand {
       throw ArgumentError("Invalid body type: ${body.runtimeType}");
     }
 
+    return (
+      filePath: filePath,
+      bodyBytes: bodyBytes,
+      contentType: contentType,
+      release: release,
+    );
+  }
+
+  @override
+  Future<bool> execute(ReleasePacker releasePacker, Directory rootDirectory,
+      {ReleaseBundle? releaseBundle}) async {
+    var params = await resolveUploadParameters(releaseBundle: releaseBundle);
+
+    if (params == null) return false;
+
     gcs.ObjectMetadata? metadata;
-    if (release != null) {
+    if (params.release != null) {
       metadata = gcs.ObjectMetadata(
-        contentType: contentType,
+        contentType: params.contentType,
         custom: {
-          'release': release,
+          'release': params.release!,
         },
       );
     }
@@ -134,19 +167,19 @@ class ReleasePackerCommandGCS extends ReleasePackerCommand {
     var client = await createGCSClient(credential);
 
     print(
-        '   »  Uploading to Google Cloud Storage> project: $project ; bucket: ${this.bucket}');
+        '   »  Uploading to Google Cloud Storage> project: $project ; bucket: ${this.bucket} ; file: ${params.filePath}');
 
     var storage = gcs.Storage(client, project);
     var bucket = storage.bucket(this.bucket);
 
     var objInfo = await bucket.writeBytes(
-      file,
-      bodyBytes,
-      contentType: contentType,
+      params.filePath,
+      params.bodyBytes,
+      contentType: params.contentType,
       metadata: metadata,
     );
 
-    var ok = objInfo.length == bodyBytes.length;
+    var ok = objInfo.length == params.bodyBytes.length;
 
     print('   »  GCS response> ${ok ? 'Ok' : 'Faul'}');
 
