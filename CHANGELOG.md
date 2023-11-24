@@ -1,3 +1,19 @@
+## 1.1.6
+
+- New `ReleasePackerCommandGCS`.
+- `ReleasePackerCommandUploadReleaseBundle`:
+  - Added `byURL` and `byGSC` constructors.
+
+
+- gcloud: ^0.8.11
+- googleapis_auth: ^1.4.1
+- data_serializer: ^1.0.12
+- ascii_art_tree: ^1.0.6
+- archive: ^3.4.9
+- test: ^1.24.9
+- dependency_validator: ^3.2.3
+- coverage: ^1.7.1
+
 ## 1.1.5
 
 - Improved console output of CLI tools.

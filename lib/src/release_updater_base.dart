@@ -2,12 +2,13 @@ import 'dart:async';
 import 'dart:convert' as dart_convert;
 import 'dart:typed_data';
 
+import 'package:data_serializer/data_serializer_io.dart';
 import 'package:pub_semver/pub_semver.dart' as semver;
 
+import 'release_updater_bundle.dart';
 import 'release_updater_provider.dart';
 import 'release_updater_storage.dart';
 import 'release_updater_utils.dart';
-import 'release_updater_bundle.dart';
 
 abstract class Copiable<T> {
   /// Returns a copy of this instance.
@@ -25,7 +26,7 @@ typedef OnRelease = void Function(Release release);
 /// A [Release] updater from [releaseProvider] to [storage].
 class ReleaseUpdater implements Copiable<ReleaseUpdater>, Spawnable {
   // ignore: constant_identifier_names
-  static const String VERSION = '1.1.5';
+  static const String VERSION = '1.1.6';
 
   /// The [Release] storage.
   final ReleaseStorage storage;
@@ -391,9 +392,8 @@ class ReleaseFile implements Comparable<ReleaseFile> {
     }
 
     var s = data.toString();
-    var encoded = dart_convert.utf8.encode(s);
-    return UnmodifiableUint8ListView(
-        encoded is Uint8List ? encoded : Uint8List.fromList(encoded));
+    var encoded = dart_convert.utf8.encode(s).asUint8List;
+    return UnmodifiableUint8ListView(encoded);
   }
 
   FutureOr<int> get length {
