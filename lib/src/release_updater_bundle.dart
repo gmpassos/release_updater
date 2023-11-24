@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:convert' as dart_convert;
 import 'dart:typed_data';
-import 'package:ascii_art_tree/ascii_art_tree.dart';
 
 import 'package:archive/archive.dart';
+import 'package:ascii_art_tree/ascii_art_tree.dart';
 import 'package:base_codecs/base_codecs.dart';
 import 'package:collection/collection.dart';
+import 'package:data_serializer/data_serializer_io.dart';
 
 import 'release_updater_base.dart';
 
@@ -20,6 +21,9 @@ abstract class ReleaseBundle {
 
   /// Converts this bundle to bytes.
   FutureOr<Uint8List> toBytes();
+
+  /// Returns the MIME-Type of [toBytes].
+  String get contentType;
 
   static const String defaultReleasesBundleFileFormat =
       '%NAME%-%VER%%[-]PLATFORM%.zip';
@@ -183,6 +187,9 @@ class ReleaseBundleZip extends ReleaseBundle {
   }
 
   @override
+  String get contentType => 'application/zip';
+
+  @override
   FutureOr<Uint8List> toBytes() => zipBytes;
 
   FutureOr<Uint8List> get zipBytes {
@@ -266,8 +273,8 @@ class ReleaseManifest {
   }
 
   Uint8List toJsonEncodedBytes() {
-    var bs = dart_convert.utf8.encode(toJsonEncoded());
-    return bs is Uint8List ? bs : Uint8List.fromList(bs);
+    var bs = dart_convert.utf8.encode(toJsonEncoded()).asUint8List;
+    return bs;
   }
 
   String toJsonEncoded() {

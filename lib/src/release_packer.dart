@@ -4,10 +4,11 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:mercury_client/mercury_client.dart';
+import 'package:path/path.dart' as pack_path;
 import 'package:release_updater/release_utility.dart';
 import 'package:yaml/yaml.dart';
-import 'package:path/path.dart' as pack_path;
 
+import 'release_packer_gcs.dart';
 import 'release_updater_base.dart';
 import 'release_updater_bundle.dart';
 import 'release_updater_config.dart';
@@ -31,9 +32,14 @@ class ReleasePacker {
       this.configDirectory})
       : properties = properties ?? <String, String>{};
 
-  factory ReleasePacker.fromJson(Map<String, Object?> json,
-      {Map<String, String>? properties, Directory? rootDirectory}) {
-    json = resolveJsonMapProperties(json, properties);
+  factory ReleasePacker.fromJson(
+    Map<String, Object?> json, {
+    Map<String, String>? properties,
+    Directory? rootDirectory,
+    bool allowPropertiesFromEnv = false,
+  }) {
+    json = resolveJsonMapProperties(json, properties,
+        allowEnv: allowPropertiesFromEnv);
 
     var name = json.get<String>('name') ?? 'app';
     var versionStr = json.get<String>('version');
@@ -64,21 +70,33 @@ class ReleasePacker {
         configDirectory: rootDirectory);
   }
 
-  factory ReleasePacker.fromFilePath(String filePath,
-      {Map<String, String>? properties, Directory? rootDirectory}) {
+  factory ReleasePacker.fromFilePath(
+    String filePath, {
+    Map<String, String>? properties,
+    Directory? rootDirectory,
+    bool allowPropertiesFromEnv = false,
+  }) {
     var file = _toFile(filePath, rootDirectory);
     return ReleasePacker.fromFile(file,
-        properties: properties, rootDirectory: rootDirectory);
+        properties: properties,
+        rootDirectory: rootDirectory,
+        allowPropertiesFromEnv: allowPropertiesFromEnv);
   }
 
-  factory ReleasePacker.fromFile(File file,
-      {Map<String, String>? properties, Directory? rootDirectory}) {
+  factory ReleasePacker.fromFile(
+    File file, {
+    Map<String, String>? properties,
+    Directory? rootDirectory,
+    bool allowPropertiesFromEnv = false,
+  }) {
     var json = _readFile(file, expected: true);
     if (json == null) {
       throw StateError("Can't read JSON from file: $file");
     }
     return ReleasePacker.fromJson(json,
-        properties: properties, rootDirectory: rootDirectory ?? file.parent);
+        properties: properties,
+        rootDirectory: rootDirectory ?? file.parent,
+        allowPropertiesFromEnv: allowPropertiesFromEnv);
   }
 
   static File _toFile(String filePath, Directory? rootDirectory) {
@@ -664,6 +682,10 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
   @override
   Future<bool> execute(ReleasePacker releasePacker, Directory rootDirectory,
       {ReleaseBundle? releaseBundle}) async {
+    var parameters = this.parameters != null
+        ? Map<String, Object?>.from(this.parameters!)
+        : null;
+
     Object? body;
 
     if (this.body == '%RELEASE_BUNDLE%') {
@@ -744,15 +766,12 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
   }
 }
 
-class ReleasePackerCommandUploadReleaseBundle extends ReleasePackerCommandURL {
-  ReleasePackerCommandUploadReleaseBundle._(String url,
-      {Map<String, Object?>? parameters, Credential? authorization})
-      : super(url,
-            parameters: parameters,
-            authorization: authorization,
-            body: '%RELEASE_BUNDLE%');
+class ReleasePackerCommandUploadReleaseBundle extends ReleasePackerCommand {
+  final ReleasePackerCommand uploadCommand;
 
-  factory ReleasePackerCommandUploadReleaseBundle(String url,
+  ReleasePackerCommandUploadReleaseBundle._(this.uploadCommand);
+
+  factory ReleasePackerCommandUploadReleaseBundle.byURL(String url,
       {Map<String, Object?>? parameters,
       Credential? authorization,
       String? file,
@@ -765,8 +784,34 @@ class ReleasePackerCommandUploadReleaseBundle extends ReleasePackerCommandURL {
     parameters['file'] ??= file;
     parameters['release'] ??= release;
 
-    return ReleasePackerCommandUploadReleaseBundle._(url,
-        parameters: parameters, authorization: authorization);
+    var cmd = ReleasePackerCommandURL(url,
+        parameters: parameters,
+        authorization: authorization,
+        body: '%RELEASE_BUNDLE%');
+
+    return ReleasePackerCommandUploadReleaseBundle._(cmd);
+  }
+
+  factory ReleasePackerCommandUploadReleaseBundle.byGCS(
+      String project, String bucket,
+      {Map<String, Object?>? parameters,
+      required Object credential,
+      String? file,
+      String? release}) {
+    file ??= ReleaseBundle.defaultReleasesBundleFileFormat;
+    release ??= '%RELEASE%';
+
+    parameters ??= <String, Object?>{};
+
+    parameters['file'] ??= file;
+    parameters['release'] ??= release;
+
+    var cmd = ReleasePackerCommandGCS(project, bucket,
+        credential: credential,
+        parameters: parameters,
+        body: '%RELEASE_BUNDLE%');
+
+    return ReleasePackerCommandUploadReleaseBundle._(cmd);
   }
 
   factory ReleasePackerCommandUploadReleaseBundle.fromJson(Object json) {
@@ -775,17 +820,37 @@ class ReleasePackerCommandUploadReleaseBundle extends ReleasePackerCommandURL {
 
     if (json is Map) {
       var map = json.asJsonMap;
+
       file = map.get('file');
       release = map.get('release');
+
+      var gcs = map.get<Map>('gcs');
+      if (gcs != null) {
+        var cmd = ReleasePackerCommandGCS.fromJson(gcs);
+
+        return ReleasePackerCommandUploadReleaseBundle.byGCS(
+            cmd.project, cmd.bucket,
+            credential: cmd.credential,
+            parameters: cmd.parameters,
+            file: file,
+            release: release);
+      }
     }
 
     var cmd = ReleasePackerCommandURL.fromJson(json);
 
-    return ReleasePackerCommandUploadReleaseBundle(cmd.url,
+    return ReleasePackerCommandUploadReleaseBundle.byURL(cmd.url,
         parameters: cmd.parameters,
         authorization: cmd.authorization,
         file: file,
         release: release);
+  }
+
+  @override
+  FutureOr<bool> execute(ReleasePacker releasePacker, Directory rootDirectory,
+      {ReleaseBundle? releaseBundle}) {
+    return uploadCommand.execute(releasePacker, rootDirectory,
+        releaseBundle: releaseBundle);
   }
 }
 
