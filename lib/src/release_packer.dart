@@ -750,9 +750,9 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
 }
 
 class ReleasePackerCommandUploadReleaseBundle extends ReleasePackerCommand {
-  late final ReleasePackerCommand _uploadCommand;
+  final ReleasePackerCommand uploadCommand;
 
-  ReleasePackerCommandUploadReleaseBundle._(this._uploadCommand);
+  ReleasePackerCommandUploadReleaseBundle._(this.uploadCommand);
 
   factory ReleasePackerCommandUploadReleaseBundle.byURL(String url,
       {Map<String, Object?>? parameters,
@@ -803,11 +803,13 @@ class ReleasePackerCommandUploadReleaseBundle extends ReleasePackerCommand {
 
     if (json is Map) {
       var map = json.asJsonMap;
+
       file = map.get('file');
       release = map.get('release');
 
-      if (json.containsKey('gcs')) {
-        var cmd = ReleasePackerCommandGCS.fromJson(json);
+      var gcs = map.get<Map>('gcs');
+      if (gcs != null) {
+        var cmd = ReleasePackerCommandGCS.fromJson(gcs);
 
         return ReleasePackerCommandUploadReleaseBundle.byGCS(
             cmd.project, cmd.bucket,
@@ -830,7 +832,7 @@ class ReleasePackerCommandUploadReleaseBundle extends ReleasePackerCommand {
   @override
   FutureOr<bool> execute(ReleasePacker releasePacker, Directory rootDirectory,
       {ReleaseBundle? releaseBundle}) {
-    return _uploadCommand.execute(releasePacker, rootDirectory,
+    return uploadCommand.execute(releasePacker, rootDirectory,
         releaseBundle: releaseBundle);
   }
 }
