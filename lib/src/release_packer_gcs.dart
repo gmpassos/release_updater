@@ -124,7 +124,8 @@ class ReleasePackerCommandGCS extends ReleasePackerCommand {
 
     String filePath;
     if (directory != null && directory.isNotEmpty) {
-      filePath = pack_path.normalize(pack_path.join(directory, file));
+      var pathContext = pack_path.Context(style: pack_path.Style.posix);
+      filePath = pathContext.normalize(pathContext.join(directory, file));
     } else {
       filePath = file;
     }

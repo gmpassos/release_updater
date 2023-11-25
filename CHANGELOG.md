@@ -1,3 +1,8 @@
+## 1.1.7
+
+- `ReleasePackerCommandGCS`:
+  - `resolveUploadParameters`: force POSIX style in file path. (Fix Windows issue).
+
 ## 1.1.6
 
 - New `ReleasePackerCommandGCS`.
