@@ -312,7 +312,7 @@ void main() {
       }
 
       var finalizeCommands = releasePacker.finalizeCommands!;
-      expect(finalizeCommands.length, equals(2));
+      expect(finalizeCommands.length, equals(3));
 
       {
         expect(finalizeCommands[0], isA<ReleasePackerCommandDelete>());
@@ -321,6 +321,10 @@ void main() {
 
         expect(finalizeCommands[1], isA<ReleasePackerCommandDelete>());
         expect((finalizeCommands[1] as ReleasePackerCommandDelete).path,
+            equals('bin/foo.dill'));
+
+        expect(finalizeCommands[2], isA<ReleasePackerCommandDelete>());
+        expect((finalizeCommands[2] as ReleasePackerCommandDelete).path,
             equals('foo.out'));
       }
 
