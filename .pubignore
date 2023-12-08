@@ -14,3 +14,4 @@ pubspec.lock
 
 # Do not publish any `.exe` binary.
 *.exe
+*.dill
