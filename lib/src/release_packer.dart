@@ -323,12 +323,17 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
   static List<ReleasePackerCommand>? toCommands(
       {String? sourcePath,
       String? dartCompileExe,
+      String? dartCompileKernel,
       String? windowsGUI,
       List? jsonList}) {
     var commands = <ReleasePackerCommand>[];
 
     if (dartCompileExe != null) {
       commands.add(ReleasePackerDartCompileExe(dartCompileExe));
+    }
+
+    if (dartCompileKernel != null) {
+      commands.add(ReleasePackerDartCompileKernel(dartCompileKernel));
     }
 
     if (windowsGUI != null) {
@@ -411,6 +416,10 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
             args[0] == 'compile' &&
             args[1] == 'exe') {
           return ReleasePackerDartCompileExe(args[2]);
+        } else if (args.length == 3 &&
+            args[0] == 'compile' &&
+            args[1] == 'kernel') {
+          return ReleasePackerDartCompileKernel(args[2]);
         }
       } else if (cmd.command == 'release_utility' && args.length >= 2) {
         var gui = args[0].toLowerCase().contains('gui');
@@ -430,6 +439,11 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
       var dartCompileExe = map.get<String>('dart_compile_exe');
       if (dartCompileExe != null && dartCompileExe.isNotEmpty) {
         return ReleasePackerDartCompileExe(dartCompileExe);
+      }
+
+      var dartCompileKernel = map.get<String>('dart_compile_kernel');
+      if (dartCompileKernel != null && dartCompileKernel.isNotEmpty) {
+        return ReleasePackerDartCompileKernel(dartCompileKernel);
       }
 
       var dartPubGet = map.get<String>('dart_pub_get');
@@ -858,9 +872,8 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
   final String? stdoutFilePath;
   final String? stderrFilePath;
 
-  ReleasePackerProcessCommand(String command,
-      [List<String>? args, this.stdoutFilePath, this.stderrFilePath])
-      : super(command, args);
+  ReleasePackerProcessCommand(super.command,
+      [super.args, this.stdoutFilePath, this.stderrFilePath]);
 
   factory ReleasePackerProcessCommand.fromList(List list,
       {String? stdoutFilePath, String? stderrFilePath}) {
@@ -959,8 +972,7 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
 }
 
 class ReleasePackerDartCommand extends ReleasePackerCommandWithArgs {
-  ReleasePackerDartCommand(String command, [List<String>? args])
-      : super(command, args);
+  ReleasePackerDartCommand(super.command, [super.args]);
 
   factory ReleasePackerDartCommand.fromList(List list) {
     var listStr = list.map((e) => '$e').toList();
@@ -1025,6 +1037,16 @@ class ReleasePackerDartCompileExe extends ReleasePackerDartCommand {
   @override
   String toString() {
     return 'ReleasePackerDartCompileExe[${args.last}]';
+  }
+}
+
+class ReleasePackerDartCompileKernel extends ReleasePackerDartCommand {
+  ReleasePackerDartCompileKernel(String dartScript)
+      : super('compile', ['kernel', dartScript]);
+
+  @override
+  String toString() {
+    return 'ReleasePackerDartCompileKernel[${args.last}]';
   }
 }
 
@@ -1213,8 +1235,7 @@ class ReleasePackerWindowsSubsystemCommand
 abstract class ReleasePackerOperation extends ReleasePackerEntry {
   List<ReleasePackerCommand>? commands;
 
-  ReleasePackerOperation({Object? platform, this.commands})
-      : super(platform: platform);
+  ReleasePackerOperation({super.platform, this.commands});
 
   bool get hasCommands => commands != null && commands!.isNotEmpty;
 
@@ -1235,15 +1256,18 @@ class ReleasePackerFile extends ReleasePackerOperation {
   String destinyPath;
 
   ReleasePackerFile(this.sourcePath, String destinyPath,
-      {Object? platform, String? dartCompileExe, String? windowsGUI})
+      {super.platform,
+      String? dartCompileExe,
+      String? dartCompileKernel,
+      String? windowsGUI})
       : destinyPath = destinyPath == '.' ? sourcePath : destinyPath,
         super(
-            platform: platform,
             commands: ReleasePackerCommand.toCommands(
-              sourcePath: sourcePath,
-              dartCompileExe: dartCompileExe,
-              windowsGUI: windowsGUI,
-            ));
+          sourcePath: sourcePath,
+          dartCompileExe: dartCompileExe,
+          dartCompileKernel: dartCompileKernel,
+          windowsGUI: windowsGUI,
+        ));
 
   factory ReleasePackerFile.fromJson(Object json) {
     if (json is String) {
@@ -1251,12 +1275,14 @@ class ReleasePackerFile extends ReleasePackerOperation {
     } else if (json is Map) {
       var platform = json['platform'];
       var dartCompileExe = json['dart_compile_exe'] as String?;
+      var dartCompileKernel = json['dart_compile_kernel'] as String?;
       var windowsGUI = json['windows_gui'];
 
       var entry = json.entries
           .where((e) =>
               e.key != 'platform' &&
               e.key != 'dart_compile_exe' &&
+              e.key != 'dart_compile_kernel' &&
               e.key != 'windows_gui')
           .first;
 
@@ -1267,6 +1293,7 @@ class ReleasePackerFile extends ReleasePackerOperation {
       return ReleasePackerFile(entry.key, entry.value,
           platform: platform,
           dartCompileExe: dartCompileExe,
+          dartCompileKernel: dartCompileKernel,
           windowsGUI: windowsGUI);
     } else {
       throw ArgumentError("Unknown type: $json");

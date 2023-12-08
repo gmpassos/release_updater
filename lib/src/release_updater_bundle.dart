@@ -103,14 +103,13 @@ class ReleaseBundleZip extends ReleaseBundle {
   final String? rootPath;
   final List<String> executableExtensions;
 
-  ReleaseBundleZip(Release release,
+  ReleaseBundleZip(super.release,
       {Uint8List? zipBytes,
       Iterable<ReleaseFile>? files,
       this.rootPath,
       this.executableExtensions = defaultExecutableExtensions})
       : _zipBytes = zipBytes,
-        _files = files?.toSet(),
-        super(release) {
+        _files = files?.toSet() {
     if (_files == null && _zipBytes == null) {
       throw ArgumentError(
           "Can't define files! Null `zipBytes` and `files` parameters.");

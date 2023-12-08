@@ -1,3 +1,10 @@
+## 1.1.8
+
+- Added command `dart_compile_kernel` (`ReleasePackerDartCompileKernel`).
+
+- path: ^1.9.0
+- lints: ^3.0.0
+
 ## 1.1.7
 
 - `ReleasePackerCommandGCS`:
