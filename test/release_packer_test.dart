@@ -103,6 +103,17 @@ void main() {
       }
 
       {
+        var cmd =
+            ReleasePackerCommand.from({'dart_compile_kernel': 'bin/foo.dart'});
+
+        expect(cmd, isA<ReleasePackerDartCompileKernel>());
+
+        var cmdWinGUI = cmd as ReleasePackerDartCompileKernel;
+
+        expect(cmdWinGUI.args, equals(['kernel', 'bin/foo.dart']));
+      }
+
+      {
         var cmd = ReleasePackerCommand.from({
           'windows_gui': ['bin/foo.exe', 'bin/foo-gui.exe']
         });
