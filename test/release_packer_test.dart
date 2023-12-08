@@ -324,7 +324,7 @@ void main() {
             equals('foo.out'));
       }
 
-      expect(releasePacker.files.length, equals(8));
+      expect(releasePacker.files.length, equals(9));
 
       expect(releasePacker.configDirectory, isNotNull);
 
@@ -340,6 +340,14 @@ void main() {
         var file = releasePacker.getFile('bin/foo.exe')!;
         expect(file.sourcePath, equals('bin/foo.exe'));
         expect(file.destinyPath, equals('foo-cli.exe'));
+        expect(file.platforms, isEmpty);
+        expect(file.matchesPlatform('any'), isTrue);
+      }
+
+      {
+        var file = releasePacker.getFile('bin/foo.dill')!;
+        expect(file.sourcePath, equals('bin/foo.dill'));
+        expect(file.destinyPath, equals('debug/foo.dill'));
         expect(file.platforms, isEmpty);
         expect(file.matchesPlatform('any'), isTrue);
       }
@@ -406,7 +414,12 @@ Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {
   var bundleFiles = (await bundle.files).toList();
   bundleFiles.sort();
 
-  expect(bundleFiles.length, equals(5));
+  print('Bundle Files: ${bundleFiles.length}');
+  for (var e in bundleFiles) {
+    print('-- $e');
+  }
+
+  expect(bundleFiles.length, equals(6));
 
   var bundleZipBytes = await bundle.zipBytes;
   expect(bundleZipBytes.length, greaterThan(100));
@@ -422,6 +435,14 @@ Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {
 
   {
     var file = bundleFiles[1];
+    expect(file.filePath, equals('debug/foo.dill'));
+
+    var length = await file.length;
+    expect(length, greaterThan(500));
+  }
+
+  {
+    var file = bundleFiles[2];
     expect(file.filePath, equals('foo-cli.exe'));
 
     var length = await file.length;
@@ -429,7 +450,7 @@ Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {
   }
 
   {
-    var file = bundleFiles[2];
+    var file = bundleFiles[3];
     expect(file.filePath, equals('foo.txt'));
 
     var dataStr = await file.dataAsString;
@@ -437,7 +458,7 @@ Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {
   }
 
   {
-    var file = bundleFiles[3];
+    var file = bundleFiles[4];
     expect(file.filePath, equals('hello-world.txt'));
 
     var dataStr = await file.dataAsString;
@@ -445,7 +466,7 @@ Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {
   }
 
   {
-    var file = bundleFiles[4];
+    var file = bundleFiles[5];
     expect(file.filePath, equals('platform.txt'));
 
     var dataStr = await file.dataAsString;

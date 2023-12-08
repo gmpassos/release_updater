@@ -48,6 +48,10 @@
     {
       "platform-windows-x86.txt": "platform.txt",
       "platform": "^windows.*"
+    },
+    {
+      "bin/foo.dill": "debug/foo.dill",
+      "dart_compile_kernel": "bin/foo.dart"
     }
   ]
 }
