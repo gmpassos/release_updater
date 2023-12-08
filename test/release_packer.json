@@ -19,6 +19,9 @@
       "rm": "bin/foo.exe"
     },
     {
+      "rm": "bin/foo.dill"
+    },
+    {
       "rm": "foo.out"
     }
   ],
