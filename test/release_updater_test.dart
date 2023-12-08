@@ -371,7 +371,7 @@ class _MyProvider extends ReleaseProvider {
 class _MyReleaseBundle extends ReleaseBundle {
   final Set<ReleaseFile> _files;
 
-  _MyReleaseBundle(Release release, this._files) : super(release);
+  _MyReleaseBundle(super.release, this._files);
 
   @override
   FutureOr<Set<ReleaseFile>> get files => _files.toSet();

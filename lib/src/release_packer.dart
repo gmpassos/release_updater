@@ -872,9 +872,8 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
   final String? stdoutFilePath;
   final String? stderrFilePath;
 
-  ReleasePackerProcessCommand(String command,
-      [List<String>? args, this.stdoutFilePath, this.stderrFilePath])
-      : super(command, args);
+  ReleasePackerProcessCommand(super.command,
+      [super.args, this.stdoutFilePath, this.stderrFilePath]);
 
   factory ReleasePackerProcessCommand.fromList(List list,
       {String? stdoutFilePath, String? stderrFilePath}) {
@@ -973,8 +972,7 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
 }
 
 class ReleasePackerDartCommand extends ReleasePackerCommandWithArgs {
-  ReleasePackerDartCommand(String command, [List<String>? args])
-      : super(command, args);
+  ReleasePackerDartCommand(super.command, [super.args]);
 
   factory ReleasePackerDartCommand.fromList(List list) {
     var listStr = list.map((e) => '$e').toList();
@@ -1237,8 +1235,7 @@ class ReleasePackerWindowsSubsystemCommand
 abstract class ReleasePackerOperation extends ReleasePackerEntry {
   List<ReleasePackerCommand>? commands;
 
-  ReleasePackerOperation({Object? platform, this.commands})
-      : super(platform: platform);
+  ReleasePackerOperation({super.platform, this.commands});
 
   bool get hasCommands => commands != null && commands!.isNotEmpty;
 
@@ -1259,19 +1256,18 @@ class ReleasePackerFile extends ReleasePackerOperation {
   String destinyPath;
 
   ReleasePackerFile(this.sourcePath, String destinyPath,
-      {Object? platform,
+      {super.platform,
       String? dartCompileExe,
       String? dartCompileKernel,
       String? windowsGUI})
       : destinyPath = destinyPath == '.' ? sourcePath : destinyPath,
         super(
-            platform: platform,
             commands: ReleasePackerCommand.toCommands(
-              sourcePath: sourcePath,
-              dartCompileExe: dartCompileExe,
-              dartCompileKernel: dartCompileKernel,
-              windowsGUI: windowsGUI,
-            ));
+          sourcePath: sourcePath,
+          dartCompileExe: dartCompileExe,
+          dartCompileKernel: dartCompileKernel,
+          windowsGUI: windowsGUI,
+        ));
 
   factory ReleasePackerFile.fromJson(Object json) {
     if (json is String) {
