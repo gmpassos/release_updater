@@ -276,7 +276,7 @@ class ReleasePacker {
 
           return releaseFiles;
         })
-        .whereNotNull()
+        .nonNulls
         .expand((e) => e)
         .toList();
 
