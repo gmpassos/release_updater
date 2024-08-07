@@ -1,3 +1,19 @@
+## 1.1.9
+
+- sdk: '>=3.4.0 <4.0.0'
+
+- Removed use of `UnmodifiableUint8ListView` (use `asUnmodifiableView()`) for Dart 3.5 compatibility.
+
+- data_serializer: ^1.2.0
+- mercury_client: ^2.2.2
+- shelf: ^1.4.2
+- shelf_gzip: ^4.1.0
+- gcloud: ^0.8.12
+- googleapis_auth: ^1.6.0
+- archive: ^3.6.1
+- test: ^1.25.8
+- coverage: ^1.9.0
+
 ## 1.1.8
 
 - Added command `dart_compile_kernel` (`ReleasePackerDartCompileKernel`).
