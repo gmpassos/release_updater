@@ -26,7 +26,7 @@ typedef OnRelease = void Function(Release release);
 /// A [Release] updater from [releaseProvider] to [storage].
 class ReleaseUpdater implements Copiable<ReleaseUpdater>, Spawnable {
   // ignore: constant_identifier_names
-  static const String VERSION = '1.1.8';
+  static const String VERSION = '1.1.9';
 
   /// The [Release] storage.
   final ReleaseStorage storage;
@@ -338,7 +338,7 @@ class SemanticVersioning extends Version {
 }
 
 abstract class DataProvider {
-  FutureOr<UnmodifiableUint8ListView> get();
+  FutureOr<Uint8List> get();
 
   FutureOr<int> get length;
 }
@@ -385,15 +385,15 @@ class ReleaseFile implements Comparable<ReleaseFile> {
 
   static Object toBytes(Object data) {
     if (data is DataProvider) return data;
-    if (data is Uint8List) return UnmodifiableUint8ListView(data);
+    if (data is Uint8List) return data.asUnmodifiableView();
 
     if (data is Iterable<int>) {
-      return UnmodifiableUint8ListView(Uint8List.fromList(data.toList()));
+      return Uint8List.fromList(data.toList()).asUnmodifiableView();
     }
 
     var s = data.toString();
     var encoded = dart_convert.utf8.encode(s).asUint8List;
-    return UnmodifiableUint8ListView(encoded);
+    return encoded.asUnmodifiableView();
   }
 
   FutureOr<int> get length {
@@ -410,7 +410,7 @@ class ReleaseFile implements Comparable<ReleaseFile> {
   FutureOr<Uint8List> get data {
     var data = _data;
     if (data is Uint8List) {
-      return UnmodifiableUint8ListView(data);
+      return data.asUnmodifiableView();
     } else if (data is DataProvider) {
       return data.get();
     }
