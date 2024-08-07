@@ -195,7 +195,7 @@ class ReleaseBundleZip extends ReleaseBundle {
     if (_zipBytes != null) return _zipBytes!;
 
     return _buildZipBytes().then((bytes) {
-      var bytesView = UnmodifiableUint8ListView(bytes);
+      var bytesView = bytes.asUnmodifiableView();
       _zipBytes = bytesView;
       return bytesView;
     });
@@ -385,7 +385,7 @@ class ReleaseManifestFile {
   final Uint8List sha256;
 
   ReleaseManifestFile(this.filePath, this.length, Uint8List sha256)
-      : sha256 = UnmodifiableUint8ListView(sha256);
+      : sha256 = sha256.asUnmodifiableView();
 
   ReleaseManifestFile.fromSha256Hex(String file, int length, String sha256Hex)
       : this(file, length, base16.decode(sha256Hex));
