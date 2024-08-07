@@ -326,11 +326,10 @@ class FileDataProvider implements DataProvider {
 
   FileDataProvider(this.file);
 
-  UnmodifiableUint8ListView? _data;
+  Uint8List? _data;
 
   @override
-  UnmodifiableUint8ListView get() =>
-      _data ??= UnmodifiableUint8ListView(file.readAsBytesSync());
+  Uint8List get() => _data ??= file.readAsBytesSync().asUnmodifiableView();
 
   @override
   int get length => file.lengthSync();

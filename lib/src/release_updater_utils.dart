@@ -314,6 +314,6 @@ extension ListIntExtension on List<int> {
   Uint8List computeSHA256() {
     var hash = sha256.convert(this).bytes;
     var bytes = hash is Uint8List ? hash : Uint8List.fromList(hash);
-    return UnmodifiableUint8ListView(bytes);
+    return bytes.asUnmodifiableView();
   }
 }
