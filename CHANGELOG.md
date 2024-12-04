@@ -1,3 +1,18 @@
+## 1.1.10
+
+- sdk: '>=3.5.0 <4.0.0'
+
+- data_serializer: ^1.2.1
+- mercury_client: ^2.2.4
+- shelf_static: ^1.1.3
+- gcloud: ^0.8.18
+- crypto: ^3.0.6
+- path: ^1.9.1
+- collection: ^1.19.1
+- lints: ^4.0.0
+- test: ^1.25.11
+- coverage: ^1.11.0
+
 ## 1.1.9
 
 - sdk: '>=3.4.0 <4.0.0'
