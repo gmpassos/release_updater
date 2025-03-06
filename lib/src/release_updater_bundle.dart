@@ -228,7 +228,7 @@ class ReleaseBundleZip extends ReleaseBundle {
       archive.addFile(archiveFile);
     }
 
-    var bytes = zipEncoder.encode(archive)!;
+    var bytes = zipEncoder.encode(archive);
 
     return bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
   }

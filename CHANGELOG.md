@@ -1,3 +1,17 @@
+## 1.1.11
+
+- sdk: '>=3.6.0 <4.0.0'
+
+- mercury_client: ^2.3.0
+- pub_semver: ^2.1.5
+- archive: ^4.0.4
+- yaml: ^3.1.3
+
+- lints: ^5.1.1
+- test: ^1.25.15
+- dependency_validator: ^5.0.2
+- coverage: ^1.11.1
+
 ## 1.1.10
 
 - sdk: '>=3.5.0 <4.0.0'

@@ -1,5 +1,5 @@
 /// Release Updater Library.
-library release_updater;
+library;
 
 export 'src/release_updater_base.dart';
 export 'src/release_updater_bundle.dart';
