@@ -1,3 +1,13 @@
+## 1.1.12
+
+- gcloud: ^0.8.19
+- googleapis_auth: ^2.0.0
+- pub_semver: ^2.2.0
+- archive: ^4.0.7
+
+- test: ^1.26.2
+- coverage: ^1.14.1
+
 ## 1.1.11
 
 - sdk: '>=3.6.0 <4.0.0'
