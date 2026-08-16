@@ -324,11 +324,21 @@ class ReleaseStorageDirectory extends ReleaseStorage {
 }
 
 extension FileStorageExtension on File {
+  /// Converts this [File] to a [ReleaseFile].
+  ///
+  /// - [parentPath] is removed from the [ReleaseFile.filePath].
+  /// - A [ReleaseFile.filePath] is always relative to the release
+  ///   directory, so, if [parentPath] is not provided (or doesn't match),
+  ///   the root prefix of the path is removed (a root separator or a
+  ///   Windows drive).
   ReleaseFile toReleaseFile({String? parentPath}) {
     var path = this.path;
     if (parentPath != null && path.startsWith(parentPath)) {
       path = path.substring(parentPath.length);
+    } else {
+      path = splitPathRootPrefix(path)[1];
     }
+
     var data = FileDataProvider(this);
     var executable =
         hasExecutablePermission || ReleaseBundleZip.isExecutableFilePath(path);

@@ -24,6 +24,9 @@
 - `ReleaseStorageDirectory`:
   - `copy`: now preserves `overwriteFiles` and `selfReleaseDirectory`
     (an `Isolate` update checker was losing them).
+  - `FileStorageExtension.toReleaseFile`: without a matching `parentPath`
+    the root prefix is now removed on any platform (a Windows absolute
+    path was throwing a `StateError`, while a POSIX one was accepted).
 - `ReleaseProviderHttp`:
   - `copy`: now preserves `releasesFile` and `releasesBundleFileFormat`.
   - Logs the error of a request that failed all the retries.

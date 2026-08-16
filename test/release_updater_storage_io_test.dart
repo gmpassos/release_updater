@@ -314,14 +314,23 @@ void main() {
       expect(await releaseFile.dataAsString, equals('Hello!'));
       expect(releaseFile.executable, isFalse);
 
-      // Without a `parentPath` the full path is normalized:
-      if (Platform.isWindows) {
-        // A Windows absolute path (with a drive) can't be a release
-        // file path:
-        expect(() => file.toReleaseFile(), throwsStateError);
-      } else {
-        expect(file.toReleaseFile().filePath, endsWith('a.txt'));
-      }
+      // Without a `parentPath` the root prefix (a root separator or a
+      // Windows drive) is removed, on any platform:
+      var noParentPath = file.toReleaseFile().filePath;
+
+      expect(noParentPath, endsWith('a.txt'));
+      expect(noParentPath, isNot(startsWith('/')));
+      expect(noParentPath, isNot(matches(RegExp(r'^[a-zA-Z]:'))));
+      expect(
+        noParentPath,
+        equals(splitPathRootPrefix(file.path)[1].replaceAll('\\', '/')),
+      );
+
+      // A `parentPath` that does not match is handled the same way:
+      expect(
+        file.toReleaseFile(parentPath: '/other/dir').filePath,
+        equals(noParentPath),
+      );
     });
 
     test('toReleaseFile (executable extension)', () {

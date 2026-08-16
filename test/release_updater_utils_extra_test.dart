@@ -125,6 +125,18 @@ void main() {
       );
     });
 
+    test('Windows drive prefix', () {
+      expect(
+        splitPathRootPrefix(r'C:\tmp\a.txt', asWindows: true),
+        equals([r'C:\', r'tmp\a.txt']),
+      );
+
+      expect(
+        splitPathRootPrefix(r'\tmp\a.txt', asWindows: true),
+        equals([r'\', r'tmp\a.txt']),
+      );
+    });
+
     test('URI prefixes', () {
       expect(
         splitPathRootPrefix('file:///foo/bar.txt', asPosix: true),
