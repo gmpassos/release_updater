@@ -1,6 +1,7 @@
 @TestOn('vm')
 import 'dart:io';
 
+import 'package:path/path.dart' as pack_path;
 import 'package:release_updater/release_updater_io.dart';
 import 'package:release_updater/src/release_updater_utils.dart';
 import 'package:test/test.dart';
@@ -268,7 +269,10 @@ void main() {
 
       var movedFiles = storage.installNewReleaseFiles();
 
-      expect(movedFiles.map((e) => e.path), contains(readme.path));
+      expect(
+        movedFiles.map((e) => pack_path.basename(e.path)),
+        contains('README.md'),
+      );
       expect(readmeNew.existsSync(), isFalse);
       expect(readme.readAsStringSync(), equals('#Foo/1.0.1'));
     });
@@ -311,7 +315,13 @@ void main() {
       expect(releaseFile.executable, isFalse);
 
       // Without a `parentPath` the full path is normalized:
-      expect(file.toReleaseFile().filePath, endsWith('a.txt'));
+      if (Platform.isWindows) {
+        // A Windows absolute path (with a drive) can't be a release
+        // file path:
+        expect(() => file.toReleaseFile(), throwsStateError);
+      } else {
+        expect(file.toReleaseFile().filePath, endsWith('a.txt'));
+      }
     });
 
     test('toReleaseFile (executable extension)', () {
