@@ -20,8 +20,13 @@ class ReleasePackerCommandGCS extends ReleasePackerCommand {
   final Map<String, Object?>? parameters;
   final Object? body;
 
-  ReleasePackerCommandGCS(this.project, this.bucket,
-      {required this.credential, this.parameters, this.body}) {
+  ReleasePackerCommandGCS(
+    this.project,
+    this.bucket, {
+    required this.credential,
+    this.parameters,
+    this.body,
+  }) {
     if (project.isEmpty) throw ArgumentError("Empty project!");
     if (bucket.isEmpty) throw ArgumentError("Empty bucket!");
   }
@@ -39,12 +44,18 @@ class ReleasePackerCommandGCS extends ReleasePackerCommand {
     var parameters = map.get<Map>('parameters');
     var body = map.get('body');
 
-    return ReleasePackerCommandGCS(project, bucket,
-        credential: credential, parameters: parameters?.asJsonMap, body: body);
+    return ReleasePackerCommandGCS(
+      project,
+      bucket,
+      credential: credential,
+      parameters: parameters?.asJsonMap,
+      body: body,
+    );
   }
 
   static Future<auth.AutoRefreshingAuthClient> createGCSClient(
-      Object credential) async {
+    Object credential,
+  ) async {
     if (credential is String) {
       var credentialLC = credential.toLowerCase();
       if (credentialLC == 'metadata' || credentialLC == 'metadata.server') {
@@ -52,12 +63,15 @@ class ReleasePackerCommandGCS extends ReleasePackerCommand {
       }
     }
 
-    final accountCredentials =
-        auth.ServiceAccountCredentials.fromJson(credential);
+    final accountCredentials = auth.ServiceAccountCredentials.fromJson(
+      credential,
+    );
 
     try {
       var client = await auth.clientViaServiceAccount(
-          accountCredentials, gcs.Storage.SCOPES);
+        accountCredentials,
+        gcs.Storage.SCOPES,
+      );
       return client;
     } catch (e) {
       throw StateError("Error creating GCP client: $e");
@@ -65,12 +79,14 @@ class ReleasePackerCommandGCS extends ReleasePackerCommand {
   }
 
   Future<
-      ({
-        String filePath,
-        Uint8List bodyBytes,
-        String contentType,
-        String? release
-      })?> resolveUploadParameters({ReleaseBundle? releaseBundle}) async {
+    ({
+      String filePath,
+      Uint8List bodyBytes,
+      String contentType,
+      String? release,
+    })?
+  >
+  resolveUploadParameters({ReleaseBundle? releaseBundle}) async {
     String? directory;
     String? file;
     String? release;
@@ -89,7 +105,11 @@ class ReleasePackerCommandGCS extends ReleasePackerCommand {
         if (file != null) {
           var release = releaseBundle.release;
           var fileFormatted = ReleaseBundle.formatReleaseBundleFile(
-              file, release.name, release.version, release.platform);
+            file,
+            release.name,
+            release.version,
+            release.platform,
+          );
           file = fileFormatted;
 
           print('   »  Parameter `file`: $fileFormatted');
@@ -98,7 +118,6 @@ class ReleasePackerCommandGCS extends ReleasePackerCommand {
         release = parameters?['release'] as String?;
         if (release != null && release.toLowerCase() == '%release%') {
           release = releaseBundle.release.toString();
-          release = release;
         }
       }
 
@@ -148,8 +167,11 @@ class ReleasePackerCommandGCS extends ReleasePackerCommand {
   }
 
   @override
-  Future<bool> execute(ReleasePacker releasePacker, Directory rootDirectory,
-      {ReleaseBundle? releaseBundle}) async {
+  Future<bool> execute(
+    ReleasePacker releasePacker,
+    Directory rootDirectory, {
+    ReleaseBundle? releaseBundle,
+  }) async {
     var params = await resolveUploadParameters(releaseBundle: releaseBundle);
 
     if (params == null) return false;
@@ -158,9 +180,7 @@ class ReleasePackerCommandGCS extends ReleasePackerCommand {
     if (params.release != null) {
       metadata = gcs.ObjectMetadata(
         contentType: params.contentType,
-        custom: {
-          'release': params.release!,
-        },
+        custom: {'release': params.release!},
       );
     }
 
@@ -169,7 +189,8 @@ class ReleasePackerCommandGCS extends ReleasePackerCommand {
     var client = await createGCSClient(credential);
 
     print(
-        '   »  Uploading to Google Cloud Storage> project: $project ; bucket: ${this.bucket} ; file: ${params.filePath}');
+      '   »  Uploading to Google Cloud Storage> project: $project ; bucket: ${this.bucket} ; file: ${params.filePath}',
+    );
 
     var storage = gcs.Storage(client, project);
     var bucket = storage.bucket(this.bucket);

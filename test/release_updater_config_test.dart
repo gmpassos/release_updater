@@ -21,8 +21,10 @@ void main() {
     });
 
     test('parseReleaseDirectory', () async {
-      expect(parseReleaseDirectory({'releases-directory': 'install-dir'}).path,
-          endsWith('install-dir'));
+      expect(
+        parseReleaseDirectory({'releases-directory': 'install-dir'}).path,
+        endsWith('install-dir'),
+      );
       expect(parseReleaseDirectory({'foo': 'bar'}).path, endsWith('releases'));
     });
 
@@ -37,8 +39,10 @@ void main() {
     });
 
     test('parseBaseURL', () async {
-      expect(parseBaseURL({'base-url': 'http://foo/bar'}),
-          endsWith('http://foo/bar'));
+      expect(
+        parseBaseURL({'base-url': 'http://foo/bar'}),
+        endsWith('http://foo/bar'),
+      );
       expect(parseBaseURL({'foo': 'bar'}), endsWith('http://localhost:8080/'));
     });
 
@@ -52,24 +56,26 @@ void main() {
 
     test('resolveJsonProperties', () {
       expect(
-          resolveJsonProperties(
-            {
-              'params': [
-                {'id': '%FOO%'},
-              ]
-            },
-            {'FOO': 'bar'},
-          ),
-          equals({
+        resolveJsonProperties(
+          {
             'params': [
-              {'id': 'bar'},
-            ]
-          }));
+              {'id': '%FOO%'},
+            ],
+          },
+          {'FOO': 'bar'},
+        ),
+        equals({
+          'params': [
+            {'id': 'bar'},
+          ],
+        }),
+      );
     });
 
     test('resolveJsonProperties (allowEnv)', () {
-      var envEntry = Platform.environment.entries
-          .firstWhereOrNull((e) => e.key.length >= 2 && e.value.isNotEmpty);
+      var envEntry = Platform.environment.entries.firstWhereOrNull(
+        (e) => e.key.length >= 2 && e.value.isNotEmpty,
+      );
 
       var envKey = envEntry?.key ?? 'ENVx';
       var envVal = envEntry?.value ?? 'VALy';
@@ -81,20 +87,21 @@ void main() {
       print("-- properties: $properties");
 
       expect(
-          resolveJsonProperties(
-            {
-              'params': [
-                {'id': '%$envKey%'},
-              ]
-            },
-            properties,
-            allowEnv: true,
-          ),
-          equals({
+        resolveJsonProperties(
+          {
             'params': [
-              {'id': envVal},
-            ]
-          }));
+              {'id': '%$envKey%'},
+            ],
+          },
+          properties,
+          allowEnv: true,
+        ),
+        equals({
+          'params': [
+            {'id': envVal},
+          ],
+        }),
+      );
     });
   });
 }

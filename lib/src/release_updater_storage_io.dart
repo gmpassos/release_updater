@@ -31,12 +31,20 @@ class ReleaseStorageDirectory extends ReleaseStorage {
 
   final bool selfReleaseDirectory;
 
-  ReleaseStorageDirectory(this.name, this.directory,
-      {bool overwriteFiles = true, this.selfReleaseDirectory = false})
-      : overwriteFiles = overwriteFiles && !selfReleaseDirectory;
+  ReleaseStorageDirectory(
+    this.name,
+    this.directory, {
+    bool overwriteFiles = true,
+    this.selfReleaseDirectory = false,
+  }) : overwriteFiles = overwriteFiles && !selfReleaseDirectory;
 
   @override
-  ReleaseStorageDirectory copy() => ReleaseStorageDirectory(name, directory);
+  ReleaseStorageDirectory copy() => ReleaseStorageDirectory(
+    name,
+    directory,
+    overwriteFiles: overwriteFiles,
+    selfReleaseDirectory: selfReleaseDirectory,
+  );
 
   @override
   String? get platform {
@@ -45,7 +53,8 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   }
 
   File get currentReleaseConfigFile => File(
-      joinPaths(directory.path, '${normalizeFileName(name)}--current.release'));
+    joinPaths(directory.path, '${normalizeFileName(name)}--current.release'),
+  );
 
   Directory? get currentReleaseDirectory {
     var currentRelease = this.currentRelease;
@@ -53,8 +62,9 @@ class ReleaseStorageDirectory extends ReleaseStorage {
     return releaseDirectory(currentRelease);
   }
 
-  static final Expando<Directory> _expandoReleaseDirectory =
-      Expando<Directory>('releaseDirectory');
+  static final Expando<Directory> _expandoReleaseDirectory = Expando<Directory>(
+    'releaseDirectory',
+  );
 
   Directory releaseDirectory(Release release) {
     var prev = _expandoReleaseDirectory[release];
@@ -137,9 +147,9 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   /// Files with `.new_release` are generated when [selfReleaseDirectory]
   /// is enabled.
   List<File> installNewReleaseFiles() {
-    var newReleaseFiles = directoryFiles(directory)
-        .where((f) => f.path.endsWith(_newReleaseSuffix))
-        .toList();
+    var newReleaseFiles = directoryFiles(
+      directory,
+    ).where((f) => f.path.endsWith(_newReleaseSuffix)).toList();
 
     var movedFiles = <File>[];
 
@@ -148,7 +158,8 @@ class ReleaseStorageDirectory extends ReleaseStorage {
       assert(filePath.endsWith(_newReleaseSuffix));
 
       var file2 = File(
-          filePath.substring(0, filePath.length - _newReleaseSuffix.length));
+        filePath.substring(0, filePath.length - _newReleaseSuffix.length),
+      );
 
       var fileMoved = file.renameSync(file2.path);
       movedFiles.add(fileMoved);
@@ -158,8 +169,11 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   }
 
   @override
-  Future<bool> saveFile(Release release, ReleaseFile file,
-      {bool verbose = false}) async {
+  Future<bool> saveFile(
+    Release release,
+    ReleaseFile file, {
+    bool verbose = false,
+  }) async {
     var dir = releaseDirectory(release);
 
     var localFile = file.toFile(parentDirectory: dir);
@@ -186,7 +200,10 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   }
 
   void setReleaseFileExecutablePermission(
-      Release release, ReleaseFile file, bool executable) {
+    Release release,
+    ReleaseFile file,
+    bool executable,
+  ) {
     var dir = releaseDirectory(release);
     var localFile = file.toFile(parentDirectory: dir);
 
@@ -205,7 +222,10 @@ class ReleaseStorageDirectory extends ReleaseStorage {
 
   @override
   FutureOr<bool> isFileEquals(
-      Release release, ReleaseFile file, ReleaseManifestFile manifestFile) {
+    Release release,
+    ReleaseFile file,
+    ReleaseManifestFile manifestFile,
+  ) {
     var dir = releaseDirectory(release);
     if (!dir.existsSync()) return false;
 
@@ -223,14 +243,18 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   }
 
   @override
-  Future<bool> checkManifest(ReleaseManifest manifest,
-      {bool verbose = false, bool checkNewReleaseFiles = true}) async {
+  Future<bool> checkManifest(
+    ReleaseManifest manifest, {
+    bool verbose = false,
+    bool checkNewReleaseFiles = true,
+  }) async {
     var release = manifest.release;
     var dir = releaseDirectory(release);
 
     if (verbose) {
       print(
-          '»  Checking manifest (${manifest.release}) with release at: ${dir.path}');
+        '»  Checking manifest (${manifest.release}) with release at: ${dir.path}',
+      );
     }
 
     if (!dir.existsSync()) {
@@ -300,17 +324,31 @@ class ReleaseStorageDirectory extends ReleaseStorage {
 }
 
 extension FileStorageExtension on File {
+  /// Converts this [File] to a [ReleaseFile].
+  ///
+  /// - [parentPath] is removed from the [ReleaseFile.filePath].
+  /// - A [ReleaseFile.filePath] is always relative to the release
+  ///   directory, so, if [parentPath] is not provided (or doesn't match),
+  ///   the root prefix of the path is removed (a root separator or a
+  ///   Windows drive).
   ReleaseFile toReleaseFile({String? parentPath}) {
     var path = this.path;
     if (parentPath != null && path.startsWith(parentPath)) {
       path = path.substring(parentPath.length);
+    } else {
+      path = splitPathRootPrefix(path)[1];
     }
+
     var data = FileDataProvider(this);
     var executable =
         hasExecutablePermission || ReleaseBundleZip.isExecutableFilePath(path);
 
-    return ReleaseFile(path, data,
-        time: lastModifiedSync(), executable: executable);
+    return ReleaseFile(
+      path,
+      data,
+      time: lastModifiedSync(),
+      executable: executable,
+    );
   }
 }
 

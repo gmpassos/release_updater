@@ -4,11 +4,13 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as pack_path;
 
-final pack_path.Context _contextWindows =
-    pack_path.Context(style: pack_path.Style.windows);
+final pack_path.Context _contextWindows = pack_path.Context(
+  style: pack_path.Style.windows,
+);
 
-final pack_path.Context _contextPosix =
-    pack_path.Context(style: pack_path.Style.posix);
+final pack_path.Context _contextPosix = pack_path.Context(
+  style: pack_path.Style.posix,
+);
 
 final RegExp _genericSeparator = RegExp(r'[\\/]');
 
@@ -28,8 +30,9 @@ final RegExp _genericSeparatorEnd = RegExp(r'[^\\/][\\/]+?$');
 bool endsWithGenericPathSeparator(String path) =>
     _genericSeparatorEnd.hasMatch(path);
 
-final RegExp _genericURIStart =
-    RegExp(r'^(?:file|https?|[a-zA-Z]{2,}):[\\//]+');
+final RegExp _genericURIStart = RegExp(
+  r'^(?:file|https?|[a-zA-Z]{2,}):[\\//]+',
+);
 
 bool startsWithURI(String path) => _genericURIStart.hasMatch(path);
 
@@ -55,11 +58,12 @@ bool isRootRelativePath(String path) {
 }
 
 /// Resolves a [pack_path.Context].
-pack_path.Context getPathContext(
-    {String? separator,
-    bool asWindows = false,
-    bool asPosix = false,
-    pack_path.Context? pathContext}) {
+pack_path.Context getPathContext({
+  String? separator,
+  bool asWindows = false,
+  bool asPosix = false,
+  pack_path.Context? pathContext,
+}) {
   if (pathContext != null) return pathContext;
 
   if (asWindows) {
@@ -80,17 +84,22 @@ pack_path.Context getPathContext(
 }
 
 /// Splits [path] in root prefix and path (platform agnostic).
-List<String> splitPathRootPrefix(String path,
-    {String? separator,
-    bool asWindows = false,
-    bool asPosix = false,
-    pack_path.Context? pathContext}) {
+List<String> splitPathRootPrefix(
+  String path, {
+  String? separator,
+  bool asWindows = false,
+  bool asPosix = false,
+  pack_path.Context? pathContext,
+}) {
   if (path.isEmpty) {
     return ['', ''];
   }
 
   pathContext ??= getPathContext(
-      separator: separator, asWindows: asWindows, asPosix: asPosix);
+    separator: separator,
+    asWindows: asWindows,
+    asPosix: asPosix,
+  );
 
   separator ??= pathContext.separator;
 
@@ -150,18 +159,26 @@ List<String> splitPathRootPrefix(String path,
 ///
 /// - If [asPosix] is `true` will use a POSIX context.
 /// - If [asWindows] is `true` will use a Windows context.
-String normalizePlatformPath(String path,
-    {String? separator,
-    bool asWindows = false,
-    bool asPosix = false,
-    pack_path.Context? pathContext}) {
+String normalizePlatformPath(
+  String path, {
+  String? separator,
+  bool asWindows = false,
+  bool asPosix = false,
+  pack_path.Context? pathContext,
+}) {
   pathContext ??= getPathContext(
-      separator: separator, asWindows: asWindows, asPosix: asPosix);
+    separator: separator,
+    asWindows: asWindows,
+    asPosix: asPosix,
+  );
 
   separator ??= pathContext.separator;
 
-  final rootPrefixSplit =
-      splitPathRootPrefix(path, separator: separator, pathContext: pathContext);
+  final rootPrefixSplit = splitPathRootPrefix(
+    path,
+    separator: separator,
+    pathContext: pathContext,
+  );
 
   var rootPrefix = rootPrefixSplit[0];
   var pathNoRootPrefix = rootPrefixSplit[1];
@@ -202,14 +219,20 @@ String normalizePlatformPath(String path,
     }
   }
 
-  var pathNormalized =
-      _normalizeToPlatformPath(pathNoRootPrefix, separator, pathContext);
+  var pathNormalized = _normalizeToPlatformPath(
+    pathNoRootPrefix,
+    separator,
+    pathContext,
+  );
 
   return '$rootPrefix$pathNormalized';
 }
 
 String _normalizeToPlatformPath(
-    String pathNoRootPrefix, String separator, pack_path.Context pathContext) {
+  String pathNoRootPrefix,
+  String separator,
+  pack_path.Context pathContext,
+) {
   if (separator == '/') {
     if (!pathNoRootPrefix.contains('\\') &&
         pathContext.style == pack_path.Style.windows) {
@@ -232,27 +255,39 @@ List<String> splitGenericPathSeparator(String pathNoRootPrefix) =>
     pathNoRootPrefix.split(_genericSeparator);
 
 /// Joins [parent] and [path], respecting if [path] is root relative (platform agnostic).
-String joinPaths(String? parent, String path,
-    {String? separator,
-    bool asWindows = false,
-    bool asPosix = false,
-    pack_path.Context? pathContext}) {
+String joinPaths(
+  String? parent,
+  String path, {
+  String? separator,
+  bool asWindows = false,
+  bool asPosix = false,
+  pack_path.Context? pathContext,
+}) {
   if (path.isEmpty) return '';
 
   pathContext ??= getPathContext(
-      separator: separator, asWindows: asWindows, asPosix: asPosix);
+    separator: separator,
+    asWindows: asWindows,
+    asPosix: asPosix,
+  );
 
   separator ??= pathContext.separator;
 
-  path = normalizePlatformPath(path,
-      separator: separator, pathContext: pathContext);
+  path = normalizePlatformPath(
+    path,
+    separator: separator,
+    pathContext: pathContext,
+  );
 
   if (parent == null || parent.isEmpty || isRootRelativePath(path)) {
     return path;
   }
 
-  parent = normalizePlatformPath(parent,
-      separator: separator, pathContext: pathContext);
+  parent = normalizePlatformPath(
+    parent,
+    separator: separator,
+    pathContext: pathContext,
+  );
 
   var pathFull = pathContext.joinAll([parent, path]);
   pathFull = pathContext.normalize(pathFull);
@@ -283,14 +318,16 @@ extension ListOfListIntExtension on List<List<int>> {
 extension StreamOfListIntExtension on Stream<List<int>> {
   Future<Uint8List> toBytes() {
     return fold<List<List<int>>>(
-            <List<int>>[], (allBytes, bytes) => allBytes..add(bytes))
-        .then((allBytes) => allBytes.toBytes());
+      <List<int>>[],
+      (allBytes, bytes) => allBytes..add(bytes),
+    ).then((allBytes) => allBytes.toBytes());
   }
 }
 
 extension FutureOrListIntExtension on FutureOr<List<int>> {
-  FutureOr<Uint8List> computeSHA256(
-      {void Function(Uint8List sha356)? onValue}) {
+  FutureOr<Uint8List> computeSHA256({
+    void Function(Uint8List sha356)? onValue,
+  }) {
     var data = this;
     if (data is List<int>) {
       var sha256 = data.computeSHA256();

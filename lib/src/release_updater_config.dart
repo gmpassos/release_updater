@@ -26,8 +26,11 @@ Map<String, String> parseProperties(List<String> args) {
 
 final RegExp _propertyPlaceHolder = RegExp(r'^%(\w+)%$');
 
-String? resolvePropertyValue(Map<String, String>? properties, String? value,
-    {bool allowEnv = false}) {
+String? resolvePropertyValue(
+  Map<String, String>? properties,
+  String? value, {
+  bool allowEnv = false,
+}) {
   if (value == null) return null;
 
   var match = _propertyPlaceHolder.firstMatch(value);
@@ -43,8 +46,11 @@ String? resolvePropertyValue(Map<String, String>? properties, String? value,
   return propertyValue;
 }
 
-Object? resolveJsonProperties(Object? json, Map<String, String>? properties,
-    {bool allowEnv = false}) {
+Object? resolveJsonProperties(
+  Object? json,
+  Map<String, String>? properties, {
+  bool allowEnv = false,
+}) {
   if (json == null ||
       (!allowEnv && (properties == null || properties.isEmpty))) {
     return json;
@@ -62,8 +68,10 @@ Object? resolveJsonProperties(Object? json, Map<String, String>? properties,
 }
 
 List<Object?> resolveJsonListProperties(
-    List<Object?> jsonList, Map<String, String>? properties,
-    {bool allowEnv = false}) {
+  List<Object?> jsonList,
+  Map<String, String>? properties, {
+  bool allowEnv = false,
+}) {
   if (jsonList.isEmpty ||
       (!allowEnv && (properties == null || properties.isEmpty))) {
     return jsonList;
@@ -77,15 +85,21 @@ List<Object?> resolveJsonListProperties(
 }
 
 Map<String, Object?> resolveJsonMapProperties(
-    Map<Object?, Object?> jsonMap, Map<String, String>? properties,
-    {bool allowEnv = false}) {
+  Map<Object?, Object?> jsonMap,
+  Map<String, String>? properties, {
+  bool allowEnv = false,
+}) {
   if (jsonMap.isEmpty ||
       (!allowEnv && (properties == null || properties.isEmpty))) {
     return jsonMap.asJsonMap;
   }
 
-  var map = jsonMap.map((key, value) => MapEntry(
-      '$key', resolveJsonProperties(value, properties, allowEnv: allowEnv)));
+  var map = jsonMap.map(
+    (key, value) => MapEntry(
+      '$key',
+      resolveJsonProperties(value, properties, allowEnv: allowEnv),
+    ),
+  );
 
   return map;
 }
@@ -171,11 +185,12 @@ extension JsonExtension on Map<String, Object?> {
 }
 
 Directory parseReleaseDirectory(Map<String, Object?> config) {
-  var releasesDirPath = config.get<String>('releases-directory') ??
+  var releasesDirPath =
+      config.get<String>('releases-directory') ??
       config.get<String>('release-directory') ??
       'releases';
 
-  if (releasesDirPath.startsWith('/')) {
+  if (isRootRelativePath(releasesDirPath)) {
     return Directory(releasesDirPath);
   } else {
     var executableFile = File(Platform.script.toFilePath());
@@ -187,7 +202,8 @@ Directory parseReleaseDirectory(Map<String, Object?> config) {
 }
 
 String parseReleaseFile(Map<String, Object?> config) {
-  var releasesFile = config.get<String>('releases-file') ??
+  var releasesFile =
+      config.get<String>('releases-file') ??
       config.get<String>('release-file') ??
       'releases.txt';
   return releasesFile;

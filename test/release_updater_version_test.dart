@@ -25,7 +25,9 @@ void main() {
       print('PubSpec.version: ${pubSpec.version}');
 
       var srcPath = path.join(
-          projectDirectory.path, 'lib\\src/release_updater_base.dart');
+        projectDirectory.path,
+        'lib\\src/release_updater_base.dart',
+      );
 
       srcPath = normalizePlatformPath(srcPath);
 
@@ -41,9 +43,12 @@ void main() {
 
       print('srcVersion: $srcVersion');
 
-      expect(pubSpec.version.toString(), equals(srcVersion),
-          reason:
-              'Bones_API.VERSION[$srcVersion] != PubSpec.version[${pubSpec.version}]');
+      expect(
+        pubSpec.version.toString(),
+        equals(srcVersion),
+        reason:
+            'Bones_API.VERSION[$srcVersion] != PubSpec.version[${pubSpec.version}]',
+      );
     });
   });
 }

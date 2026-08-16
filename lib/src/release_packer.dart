@@ -25,12 +25,15 @@ class ReleasePacker {
   final Map<String, String> properties;
   final Directory? configDirectory;
 
-  ReleasePacker(this.name, this.version, this.files,
-      {this.prepareCommands,
-      this.finalizeCommands,
-      Map<String, String>? properties,
-      this.configDirectory})
-      : properties = properties ?? <String, String>{};
+  ReleasePacker(
+    this.name,
+    this.version,
+    this.files, {
+    this.prepareCommands,
+    this.finalizeCommands,
+    Map<String, String>? properties,
+    this.configDirectory,
+  }) : properties = properties ?? <String, String>{};
 
   factory ReleasePacker.fromJson(
     Map<String, Object?> json, {
@@ -38,8 +41,11 @@ class ReleasePacker {
     Directory? rootDirectory,
     bool allowPropertiesFromEnv = false,
   }) {
-    json = resolveJsonMapProperties(json, properties,
-        allowEnv: allowPropertiesFromEnv);
+    json = resolveJsonMapProperties(
+      json,
+      properties,
+      allowEnv: allowPropertiesFromEnv,
+    );
 
     var name = json.get<String>('name') ?? 'app';
     var versionStr = json.get<String>('version');
@@ -63,11 +69,15 @@ class ReleasePacker {
     var files = json.get<List>('files', [])!;
     var releaseFiles = files.map((e) => ReleasePackerFile.fromJson(e)).toList();
 
-    return ReleasePacker(name, version, releaseFiles,
-        prepareCommands: prepareCommands,
-        finalizeCommands: finalizeCommands,
-        properties: properties,
-        configDirectory: rootDirectory);
+    return ReleasePacker(
+      name,
+      version,
+      releaseFiles,
+      prepareCommands: prepareCommands,
+      finalizeCommands: finalizeCommands,
+      properties: properties,
+      configDirectory: rootDirectory,
+    );
   }
 
   factory ReleasePacker.fromFilePath(
@@ -77,10 +87,12 @@ class ReleasePacker {
     bool allowPropertiesFromEnv = false,
   }) {
     var file = _toFile(filePath, rootDirectory);
-    return ReleasePacker.fromFile(file,
-        properties: properties,
-        rootDirectory: rootDirectory,
-        allowPropertiesFromEnv: allowPropertiesFromEnv);
+    return ReleasePacker.fromFile(
+      file,
+      properties: properties,
+      rootDirectory: rootDirectory,
+      allowPropertiesFromEnv: allowPropertiesFromEnv,
+    );
   }
 
   factory ReleasePacker.fromFile(
@@ -93,10 +105,12 @@ class ReleasePacker {
     if (json == null) {
       throw StateError("Can't read JSON from file: $file");
     }
-    return ReleasePacker.fromJson(json,
-        properties: properties,
-        rootDirectory: rootDirectory ?? file.parent,
-        allowPropertiesFromEnv: allowPropertiesFromEnv);
+    return ReleasePacker.fromJson(
+      json,
+      properties: properties,
+      rootDirectory: rootDirectory ?? file.parent,
+      allowPropertiesFromEnv: allowPropertiesFromEnv,
+    );
   }
 
   static File _toFile(String filePath, Directory? rootDirectory) {
@@ -142,7 +156,8 @@ class ReleasePacker {
     var possibleDirPath = filePath.endsWith('/') ? filePath : '$filePath/';
 
     var where = files.where(
-        (e) => e.sourcePath == filePath || e.sourcePath == possibleDirPath);
+      (e) => e.sourcePath == filePath || e.sourcePath == possibleDirPath,
+    );
 
     if (platform != null) {
       where = where.where((e) => e.matchesPlatform(platform));
@@ -154,32 +169,47 @@ class ReleasePacker {
   ReleasePackerFile? getFileMatching(RegExp filePathRegexp) =>
       files.firstWhereOrNull((e) => filePathRegexp.hasMatch(e.sourcePath));
 
-  Future<Map<ReleasePackerCommand, bool>> prepare(Directory rootDirectory,
-      {String? platform}) {
+  Future<Map<ReleasePackerCommand, bool>> prepare(
+    Directory rootDirectory, {
+    String? platform,
+  }) {
     var prepareCommands = this.prepareCommands;
     if (prepareCommands != null && prepareCommands.isNotEmpty) {
       print('\n»  Running prepare commands (${prepareCommands.length})...');
     }
 
     return ReleasePackerCommand.executeCommands(
-        this, prepareCommands, rootDirectory,
-        platform: platform);
+      this,
+      prepareCommands,
+      rootDirectory,
+      platform: platform,
+    );
   }
 
-  Future<Map<ReleasePackerCommand, bool>> finalize(Directory rootDirectory,
-      {ReleaseBundle? releaseBundle, String? platform}) {
+  Future<Map<ReleasePackerCommand, bool>> finalize(
+    Directory rootDirectory, {
+    ReleaseBundle? releaseBundle,
+    String? platform,
+  }) {
     var finalizeCommands = this.finalizeCommands;
     if (finalizeCommands != null && finalizeCommands.isNotEmpty) {
       print('\n»  Running finalize commands (${finalizeCommands.length})...');
     }
 
     return ReleasePackerCommand.executeCommands(
-        this, finalizeCommands, rootDirectory,
-        releaseBundle: releaseBundle, platform: platform);
+      this,
+      finalizeCommands,
+      rootDirectory,
+      releaseBundle: releaseBundle,
+      platform: platform,
+    );
   }
 
-  Future<ReleaseBundleZip> buildFromDirectory(
-      {Directory? rootDirectory, String? sourcePath, String? platform}) async {
+  Future<ReleaseBundleZip> buildFromDirectory({
+    Directory? rootDirectory,
+    String? sourcePath,
+    String? platform,
+  }) async {
     var configDirectory = this.configDirectory;
 
     if (rootDirectory == null) {
@@ -196,8 +226,9 @@ class ReleasePacker {
 
     await prepare(rootDirectory, platform: platform);
 
-    var filesWithCommand =
-        getFiles(platform: platform).where((e) => e.hasCommands).toList();
+    var filesWithCommand = getFiles(
+      platform: platform,
+    ).where((e) => e.hasCommands).toList();
 
     if (filesWithCommand.isNotEmpty) {
       print('»  Running files commands (${filesWithCommand.length}):');
@@ -238,8 +269,10 @@ class ReleasePacker {
             var dir = Directory(file.path);
             var dirPath = dir.path;
 
-            var dirFiles =
-                dir.listSync(recursive: true).whereType<File>().toList();
+            var dirFiles = dir
+                .listSync(recursive: true)
+                .whereType<File>()
+                .toList();
 
             for (var f in dirFiles) {
               var filePath = f.path;
@@ -254,22 +287,32 @@ class ReleasePacker {
 
               var data = f.readAsBytesSync();
               var time = f.lastModifiedSync();
-              var exec = f.hasExecutablePermission ||
+              var exec =
+                  f.hasExecutablePermission ||
                   ReleaseBundleZip.isExecutableFilePath(destinyPath);
 
-              var releaseFile = ReleaseFile(fileDestinyPath, data,
-                  time: time, executable: exec);
+              var releaseFile = ReleaseFile(
+                fileDestinyPath,
+                data,
+                time: time,
+                executable: exec,
+              );
 
               releaseFiles.add(releaseFile);
             }
           } else {
             var data = file.readAsBytesSync();
             var time = file.lastModifiedSync();
-            var exec = file.hasExecutablePermission ||
+            var exec =
+                file.hasExecutablePermission ||
                 ReleaseBundleZip.isExecutableFilePath(destinyPath);
 
-            var releaseFile =
-                ReleaseFile(destinyPath, data, time: time, executable: exec);
+            var releaseFile = ReleaseFile(
+              destinyPath,
+              data,
+              time: time,
+              executable: exec,
+            );
 
             releaseFiles.add(releaseFile);
           }
@@ -283,8 +326,11 @@ class ReleasePacker {
     var release = Release(name, version, platform: platform);
     var releaseBundle = ReleaseBundleZip(release, files: list);
 
-    await finalize(rootDirectory,
-        releaseBundle: releaseBundle, platform: platform);
+    await finalize(
+      rootDirectory,
+      releaseBundle: releaseBundle,
+      platform: platform,
+    );
 
     return releaseBundle;
   }
@@ -299,9 +345,9 @@ abstract class ReleasePackerEntry {
   List<RegExp> platforms;
 
   ReleasePackerEntry({Object? platform})
-      : platforms = platform == null
-            ? <RegExp>[]
-            : (platform is List
+    : platforms = platform == null
+          ? <RegExp>[]
+          : (platform is List
                 ? platform.where((e) => e != null).map(_toRegExp).toList()
                 : <RegExp>[_toRegExp(platform)]);
 
@@ -320,12 +366,13 @@ abstract class ReleasePackerEntry {
 }
 
 abstract class ReleasePackerCommand extends ReleasePackerEntry {
-  static List<ReleasePackerCommand>? toCommands(
-      {String? sourcePath,
-      String? dartCompileExe,
-      String? dartCompileKernel,
-      String? windowsGUI,
-      List? jsonList}) {
+  static List<ReleasePackerCommand>? toCommands({
+    String? sourcePath,
+    String? dartCompileExe,
+    String? dartCompileKernel,
+    String? windowsGUI,
+    List? jsonList,
+  }) {
     var commands = <ReleasePackerCommand>[];
 
     if (dartCompileExe != null) {
@@ -361,7 +408,8 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
       }
 
       commands.add(
-          ReleasePackerWindowsSubsystemCommand(true, inputFile, outputFile));
+        ReleasePackerWindowsSubsystemCommand(true, inputFile, outputFile),
+      );
     }
 
     if (jsonList != null) {
@@ -476,11 +524,15 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
 
         if (input == null || output == null) {
           throw StateError(
-              "Can't define `windows_gui` input and output: $windowsGUI");
+            "Can't define `windows_gui` input and output: $windowsGUI",
+          );
         }
 
         return ReleasePackerWindowsSubsystemCommand(
-            true, input.toString(), output.toString());
+          true,
+          input.toString(),
+          output.toString(),
+        );
       }
 
       var rm = map.get<String>('rm') ?? map.get<String>('del');
@@ -495,8 +547,11 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
       if (cmd != null) {
         var stdout = map.get<String>('stdout');
         var stderr = map.get<String>('stderr');
-        return ReleasePackerProcessCommand.from(cmd,
-            stdoutFilePath: stdout, stderrFilePath: stderr);
+        return ReleasePackerProcessCommand.from(
+          cmd,
+          stdoutFilePath: stdout,
+          stderrFilePath: stderr,
+        );
       }
 
       var url = map.get('url');
@@ -541,21 +596,28 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
     return list;
   }
 
-  FutureOr<bool> execute(ReleasePacker releasePacker, Directory rootDirectory,
-      {ReleaseBundle? releaseBundle});
+  FutureOr<bool> execute(
+    ReleasePacker releasePacker,
+    Directory rootDirectory, {
+    ReleaseBundle? releaseBundle,
+  });
 
   static Future<Map<ReleasePackerCommand, bool>> executeCommands(
-      ReleasePacker releasePacker,
-      List<ReleasePackerCommand>? commands,
-      Directory rootDirectory,
-      {ReleaseBundle? releaseBundle,
-      String? platform}) async {
+    ReleasePacker releasePacker,
+    List<ReleasePackerCommand>? commands,
+    Directory rootDirectory, {
+    ReleaseBundle? releaseBundle,
+    String? platform,
+  }) async {
     var results = <ReleasePackerCommand, bool>{};
     if (commands == null || commands.isEmpty) return results;
 
     for (var c in commands.where((e) => e.matchesPlatform(platform))) {
-      var ok = await c.execute(releasePacker, rootDirectory,
-          releaseBundle: releaseBundle);
+      var ok = await c.execute(
+        releasePacker,
+        rootDirectory,
+        releaseBundle: releaseBundle,
+      );
       results[c] = ok;
     }
 
@@ -575,9 +637,10 @@ abstract class ReleasePackerCommandWithArgs extends ReleasePackerCommand {
   final List<String> args;
 
   ReleasePackerCommandWithArgs(String command, [List<String>? args])
-      : command = command.trim(),
-        args = args?.toList() ?? <String>[] {
-    if (command.isEmpty) {
+    : command = command.trim(),
+      args = args?.toList() ?? <String>[] {
+    // NOTE: checks the trimmed field, not the parameter:
+    if (this.command.isEmpty) {
       throw ArgumentError("Empty command!");
     }
   }
@@ -593,8 +656,11 @@ class ReleasePackerCommandDelete extends ReleasePackerCommand {
   }
 
   @override
-  FutureOr<bool> execute(ReleasePacker releasePacker, Directory rootDirectory,
-      {ReleaseBundle? releaseBundle}) {
+  FutureOr<bool> execute(
+    ReleasePacker releasePacker,
+    Directory rootDirectory, {
+    ReleaseBundle? releaseBundle,
+  }) {
     var filePath = joinPaths(rootDirectory.path, path);
     var file = File(filePath);
 
@@ -620,8 +686,12 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
   final Credential? authorization;
   final Object? body;
 
-  ReleasePackerCommandURL(this.url,
-      {this.parameters, this.authorization, this.body}) {
+  ReleasePackerCommandURL(
+    this.url, {
+    this.parameters,
+    this.authorization,
+    this.body,
+  }) {
     if (url.isEmpty) {
       throw ArgumentError("Empty URL!");
     }
@@ -644,10 +714,12 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
 
       var credential = toCredential(authorization);
 
-      return ReleasePackerCommandURL(url,
-          parameters: parameters?.asJsonMap,
-          authorization: credential,
-          body: body);
+      return ReleasePackerCommandURL(
+        url,
+        parameters: parameters?.asJsonMap,
+        authorization: credential,
+        body: body,
+      );
     } else {
       throw ArgumentError("Unknown type: $json");
     }
@@ -676,7 +748,8 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
     } else if (o is Map) {
       var map = o.asJsonMap;
       var user = map.get<String>('username') ?? map.get<String>('user');
-      var pass = map.get<String>('password') ??
+      var pass =
+          map.get<String>('password') ??
           map.get<String>('pass') ??
           map.get<String>('passphrase');
       var bearer = map.get<String>('bearer') ?? map.get<String>('token');
@@ -694,8 +767,11 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
   }
 
   @override
-  Future<bool> execute(ReleasePacker releasePacker, Directory rootDirectory,
-      {ReleaseBundle? releaseBundle}) async {
+  Future<bool> execute(
+    ReleasePacker releasePacker,
+    Directory rootDirectory, {
+    ReleaseBundle? releaseBundle,
+  }) async {
     var parameters = this.parameters != null
         ? Map<String, Object?>.from(this.parameters!)
         : null;
@@ -713,7 +789,11 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
         if (file != null) {
           var release = releaseBundle.release;
           var fileFormatted = ReleaseBundle.formatReleaseBundleFile(
-              file, release.name, release.version, release.platform);
+            file,
+            release.name,
+            release.version,
+            release.platform,
+          );
           parameters!['file'] = fileFormatted;
 
           print('   »  Parameter `file`: $fileFormatted');
@@ -747,8 +827,12 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
       print('   »  Body: $bodyStr');
 
       try {
-        response = await httpClient.post('',
-            parameters: parameters, authorization: authorization, body: body);
+        response = await httpClient.post(
+          '',
+          parameters: parameters,
+          authorization: authorization,
+          body: body,
+        );
       } catch (e) {
         print('  ▒  Error requesting: $url > $e');
         return false;
@@ -769,7 +853,8 @@ class ReleasePackerCommandURL extends ReleasePackerCommand {
     }
 
     print(
-        '   »  Request response> status: ${response.status} ; body: ${response.bodyAsString}');
+      '   »  Request response> status: ${response.status} ; body: ${response.bodyAsString}',
+    );
 
     return response.isOK;
   }
@@ -785,11 +870,13 @@ class ReleasePackerCommandUploadReleaseBundle extends ReleasePackerCommand {
 
   ReleasePackerCommandUploadReleaseBundle._(this.uploadCommand);
 
-  factory ReleasePackerCommandUploadReleaseBundle.byURL(String url,
-      {Map<String, Object?>? parameters,
-      Credential? authorization,
-      String? file,
-      String? release}) {
+  factory ReleasePackerCommandUploadReleaseBundle.byURL(
+    String url, {
+    Map<String, Object?>? parameters,
+    Credential? authorization,
+    String? file,
+    String? release,
+  }) {
     file ??= ReleaseBundle.defaultReleasesBundleFileFormat;
     release ??= '%RELEASE%';
 
@@ -798,20 +885,24 @@ class ReleasePackerCommandUploadReleaseBundle extends ReleasePackerCommand {
     parameters['file'] ??= file;
     parameters['release'] ??= release;
 
-    var cmd = ReleasePackerCommandURL(url,
-        parameters: parameters,
-        authorization: authorization,
-        body: '%RELEASE_BUNDLE%');
+    var cmd = ReleasePackerCommandURL(
+      url,
+      parameters: parameters,
+      authorization: authorization,
+      body: '%RELEASE_BUNDLE%',
+    );
 
     return ReleasePackerCommandUploadReleaseBundle._(cmd);
   }
 
   factory ReleasePackerCommandUploadReleaseBundle.byGCS(
-      String project, String bucket,
-      {Map<String, Object?>? parameters,
-      required Object credential,
-      String? file,
-      String? release}) {
+    String project,
+    String bucket, {
+    Map<String, Object?>? parameters,
+    required Object credential,
+    String? file,
+    String? release,
+  }) {
     file ??= ReleaseBundle.defaultReleasesBundleFileFormat;
     release ??= '%RELEASE%';
 
@@ -820,10 +911,13 @@ class ReleasePackerCommandUploadReleaseBundle extends ReleasePackerCommand {
     parameters['file'] ??= file;
     parameters['release'] ??= release;
 
-    var cmd = ReleasePackerCommandGCS(project, bucket,
-        credential: credential,
-        parameters: parameters,
-        body: '%RELEASE_BUNDLE%');
+    var cmd = ReleasePackerCommandGCS(
+      project,
+      bucket,
+      credential: credential,
+      parameters: parameters,
+      body: '%RELEASE_BUNDLE%',
+    );
 
     return ReleasePackerCommandUploadReleaseBundle._(cmd);
   }
@@ -843,28 +937,38 @@ class ReleasePackerCommandUploadReleaseBundle extends ReleasePackerCommand {
         var cmd = ReleasePackerCommandGCS.fromJson(gcs);
 
         return ReleasePackerCommandUploadReleaseBundle.byGCS(
-            cmd.project, cmd.bucket,
-            credential: cmd.credential,
-            parameters: cmd.parameters,
-            file: file,
-            release: release);
+          cmd.project,
+          cmd.bucket,
+          credential: cmd.credential,
+          parameters: cmd.parameters,
+          file: file,
+          release: release,
+        );
       }
     }
 
     var cmd = ReleasePackerCommandURL.fromJson(json);
 
-    return ReleasePackerCommandUploadReleaseBundle.byURL(cmd.url,
-        parameters: cmd.parameters,
-        authorization: cmd.authorization,
-        file: file,
-        release: release);
+    return ReleasePackerCommandUploadReleaseBundle.byURL(
+      cmd.url,
+      parameters: cmd.parameters,
+      authorization: cmd.authorization,
+      file: file,
+      release: release,
+    );
   }
 
   @override
-  FutureOr<bool> execute(ReleasePacker releasePacker, Directory rootDirectory,
-      {ReleaseBundle? releaseBundle}) {
-    return uploadCommand.execute(releasePacker, rootDirectory,
-        releaseBundle: releaseBundle);
+  FutureOr<bool> execute(
+    ReleasePacker releasePacker,
+    Directory rootDirectory, {
+    ReleaseBundle? releaseBundle,
+  }) {
+    return uploadCommand.execute(
+      releasePacker,
+      rootDirectory,
+      releaseBundle: releaseBundle,
+    );
   }
 }
 
@@ -872,41 +976,72 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
   final String? stdoutFilePath;
   final String? stderrFilePath;
 
-  ReleasePackerProcessCommand(super.command,
-      [super.args, this.stdoutFilePath, this.stderrFilePath]);
+  ReleasePackerProcessCommand(
+    super.command, [
+    super.args,
+    this.stdoutFilePath,
+    this.stderrFilePath,
+  ]);
 
-  factory ReleasePackerProcessCommand.fromList(List list,
-      {String? stdoutFilePath, String? stderrFilePath}) {
+  factory ReleasePackerProcessCommand.fromList(
+    List list, {
+    String? stdoutFilePath,
+    String? stderrFilePath,
+  }) {
     var listStr = list.map((e) => '$e').toList();
     var command = listStr.removeAt(0);
     return ReleasePackerProcessCommand(
-        command, listStr, stdoutFilePath, stderrFilePath);
+      command,
+      listStr,
+      stdoutFilePath,
+      stderrFilePath,
+    );
   }
 
-  factory ReleasePackerProcessCommand.inline(String fullCommand,
-      {String? stdoutFilePath, String? stderrFilePath}) {
+  factory ReleasePackerProcessCommand.inline(
+    String fullCommand, {
+    String? stdoutFilePath,
+    String? stderrFilePath,
+  }) {
     var list = ReleasePackerCommand.parseInlineCommand(fullCommand);
     var command = list.removeAt(0);
     return ReleasePackerProcessCommand(
-        command, list, stdoutFilePath, stderrFilePath);
+      command,
+      list,
+      stdoutFilePath,
+      stderrFilePath,
+    );
   }
 
-  factory ReleasePackerProcessCommand.from(Object command,
-      {String? stdoutFilePath, String? stderrFilePath}) {
+  factory ReleasePackerProcessCommand.from(
+    Object command, {
+    String? stdoutFilePath,
+    String? stderrFilePath,
+  }) {
     if (command is String) {
-      return ReleasePackerProcessCommand.inline(command,
-          stdoutFilePath: stdoutFilePath, stderrFilePath: stderrFilePath);
+      return ReleasePackerProcessCommand.inline(
+        command,
+        stdoutFilePath: stdoutFilePath,
+        stderrFilePath: stderrFilePath,
+      );
     } else if (command is List) {
-      return ReleasePackerProcessCommand.fromList(command,
-          stdoutFilePath: stdoutFilePath, stderrFilePath: stderrFilePath);
+      return ReleasePackerProcessCommand.fromList(
+        command,
+        stdoutFilePath: stdoutFilePath,
+        stderrFilePath: stderrFilePath,
+      );
     } else {
       throw ArgumentError("Unknown command type: $command");
     }
   }
 
   @override
-  bool execute(ReleasePacker releasePacker, Directory rootDirectory,
-      {ReleaseBundle? releaseBundle, int expectedExitCode = 0}) {
+  bool execute(
+    ReleasePacker releasePacker,
+    Directory rootDirectory, {
+    ReleaseBundle? releaseBundle,
+    int expectedExitCode = 0,
+  }) {
     String commandPath;
     if (!containsGenericPathSeparator(command)) {
       commandPath = whichExecutablePath(command);
@@ -917,10 +1052,14 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
     var fullCommandPath = joinPaths(rootDirectory.path, commandPath);
 
     print(
-        '   »  Process command> ${rootDirectory.path} -> $fullCommandPath $args');
+      '   »  Process command> ${rootDirectory.path} -> $fullCommandPath $args',
+    );
 
-    var result = Process.runSync(fullCommandPath, args,
-        workingDirectory: rootDirectory.path);
+    var result = Process.runSync(
+      fullCommandPath,
+      args,
+      workingDirectory: rootDirectory.path,
+    );
 
     saveStdout(rootDirectory, result.stdout);
     saveStderr(rootDirectory, result.stderr);
@@ -930,7 +1069,8 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
 
     if (!ok) {
       print(
-          '  ▒  Command error! exitCode: $exitCode ; command: $command $args');
+        '  ▒  Command error! exitCode: $exitCode ; command: $command $args',
+      );
       print(result.stdout);
       print(result.stderr);
     }
@@ -945,7 +1085,11 @@ class ReleasePackerProcessCommand extends ReleasePackerCommandWithArgs {
       _saveTo(rootDirectory, stderr, stderrFilePath, 'STDERR');
 
   bool _saveTo(
-      Directory rootDirectory, Object? output, String? filePath, String type) {
+    Directory rootDirectory,
+    Object? output,
+    String? filePath,
+    String type,
+  ) {
     if (output == null || filePath == null || filePath.isEmpty) return true;
 
     var fullPath = joinPaths(rootDirectory.path, filePath);
@@ -992,22 +1136,30 @@ class ReleasePackerDartCommand extends ReleasePackerCommandWithArgs {
   }
 
   @override
-  bool execute(ReleasePacker releasePacker, Directory rootDirectory,
-      {ReleaseBundle? releaseBundle, int expectedExitCode = 0}) {
+  bool execute(
+    ReleasePacker releasePacker,
+    Directory rootDirectory, {
+    ReleaseBundle? releaseBundle,
+    int expectedExitCode = 0,
+  }) {
     var dartPath = whichExecutablePath('dart');
 
     print(
-        '   »  Dart command> ${rootDirectory.path} -> $dartPath $command $args');
+      '   »  Dart command> ${rootDirectory.path} -> $dartPath $command $args',
+    );
 
-    var result = Process.runSync(dartPath, [command, ...args],
-        workingDirectory: rootDirectory.path);
+    var result = Process.runSync(dartPath, [
+      command,
+      ...args,
+    ], workingDirectory: rootDirectory.path);
 
     var exitCode = result.exitCode;
     var ok = exitCode == expectedExitCode;
 
     if (!ok) {
       print(
-          '  ▒  Dart command error! exitCode: $exitCode ; command: $command $args');
+        '  ▒  Dart command error! exitCode: $exitCode ; command: $command $args',
+      );
       print(result.stdout);
       print(result.stderr);
     }
@@ -1032,7 +1184,7 @@ class ReleasePackerDartPubGet extends ReleasePackerDartCommand {
 
 class ReleasePackerDartCompileExe extends ReleasePackerDartCommand {
   ReleasePackerDartCompileExe(String dartScript)
-      : super('compile', ['exe', dartScript]);
+    : super('compile', ['exe', dartScript]);
 
   @override
   String toString() {
@@ -1042,7 +1194,7 @@ class ReleasePackerDartCompileExe extends ReleasePackerDartCommand {
 
 class ReleasePackerDartCompileKernel extends ReleasePackerDartCommand {
   ReleasePackerDartCompileKernel(String dartScript)
-      : super('compile', ['kernel', dartScript]);
+    : super('compile', ['kernel', dartScript]);
 
   @override
   String toString() {
@@ -1053,12 +1205,14 @@ class ReleasePackerDartCompileKernel extends ReleasePackerDartCommand {
 class ReleasePackerWindowsSubsystemCommand
     extends ReleasePackerCommandWithArgs {
   ReleasePackerWindowsSubsystemCommand(
-      bool gui, String executableFile, String outputFile)
-      : super('release_utility', [
-          gui ? '--windows-gui' : '--windows-console',
-          executableFile,
-          outputFile
-        ]);
+    bool gui,
+    String executableFile,
+    String outputFile,
+  ) : super('release_utility', [
+        gui ? '--windows-gui' : '--windows-console',
+        executableFile,
+        outputFile,
+      ]);
 
   factory ReleasePackerWindowsSubsystemCommand.fromList(List list) {
     var listStr = list.map((e) => '$e').toList();
@@ -1102,16 +1256,22 @@ class ReleasePackerWindowsSubsystemCommand
   }
 
   @override
-  bool execute(ReleasePacker releasePacker, Directory rootDirectory,
-      {ReleaseBundle? releaseBundle, int expectedExitCode = 0}) {
+  bool execute(
+    ReleasePacker releasePacker,
+    Directory rootDirectory, {
+    ReleaseBundle? releaseBundle,
+    int expectedExitCode = 0,
+  }) {
     var executablePath = args[args.length - 2];
     var executableOutputPath = args.last;
 
-    var inputPath =
-        pack_path.normalize(pack_path.join(rootDirectory.path, executablePath));
+    var inputPath = pack_path.normalize(
+      pack_path.join(rootDirectory.path, executablePath),
+    );
 
-    var outputPath = pack_path
-        .normalize(pack_path.join(rootDirectory.path, executableOutputPath));
+    var outputPath = pack_path.normalize(
+      pack_path.join(rootDirectory.path, executableOutputPath),
+    );
 
     var inputFile = File(inputPath);
     if (!inputFile.existsSync()) {
@@ -1142,7 +1302,8 @@ class ReleasePackerWindowsSubsystemCommand
     }
 
     print(
-        '   »  Windows Subsystem command> ${rootDirectory.path} -> GUI: $gui ; executable: $inputPath');
+      '   »  Windows Subsystem command> ${rootDirectory.path} -> GUI: $gui ; executable: $inputPath',
+    );
 
     WindowsPEFile windowsPEFile;
     try {
@@ -1157,7 +1318,8 @@ class ReleasePackerWindowsSubsystemCommand
     try {
       if (!windowsPEFile.isValidExecutable) {
         print(
-            "   »  IGNORING Windows Subsystem command> Not a valid Windows Executable: $inputPath");
+          "   »  IGNORING Windows Subsystem command> Not a valid Windows Executable: $inputPath",
+        );
         return false;
       }
 
@@ -1173,7 +1335,8 @@ class ReleasePackerWindowsSubsystemCommand
           if (!outputFile.existsSync() ||
               outputFile.lengthSync() != windowsPEFile.fileBuffer.length) {
             print(
-                '  ▒  Error saving executable file: ${outputFile.path} (copy: ${inputFileCp.path})');
+              '  ▒  Error saving executable file: ${outputFile.path} (copy: ${inputFileCp.path})',
+            );
             return false;
           }
 
@@ -1193,14 +1356,18 @@ class ReleasePackerWindowsSubsystemCommand
       var expectedWindowsSubsystem = gui ? 2 : 3;
 
       if (windowsSubsystem != expectedWindowsSubsystem) {
-        print("  ▒  Windows Subsystem Error> "
-            "Value not set to `$expectedWindowsSubsystem` (${WindowsPEFile.windowsSubsystemName(expectedWindowsSubsystem)}). "
-            "Read value: `$windowsSubsystem` (${WindowsPEFile.windowsSubsystemName(windowsSubsystem)})");
+        print(
+          "  ▒  Windows Subsystem Error> "
+          "Value not set to `$expectedWindowsSubsystem` (${WindowsPEFile.windowsSubsystemName(expectedWindowsSubsystem)}). "
+          "Read value: `$windowsSubsystem` (${WindowsPEFile.windowsSubsystemName(windowsSubsystem)})",
+        );
         return false;
       } else {
-        print("   »  Windows Subsystem> "
-            "Current value: `$windowsSubsystem` (${WindowsPEFile.windowsSubsystemName(windowsSubsystem)}) "
-            "@ $outputFile");
+        print(
+          "   »  Windows Subsystem> "
+          "Current value: `$windowsSubsystem` (${WindowsPEFile.windowsSubsystemName(windowsSubsystem)}) "
+          "@ $outputFile",
+        );
       }
     } catch (e, s) {
       print(e);
@@ -1243,11 +1410,17 @@ abstract class ReleasePackerOperation extends ReleasePackerEntry {
       hasCommands && commands!.whereType<T>().isNotEmpty;
 
   Future<Map<ReleasePackerCommand, bool>> executeCommands(
-          ReleasePacker releasePacker, Directory rootDirectory,
-          {ReleaseBundle? releaseBundle, String? platform}) =>
-      ReleasePackerCommand.executeCommands(
-          releasePacker, commands, rootDirectory,
-          releaseBundle: releaseBundle, platform: platform);
+    ReleasePacker releasePacker,
+    Directory rootDirectory, {
+    ReleaseBundle? releaseBundle,
+    String? platform,
+  }) => ReleasePackerCommand.executeCommands(
+    releasePacker,
+    commands,
+    rootDirectory,
+    releaseBundle: releaseBundle,
+    platform: platform,
+  );
 }
 
 class ReleasePackerFile extends ReleasePackerOperation {
@@ -1255,19 +1428,22 @@ class ReleasePackerFile extends ReleasePackerOperation {
 
   String destinyPath;
 
-  ReleasePackerFile(this.sourcePath, String destinyPath,
-      {super.platform,
-      String? dartCompileExe,
-      String? dartCompileKernel,
-      String? windowsGUI})
-      : destinyPath = destinyPath == '.' ? sourcePath : destinyPath,
-        super(
-            commands: ReleasePackerCommand.toCommands(
-          sourcePath: sourcePath,
-          dartCompileExe: dartCompileExe,
-          dartCompileKernel: dartCompileKernel,
-          windowsGUI: windowsGUI,
-        ));
+  ReleasePackerFile(
+    this.sourcePath,
+    String destinyPath, {
+    super.platform,
+    String? dartCompileExe,
+    String? dartCompileKernel,
+    String? windowsGUI,
+  }) : destinyPath = destinyPath == '.' ? sourcePath : destinyPath,
+       super(
+         commands: ReleasePackerCommand.toCommands(
+           sourcePath: sourcePath,
+           dartCompileExe: dartCompileExe,
+           dartCompileKernel: dartCompileKernel,
+           windowsGUI: windowsGUI,
+         ),
+       );
 
   factory ReleasePackerFile.fromJson(Object json) {
     if (json is String) {
@@ -1279,22 +1455,27 @@ class ReleasePackerFile extends ReleasePackerOperation {
       var windowsGUI = json['windows_gui'];
 
       var entry = json.entries
-          .where((e) =>
-              e.key != 'platform' &&
-              e.key != 'dart_compile_exe' &&
-              e.key != 'dart_compile_kernel' &&
-              e.key != 'windows_gui')
+          .where(
+            (e) =>
+                e.key != 'platform' &&
+                e.key != 'dart_compile_exe' &&
+                e.key != 'dart_compile_kernel' &&
+                e.key != 'windows_gui',
+          )
           .first;
 
       if (windowsGUI is bool && windowsGUI) {
         windowsGUI = dartCompileExe ?? entry.key;
       }
 
-      return ReleasePackerFile(entry.key, entry.value,
-          platform: platform,
-          dartCompileExe: dartCompileExe,
-          dartCompileKernel: dartCompileKernel,
-          windowsGUI: windowsGUI);
+      return ReleasePackerFile(
+        entry.key,
+        entry.value,
+        platform: platform,
+        dartCompileExe: dartCompileExe,
+        dartCompileKernel: dartCompileKernel,
+        windowsGUI: windowsGUI,
+      );
     } else {
       throw ArgumentError("Unknown type: $json");
     }

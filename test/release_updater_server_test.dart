@@ -67,8 +67,10 @@ void main() {
 
         if (!blocked) {
           requestInfo.markRequest(now: now);
-          expect(requestInfo.isBlocked(now: now),
-              requestI >= 80 ? isTrue : isFalse);
+          expect(
+            requestInfo.isBlocked(now: now),
+            requestI >= 80 ? isTrue : isFalse,
+          );
         }
       }
     });

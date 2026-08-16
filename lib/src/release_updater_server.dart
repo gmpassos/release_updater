@@ -12,9 +12,7 @@ import 'release_updater_utils.dart';
 
 final Map<String, RequestInfo> _requestsInfos = <String, RequestInfo>{};
 
-RequestInfo resolveRequestInfo(
-  shelf.Request request,
-) {
+RequestInfo resolveRequestInfo(shelf.Request request) {
   final connectionInfo =
       request.context['shelf.io.connection_info'] as HttpConnectionInfo;
 
@@ -22,10 +20,40 @@ RequestInfo resolveRequestInfo(
 }
 
 RequestInfo resolveAddressRequestInfo(InternetAddress remoteAddress) {
-  var requestInfo =
-      _requestsInfos[remoteAddress.address] ??= RequestInfo(remoteAddress);
+  var requestInfo = _requestsInfos[remoteAddress.address] ??= RequestInfo(
+    remoteAddress,
+  );
+
+  if (_requestsInfos.length > requestsInfosPurgeLimit) {
+    purgeRequestsInfos(keep: requestInfo);
+  }
+
   return requestInfo;
 }
+
+/// The [_requestsInfos] length that triggers a [purgeRequestsInfos] call.
+const int requestsInfosPurgeLimit = 1000;
+
+/// Removes the tracked [RequestInfo]s without any recent request or error,
+/// avoiding an unbounded growth of the tracked addresses.
+/// Returns the number of removed entries.
+int purgeRequestsInfos({DateTime? now, RequestInfo? keep}) {
+  now ??= DateTime.now();
+
+  var expired = _requestsInfos.entries
+      .where((e) => e.value != keep && e.value.isExpired(now: now))
+      .map((e) => e.key)
+      .toList();
+
+  for (var k in expired) {
+    _requestsInfos.remove(k);
+  }
+
+  return expired.length;
+}
+
+/// The number of tracked [RequestInfo]s. See [resolveAddressRequestInfo].
+int get requestsInfosLength => _requestsInfos.length;
 
 class RequestInfo {
   final InternetAddress address;
@@ -77,14 +105,24 @@ class RequestInfo {
     return false;
   }
 
+  /// Returns `true` if there's no request or error in the timeout windows.
+  bool isExpired({DateTime? now}) {
+    purge(now: now);
+    return _requestsTime.isEmpty && _errorsTime.isEmpty;
+  }
+
   @override
   String toString() {
-    return 'RequestInfo{address: $address, requests: ${_requestsTime.length}, errors: ${_errorsTime.length}';
+    return 'RequestInfo{address: $address, requests: ${_requestsTime.length}, errors: ${_errorsTime.length}}';
   }
 }
 
-shelf.Handler processServerRequest(shelf.Handler handler, Directory releasesDir,
-    BasicCredential? credential, File releasesFile) {
+shelf.Handler processServerRequest(
+  shelf.Handler handler,
+  Directory releasesDir,
+  BasicCredential? credential,
+  File releasesFile,
+) {
   return (request) {
     var requestInfo = resolveRequestInfo(request);
 
@@ -95,7 +133,12 @@ shelf.Handler processServerRequest(shelf.Handler handler, Directory releasesDir,
 
     if (credential != null) {
       var response = _processUpLoad(
-          request, releasesDir, credential, releasesFile, requestInfo);
+        request,
+        releasesDir,
+        credential,
+        releasesFile,
+        requestInfo,
+      );
       if (response != null) return response;
     }
 
@@ -120,9 +163,10 @@ shelf.Handler processServerRequest(shelf.Handler handler, Directory releasesDir,
 shelf.Response _processReleases(File releasesFile) {
   var content = releasesFile.readAsStringSync();
 
-  return shelf.Response.ok(content, headers: {
-    HttpHeaders.contentTypeHeader: 'text/plain',
-  });
+  return shelf.Response.ok(
+    content,
+    headers: {HttpHeaders.contentTypeHeader: 'text/plain'},
+  );
 }
 
 shelf.Response _processReleasesFiles(Directory releasesDir) {
@@ -130,9 +174,10 @@ shelf.Response _processReleasesFiles(Directory releasesDir) {
 
   var content = '${filesPaths.join('\n')}\n';
 
-  return shelf.Response.ok(content, headers: {
-    HttpHeaders.contentTypeHeader: 'text/plain',
-  });
+  return shelf.Response.ok(
+    content,
+    headers: {HttpHeaders.contentTypeHeader: 'text/plain'},
+  );
 }
 
 shelf.Response _processReleasesURLs(Directory releasesDir, Uri requestedURL) {
@@ -150,9 +195,10 @@ shelf.Response _processReleasesURLs(Directory releasesDir, Uri requestedURL) {
 
   var content = '${urls.join('\n')}\n';
 
-  return shelf.Response.ok(content, headers: {
-    HttpHeaders.contentTypeHeader: 'text/plain',
-  });
+  return shelf.Response.ok(
+    content,
+    headers: {HttpHeaders.contentTypeHeader: 'text/plain'},
+  );
 }
 
 List<String> _listReleasesFilesPaths(Directory releasesDir) {
@@ -169,11 +215,12 @@ List<String> _listReleasesFilesPaths(Directory releasesDir) {
 }
 
 FutureOr<shelf.Response>? _processUpLoad(
-    shelf.Request request,
-    Directory releasesDir,
-    BasicCredential credential,
-    File releasesFile,
-    RequestInfo requestInfo) {
+  shelf.Request request,
+  Directory releasesDir,
+  BasicCredential credential,
+  File releasesFile,
+  RequestInfo requestInfo,
+) {
   if (request.method != 'POST') return null;
 
   var queryParameters = request.url.queryParameters;
@@ -196,7 +243,13 @@ FutureOr<shelf.Response>? _processUpLoad(
 
   return request.read().toBytes().then((body) {
     var response = _saveUploadedFile(
-        releasesDir, file, body, releasesFile, release, address);
+      releasesDir,
+      file,
+      body,
+      releasesFile,
+      release,
+      address,
+    );
     if (response == null) {
       requestInfo.markError();
       return shelf.Response.internalServerError();
@@ -206,9 +259,7 @@ FutureOr<shelf.Response>? _processUpLoad(
   });
 }
 
-BasicCredential _parseRequestCredential(
-  shelf.Request request,
-) {
+BasicCredential _parseRequestCredential(shelf.Request request) {
   var headerAuthorization = request.headers['authorization'];
 
   if (headerAuthorization != null && headerAuthorization.isNotEmpty) {
@@ -228,8 +279,14 @@ BasicCredential _parseRequestCredential(
 
 final _regExpNonWord = RegExp(r'\W');
 
-Map<String, Object?>? _saveUploadedFile(Directory releasesDir, String paramFile,
-    Uint8List bytes, File releasesFile, String? release, String address) {
+Map<String, Object?>? _saveUploadedFile(
+  Directory releasesDir,
+  String paramFile,
+  Uint8List bytes,
+  File releasesFile,
+  String? release,
+  String address,
+) {
   if (bytes.isEmpty) {
     print("▒  Upload ERROR[$address]> Empty release file: $paramFile");
     return null;
@@ -251,7 +308,8 @@ Map<String, Object?>? _saveUploadedFile(Directory releasesDir, String paramFile,
 
   if (file.existsSync()) {
     print(
-        "▒  Upload ERROR[$address]> Can't overwrite release file: ${file.path}");
+      "▒  Upload ERROR[$address]> Can't overwrite release file: ${file.path}",
+    );
     return null;
   }
 
@@ -260,7 +318,8 @@ Map<String, Object?>? _saveUploadedFile(Directory releasesDir, String paramFile,
   var savedBytes = file.lengthSync();
 
   print(
-      '»  Upload[$address]> Saved release file: ${file.path} ($savedBytes bytes)');
+    '»  Upload[$address]> Saved release file: ${file.path} ($savedBytes bytes)',
+  );
 
   var result = {'file': fileName, 'bytes': savedBytes};
 

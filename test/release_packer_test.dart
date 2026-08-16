@@ -12,15 +12,19 @@ void main() {
   group('ReleasePacker', () {
     test('ReleasePackerCommand', () async {
       expect(
-          ReleasePackerCommand.parseInlineCommand(
-              'bin/foo.exe arg1 "a b x" arg2'),
-          equals(['bin/foo.exe', 'arg1', 'a b x', 'arg2']));
+        ReleasePackerCommand.parseInlineCommand(
+          'bin/foo.exe arg1 "a b x" arg2',
+        ),
+        equals(['bin/foo.exe', 'arg1', 'a b x', 'arg2']),
+      );
     });
 
     test('ReleasePackerCommand', () async {
       {
-        var cmd = ReleasePackerCommandURL.fromJson(
-            {'url': 'http://foo/bar', 'authorization': 'joe:12345678'});
+        var cmd = ReleasePackerCommandURL.fromJson({
+          'url': 'http://foo/bar',
+          'authorization': 'joe:12345678',
+        });
 
         expect(cmd.url, equals('http://foo/bar'));
 
@@ -36,7 +40,7 @@ void main() {
           'url': 'http://foo/bar',
           'authorization': 'joe:12345678',
           'parameters': {'a': 123},
-          'body': 'Data'
+          'body': 'Data',
         });
 
         expect(cmd.url, equals('http://foo/bar'));
@@ -54,7 +58,7 @@ void main() {
           'url': 'http://foo/bar',
           'authorization': {'user': 'userX', 'pass': 'pass123'},
           'parameters': {'a': 123},
-          'body': 'Data'
+          'body': 'Data',
         });
 
         expect(cmd.url, equals('http://foo/bar'));
@@ -70,8 +74,8 @@ void main() {
             'url': 'http://foo/bar',
             'authorization': {'user': 'userX', 'pass': 'pass123'},
             'parameters': {'a': 123},
-            'body': 'Data'
-          }
+            'body': 'Data',
+          },
         });
 
         expect(cmd, isA<ReleasePackerCommandURL>());
@@ -92,8 +96,9 @@ void main() {
       }
 
       {
-        var cmd =
-            ReleasePackerCommand.from({'dart_compile_exe': 'bin/foo.dart'});
+        var cmd = ReleasePackerCommand.from({
+          'dart_compile_exe': 'bin/foo.dart',
+        });
 
         expect(cmd, isA<ReleasePackerDartCompileExe>());
 
@@ -103,8 +108,9 @@ void main() {
       }
 
       {
-        var cmd =
-            ReleasePackerCommand.from({'dart_compile_kernel': 'bin/foo.dart'});
+        var cmd = ReleasePackerCommand.from({
+          'dart_compile_kernel': 'bin/foo.dart',
+        });
 
         expect(cmd, isA<ReleasePackerDartCompileKernel>());
 
@@ -115,15 +121,17 @@ void main() {
 
       {
         var cmd = ReleasePackerCommand.from({
-          'windows_gui': ['bin/foo.exe', 'bin/foo-gui.exe']
+          'windows_gui': ['bin/foo.exe', 'bin/foo-gui.exe'],
         });
 
         expect(cmd, isA<ReleasePackerWindowsSubsystemCommand>());
 
         var cmdWinGUI = cmd as ReleasePackerWindowsSubsystemCommand;
 
-        expect(cmdWinGUI.args,
-            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']));
+        expect(
+          cmdWinGUI.args,
+          equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']),
+        );
       }
 
       {
@@ -133,8 +141,12 @@ void main() {
       }
 
       {
-        var cmd = ReleasePackerCommand.from(
-            ['dart', 'compile', 'exe', 'bin/foo.dart']);
+        var cmd = ReleasePackerCommand.from([
+          'dart',
+          'compile',
+          'exe',
+          'bin/foo.dart',
+        ]);
 
         expect(cmd, isA<ReleasePackerDartCompileExe>());
 
@@ -144,15 +156,20 @@ void main() {
       }
 
       {
-        var cmd = ReleasePackerCommand.from(
-            ['windows_gui', 'bin/foo.exe', 'bin/foo-gui.exe']);
+        var cmd = ReleasePackerCommand.from([
+          'windows_gui',
+          'bin/foo.exe',
+          'bin/foo-gui.exe',
+        ]);
 
         expect(cmd, isA<ReleasePackerWindowsSubsystemCommand>());
 
         var cmdWinGUI = cmd as ReleasePackerWindowsSubsystemCommand;
 
-        expect(cmdWinGUI.args,
-            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']));
+        expect(
+          cmdWinGUI.args,
+          equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']),
+        );
       }
 
       {
@@ -162,18 +179,25 @@ void main() {
 
         var cmdWinGUI = cmd as ReleasePackerWindowsSubsystemCommand;
 
-        expect(cmdWinGUI.args,
-            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo.exe']));
+        expect(
+          cmdWinGUI.args,
+          equals(['--windows-gui', 'bin/foo.exe', 'bin/foo.exe']),
+        );
       }
 
       {
-        var cmd = ReleasePackerWindowsSubsystemCommand.fromList(
-            ['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']);
+        var cmd = ReleasePackerWindowsSubsystemCommand.fromList([
+          '--windows-gui',
+          'bin/foo.exe',
+          'bin/foo-gui.exe',
+        ]);
 
         expect(cmd, isA<ReleasePackerWindowsSubsystemCommand>());
 
-        expect(cmd.args,
-            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']));
+        expect(
+          cmd.args,
+          equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']),
+        );
       }
 
       {
@@ -181,13 +205,15 @@ void main() {
           'release_utility',
           '--windows-gui',
           'bin/foo.exe',
-          'bin/foo-gui.exe'
+          'bin/foo-gui.exe',
         ]);
 
         expect(cmd, isA<ReleasePackerWindowsSubsystemCommand>());
 
-        expect(cmd.args,
-            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']));
+        expect(
+          cmd.args,
+          equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']),
+        );
       }
 
       {
@@ -195,20 +221,22 @@ void main() {
           'release_utility',
           '--windows-console',
           'bin/foo.exe',
-          'bin/foo-console.exe'
+          'bin/foo-console.exe',
         ]);
 
         expect(cmd, isA<ReleasePackerWindowsSubsystemCommand>());
 
         expect(
-            cmd.args,
-            equals(
-                ['--windows-console', 'bin/foo.exe', 'bin/foo-console.exe']));
+          cmd.args,
+          equals(['--windows-console', 'bin/foo.exe', 'bin/foo-console.exe']),
+        );
       }
 
       {
         var cmds = ReleasePackerCommand.toCommands(
-            dartCompileExe: 'bin/foo.exe', windowsGUI: 'bin/foo-gui.exe');
+          dartCompileExe: 'bin/foo.exe',
+          windowsGUI: 'bin/foo-gui.exe',
+        );
 
         expect(cmds!.length, equals(2));
         expect(cmds[0], isA<ReleasePackerDartCompileExe>());
@@ -219,15 +247,18 @@ void main() {
 
         var cmdWinGUI = cmds[1] as ReleasePackerWindowsSubsystemCommand;
 
-        expect(cmdWinGUI.args,
-            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']));
+        expect(
+          cmdWinGUI.args,
+          equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']),
+        );
       }
 
       {
         var cmds = ReleasePackerCommand.toCommands(
-            sourcePath: 'bin/foo-gui.exe',
-            dartCompileExe: 'bin/foo.exe',
-            windowsGUI: 'bin/foo.exe');
+          sourcePath: 'bin/foo-gui.exe',
+          dartCompileExe: 'bin/foo.exe',
+          windowsGUI: 'bin/foo.exe',
+        );
 
         expect(cmds!.length, equals(2));
         expect(cmds[0], isA<ReleasePackerDartCompileExe>());
@@ -238,34 +269,44 @@ void main() {
 
         var cmdWinGUI = cmds[1] as ReleasePackerWindowsSubsystemCommand;
 
-        expect(cmdWinGUI.args,
-            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']));
+        expect(
+          cmdWinGUI.args,
+          equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']),
+        );
       }
 
       {
         var cmds = ReleasePackerCommand.toCommands(
-            sourcePath: 'bin/foo-gui.exe', windowsGUI: 'bin/foo.exe');
+          sourcePath: 'bin/foo-gui.exe',
+          windowsGUI: 'bin/foo.exe',
+        );
 
         expect(cmds!.length, equals(1));
         expect(cmds[0], isA<ReleasePackerWindowsSubsystemCommand>());
 
         var cmdWinGUI = cmds[0] as ReleasePackerWindowsSubsystemCommand;
 
-        expect(cmdWinGUI.args,
-            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']));
+        expect(
+          cmdWinGUI.args,
+          equals(['--windows-gui', 'bin/foo.exe', 'bin/foo-gui.exe']),
+        );
       }
 
       {
         var cmds = ReleasePackerCommand.toCommands(
-            sourcePath: 'bin/foo.exe', windowsGUI: 'bin/foo.exe');
+          sourcePath: 'bin/foo.exe',
+          windowsGUI: 'bin/foo.exe',
+        );
 
         expect(cmds!.length, equals(1));
         expect(cmds[0], isA<ReleasePackerWindowsSubsystemCommand>());
 
         var cmdWinGUI = cmds[0] as ReleasePackerWindowsSubsystemCommand;
 
-        expect(cmdWinGUI.args,
-            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo.exe']));
+        expect(
+          cmdWinGUI.args,
+          equals(['--windows-gui', 'bin/foo.exe', 'bin/foo.exe']),
+        );
       }
     });
 
@@ -273,8 +314,10 @@ void main() {
       var releasePackerJsonPath = resolveReleasePackerJsonFilePath();
       var properties = {'readme': 'README.md', 'FOO_EXE_PATH': 'foo-cli.exe'};
 
-      var releasePacker = ReleasePacker.fromFilePath(releasePackerJsonPath,
-          properties: properties);
+      var releasePacker = ReleasePacker.fromFilePath(
+        releasePackerJsonPath,
+        properties: properties,
+      );
 
       print(releasePacker);
       for (var f in releasePacker.files) {
@@ -291,24 +334,30 @@ void main() {
         expect(prepareCommands[0], isA<ReleasePackerDartPubGet>());
 
         expect(prepareCommands[1], isA<ReleasePackerDartCompileExe>());
-        expect((prepareCommands[1] as ReleasePackerDartCompileExe).args,
-            equals(['exe', 'bin/foo.dart']));
+        expect(
+          (prepareCommands[1] as ReleasePackerDartCompileExe).args,
+          equals(['exe', 'bin/foo.dart']),
+        );
 
         expect(prepareCommands[2], isA<ReleasePackerWindowsSubsystemCommand>());
         expect(
-            (prepareCommands[2] as ReleasePackerWindowsSubsystemCommand)
-                .command,
-            equals('release_utility'));
+          (prepareCommands[2] as ReleasePackerWindowsSubsystemCommand).command,
+          equals('release_utility'),
+        );
         expect(
-            (prepareCommands[2] as ReleasePackerWindowsSubsystemCommand).args,
-            equals(['--windows-gui', 'bin/foo.exe', 'bin/foo.exe']));
+          (prepareCommands[2] as ReleasePackerWindowsSubsystemCommand).args,
+          equals(['--windows-gui', 'bin/foo.exe', 'bin/foo.exe']),
+        );
 
         expect(prepareCommands[3], isA<ReleasePackerProcessCommand>());
-        expect((prepareCommands[3] as ReleasePackerProcessCommand).command,
-            equals('bin/foo.exe'));
         expect(
-            (prepareCommands[3] as ReleasePackerProcessCommand).stdoutFilePath,
-            equals('foo.out'));
+          (prepareCommands[3] as ReleasePackerProcessCommand).command,
+          equals('bin/foo.exe'),
+        );
+        expect(
+          (prepareCommands[3] as ReleasePackerProcessCommand).stdoutFilePath,
+          equals('foo.out'),
+        );
       }
 
       var finalizeCommands = releasePacker.finalizeCommands!;
@@ -316,16 +365,22 @@ void main() {
 
       {
         expect(finalizeCommands[0], isA<ReleasePackerCommandDelete>());
-        expect((finalizeCommands[0] as ReleasePackerCommandDelete).path,
-            equals('bin/foo.exe'));
+        expect(
+          (finalizeCommands[0] as ReleasePackerCommandDelete).path,
+          equals('bin/foo.exe'),
+        );
 
         expect(finalizeCommands[1], isA<ReleasePackerCommandDelete>());
-        expect((finalizeCommands[1] as ReleasePackerCommandDelete).path,
-            equals('bin/foo.dill'));
+        expect(
+          (finalizeCommands[1] as ReleasePackerCommandDelete).path,
+          equals('bin/foo.dill'),
+        );
 
         expect(finalizeCommands[2], isA<ReleasePackerCommandDelete>());
-        expect((finalizeCommands[2] as ReleasePackerCommandDelete).path,
-            equals('foo.out'));
+        expect(
+          (finalizeCommands[2] as ReleasePackerCommandDelete).path,
+          equals('foo.out'),
+        );
       }
 
       expect(releasePacker.files.length, equals(9));
@@ -397,7 +452,9 @@ void main() {
       var platform = ReleasePlatform.platform;
 
       var bundle = await releasePacker.buildFromDirectory(
-          sourcePath: 'project-foo', platform: platform);
+        sourcePath: 'project-foo',
+        platform: platform,
+      );
 
       await _checkBundle(bundle, platform);
 
@@ -412,8 +469,10 @@ void main() {
 Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {
   expect(bundle, isNotNull);
 
-  expect(bundle.release.toString(),
-      equals('foo/${ReleaseUpdater.VERSION}/$platform'));
+  expect(
+    bundle.release.toString(),
+    equals('foo/${ReleaseUpdater.VERSION}/$platform'),
+  );
 
   var bundleFiles = (await bundle.files).toList();
   bundleFiles.sort();
@@ -433,8 +492,10 @@ Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {
     expect(file.filePath, equals('README.md'));
 
     var dataStr = await file.dataAsString;
-    expect(dataStr.normalizeToPosixLines().trim(),
-        equals('# Foo/1.0.1\n\nA Foo project.'));
+    expect(
+      dataStr.normalizeToPosixLines().trim(),
+      equals('# Foo/1.0.1\n\nA Foo project.'),
+    );
   }
 
   {
@@ -482,7 +543,7 @@ String resolveReleasePackerJsonFilePath() {
   var paths = [
     'release_packer.json',
     'test/release_packer.json',
-    '../test/release_packer.json'
+    '../test/release_packer.json',
   ];
 
   var currentDir = Directory.current;

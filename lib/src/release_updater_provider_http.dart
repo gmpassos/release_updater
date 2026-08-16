@@ -18,18 +18,24 @@ class ReleaseProviderHttp extends ReleaseProvider {
   static const String defaultReleasesBundleFileFormat =
       ReleaseBundle.defaultReleasesBundleFileFormat;
 
-  ReleaseProviderHttp.withClient(this._httpClient,
-      {this.releasesFile = defaultReleasesFile,
-      this.releasesBundleFileFormat = defaultReleasesBundleFileFormat})
-      : baseURL = _httpClient!.baseURL;
+  ReleaseProviderHttp.withClient(
+    this._httpClient, {
+    this.releasesFile = defaultReleasesFile,
+    this.releasesBundleFileFormat = defaultReleasesBundleFileFormat,
+  }) : baseURL = _httpClient!.baseURL;
 
-  ReleaseProviderHttp.baseURL(this.baseURL,
-      {this.releasesFile = defaultReleasesFile,
-      this.releasesBundleFileFormat = defaultReleasesBundleFileFormat})
-      : _httpClient = null;
+  ReleaseProviderHttp.baseURL(
+    this.baseURL, {
+    this.releasesFile = defaultReleasesFile,
+    this.releasesBundleFileFormat = defaultReleasesBundleFileFormat,
+  }) : _httpClient = null;
 
   @override
-  ReleaseProviderHttp copy() => ReleaseProviderHttp.baseURL(baseURL);
+  ReleaseProviderHttp copy() => ReleaseProviderHttp.baseURL(
+    baseURL,
+    releasesFile: releasesFile,
+    releasesBundleFileFormat: releasesBundleFileFormat,
+  );
 
   HttpClient get httpClient => _httpClient ??= HttpClient(baseURL);
 
@@ -38,8 +44,13 @@ class ReleaseProviderHttp extends ReleaseProvider {
       try {
         var response = await httpClient.get(path);
         return response.isOK ? response.body : null;
-      } catch (_) {
-        await Future.delayed(Duration(seconds: 1));
+      } catch (e) {
+        var lastRetry = i == maxRetries - 1;
+        if (lastRetry) {
+          print('▒  Error requesting `$path` from `$baseURL`: $e');
+        } else {
+          await Future.delayed(Duration(seconds: 1));
+        }
       }
     }
 
@@ -64,25 +75,38 @@ class ReleaseProviderHttp extends ReleaseProvider {
   }
 
   @override
-  Future<ReleaseBundle?> getReleaseBundle(String name, Version targetVersion,
-      [String? platform]) async {
+  Future<ReleaseBundle?> getReleaseBundle(
+    String name,
+    Version targetVersion, [
+    String? platform,
+  ]) async {
     var file = ReleaseBundle.formatReleaseBundleFile(
-        releasesBundleFileFormat, name, targetVersion, platform);
+      releasesBundleFileFormat,
+      name,
+      targetVersion,
+      platform,
+    );
 
     var body = await _getHttpPath(file);
     if (body == null) return null;
 
     var byteArray = body.asByteArray!;
 
-    var zipBytes =
-        byteArray is Uint8List ? byteArray : Uint8List.fromList(byteArray);
+    var zipBytes = byteArray is Uint8List
+        ? byteArray
+        : Uint8List.fromList(byteArray);
 
-    var rootPath =
-        file.replaceFirst(RegExp(r'\.zip$', caseSensitive: false), '');
+    var rootPath = file.replaceFirst(
+      RegExp(r'\.zip$', caseSensitive: false),
+      '',
+    );
 
     var release = Release(name, targetVersion, platform: platform);
-    var releaseBundle =
-        ReleaseBundleZip(release, zipBytes: zipBytes, rootPath: rootPath);
+    var releaseBundle = ReleaseBundleZip(
+      release,
+      zipBytes: zipBytes,
+      rootPath: rootPath,
+    );
 
     return releaseBundle;
   }
