@@ -92,11 +92,13 @@ void _showCurrentWindowsSubsystem(File file, bool cmdVerbose) {
 
   var windowsSubsystem = windowsPEFile.readWindowsSubsystem();
 
-  var windowsSubsystemName =
-      WindowsPEFile.windowsSubsystemName(windowsSubsystem);
+  var windowsSubsystemName = WindowsPEFile.windowsSubsystemName(
+    windowsSubsystem,
+  );
 
   print(
-      '»  Current Windows Subsystem: $windowsSubsystem ($windowsSubsystemName) @ ${file.path}');
+    '»  Current Windows Subsystem: $windowsSubsystem ($windowsSubsystemName) @ ${file.path}',
+  );
 }
 
 File? _resolveDefaultOutputFile(List<String> args, File file) {

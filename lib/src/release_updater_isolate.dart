@@ -12,10 +12,16 @@ extension ReleaseUpdaterIsolateExtension on ReleaseUpdater {
   /// - The created [Isolate] is shared by all calls to [spawnPeriodicUpdateCheckerIsolate].
   ///
   /// See [startPeriodicUpdateChecker].
-  Future<bool> spawnPeriodicUpdateCheckerIsolate(OnRelease onNewRelease,
-          {Duration? interval, Release? currentRelease}) =>
-      _PeriodicUpdateCheckerController.sendTask(
-          this, onNewRelease, interval, currentRelease);
+  Future<bool> spawnPeriodicUpdateCheckerIsolate(
+    OnRelease onNewRelease, {
+    Duration? interval,
+    Release? currentRelease,
+  }) => _PeriodicUpdateCheckerController.sendTask(
+    this,
+    onNewRelease,
+    interval,
+    currentRelease,
+  );
 }
 
 class _PeriodicUpdateCheckerController {
@@ -36,9 +42,9 @@ class _PeriodicUpdateCheckerController {
     var receivePort = ReceivePort();
     receivePort.listen((sendPort) => isolatePortCompleter.complete(sendPort));
 
-    await Isolate.spawn(
-        _PeriodicUpdateCheckerIsolate.isolateMain, [receivePort.sendPort],
-        debugName: 'PeriodicUpdateChecker');
+    await Isolate.spawn(_PeriodicUpdateCheckerIsolate.isolateMain, [
+      receivePort.sendPort,
+    ], debugName: 'PeriodicUpdateChecker');
 
     var isolatePort = await isolatePortCompleter.future;
     _isolatePort = isolatePort;
@@ -49,10 +55,11 @@ class _PeriodicUpdateCheckerController {
   }
 
   static Future<bool> sendTask(
-      ReleaseUpdater releaseUpdater,
-      OnRelease onNewRelease,
-      Duration? interval,
-      Release? currentRelease) async {
+    ReleaseUpdater releaseUpdater,
+    OnRelease onNewRelease,
+    Duration? interval,
+    Release? currentRelease,
+  ) async {
     var isolatePort = await _getIsolatePort();
 
     var receivePort = ReceivePort();
@@ -62,7 +69,7 @@ class _PeriodicUpdateCheckerController {
       receivePort.sendPort,
       releaseUpdater.copy(),
       interval,
-      currentRelease?.toString()
+      currentRelease?.toString(),
     ]);
 
     return true;
@@ -86,14 +93,18 @@ class _PeriodicUpdateCheckerIsolate {
     Duration? interval = message[2];
     String? currentReleaseStr = message[3];
 
-    var currentRelease =
-        currentReleaseStr != null ? Release.parse(currentReleaseStr) : null;
+    var currentRelease = currentReleaseStr != null
+        ? Release.parse(currentReleaseStr)
+        : null;
 
     var ret = Future.sync(() => releaseUpdater.onSpawned());
 
     ret.then((_) {
-      releaseUpdater.startPeriodicUpdateChecker((r) => sendPort.send(r),
-          interval: interval, currentRelease: currentRelease);
+      releaseUpdater.startPeriodicUpdateChecker(
+        (r) => sendPort.send(r),
+        interval: interval,
+        currentRelease: currentRelease,
+      );
     });
   }
 

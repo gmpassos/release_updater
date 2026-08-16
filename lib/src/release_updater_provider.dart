@@ -42,6 +42,9 @@ abstract class ReleaseProvider implements Copiable<ReleaseProvider>, Spawnable {
   }
 
   /// Gets a [ReleaseBundle] for the [targetVersion].
-  FutureOr<ReleaseBundle?> getReleaseBundle(String name, Version targetVersion,
-      [String? platform]);
+  FutureOr<ReleaseBundle?> getReleaseBundle(
+    String name,
+    Version targetVersion, [
+    String? platform,
+  ]);
 }

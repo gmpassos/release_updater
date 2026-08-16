@@ -78,8 +78,10 @@ class ReleaseUpdater implements Copiable<ReleaseUpdater>, Spawnable {
   /// Checks if there's a new version to update and returns it, otherwise returns `null`.
   ///
   /// - [onNewRelease] is called when a new release is available.
-  FutureOr<Release?> checkForUpdate(
-      {OnRelease? onNewRelease, Release? currentRelease}) async {
+  FutureOr<Release?> checkForUpdate({
+    OnRelease? onNewRelease,
+    Release? currentRelease,
+  }) async {
     final realCurrentRelease = await this.currentRelease;
 
     if (currentRelease == null) {
@@ -115,13 +117,18 @@ class ReleaseUpdater implements Copiable<ReleaseUpdater>, Spawnable {
   ///
   /// - [onNewRelease] is called when a new release is available.
   /// - [interval] is the [Timer] interval. Default: 1min.
-  Timer startPeriodicUpdateChecker(OnRelease onNewRelease,
-      {Duration? interval, Release? currentRelease}) {
+  Timer startPeriodicUpdateChecker(
+    OnRelease onNewRelease, {
+    Duration? interval,
+    Release? currentRelease,
+  }) {
     interval ??= Duration(minutes: 1);
 
     return Timer.periodic(interval, (_) async {
       var newRelease = await checkForUpdate(
-          onNewRelease: onNewRelease, currentRelease: currentRelease);
+        onNewRelease: onNewRelease,
+        currentRelease: currentRelease,
+      );
       if (newRelease != null) {
         currentRelease = newRelease;
       }
@@ -152,13 +159,14 @@ class ReleaseUpdater implements Copiable<ReleaseUpdater>, Spawnable {
   /// - [platform] is the desired platform of the available [Release].
   /// - [exactPlatform] when `true` ensures that the update is for the exact [platform] parameter.
   /// - [force] when `true` performs the update even when already updated to the [targetRelease] and [targetVersion].
-  FutureOr<ReleaseUpdateResult?> update(
-      {Release? targetRelease,
-      Version? targetVersion,
-      String? platform,
-      bool exactPlatform = false,
-      bool force = false,
-      bool verbose = false}) async {
+  FutureOr<ReleaseUpdateResult?> update({
+    Release? targetRelease,
+    Version? targetVersion,
+    String? platform,
+    bool exactPlatform = false,
+    bool force = false,
+    bool verbose = false,
+  }) async {
     Release? lastRelease;
 
     if (targetVersion == null) {
@@ -183,12 +191,17 @@ class ReleaseUpdater implements Copiable<ReleaseUpdater>, Spawnable {
       }
     }
 
-    var releaseBundle =
-        await releaseProvider.getReleaseBundle(name, targetVersion, platform);
+    var releaseBundle = await releaseProvider.getReleaseBundle(
+      name,
+      targetVersion,
+      platform,
+    );
 
     if (releaseBundle == null && !exactPlatform) {
-      releaseBundle =
-          await releaseProvider.getReleaseBundle(name, targetVersion);
+      releaseBundle = await releaseProvider.getReleaseBundle(
+        name,
+        targetVersion,
+      );
     }
 
     if (releaseBundle == null) return null;
@@ -244,16 +257,19 @@ class Release implements Comparable<Release> {
   final String? platform;
 
   Release(String name, this.version, {String? platform})
-      : name = normalizeName(name),
-        platform = normalizePlatform(platform);
+    : name = normalizeName(name),
+      platform = normalizePlatform(platform);
 
   factory Release.parse(String s) {
     var parts = s.trim().split('/');
     var name = parts[0].trim();
     var ver = parts[1].trim();
     var platform = parts.length > 2 ? parts[2] : null;
-    return Release(name, SemanticVersioning.parse(ver),
-        platform: platform?.trim());
+    return Release(
+      name,
+      SemanticVersioning.parse(ver),
+      platform: platform?.trim(),
+    );
   }
 
   @override
@@ -321,7 +337,7 @@ class SemanticVersioning extends Version {
   SemanticVersioning._(this._semver);
 
   SemanticVersioning.parse(String version)
-      : this._(semver.Version.parse(version));
+    : this._(semver.Version.parse(version));
 
   @override
   int compareTo(Version other) {
@@ -377,11 +393,15 @@ class ReleaseFile implements Comparable<ReleaseFile> {
 
   final bool compressed;
 
-  ReleaseFile(String filePath, Object data,
-      {DateTime? time, this.executable = false, this.compressed = false})
-      : filePath = normalizePath(filePath),
-        _data = toBytes(data),
-        time = time ?? DateTime.now();
+  ReleaseFile(
+    String filePath,
+    Object data, {
+    DateTime? time,
+    this.executable = false,
+    this.compressed = false,
+  }) : filePath = normalizePath(filePath),
+       _data = toBytes(data),
+       time = time ?? DateTime.now();
 
   static Object toBytes(Object data) {
     if (data is DataProvider) return data;

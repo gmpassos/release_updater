@@ -29,8 +29,11 @@ abstract class ReleaseBundle {
       '%NAME%-%VER%%[-]PLATFORM%.zip';
 
   static String formatReleaseBundleFile(
-      String file, String name, Version version,
-      [String? platform]) {
+    String file,
+    String name,
+    Version version, [
+    String? platform,
+  ]) {
     if (!file.contains('%')) {
       return file;
     }
@@ -55,8 +58,9 @@ abstract class ReleaseBundle {
 
     var manifest = ReleaseManifest(release);
 
-    var manifestFiles =
-        await ReleaseManifestFile.toReleaseManifestFileList(files);
+    var manifestFiles = await ReleaseManifestFile.toReleaseManifestFileList(
+      files,
+    );
 
     manifest.addFiles(manifestFiles);
 
@@ -103,21 +107,25 @@ class ReleaseBundleZip extends ReleaseBundle {
   final String? rootPath;
   final List<String> executableExtensions;
 
-  ReleaseBundleZip(super.release,
-      {Uint8List? zipBytes,
-      Iterable<ReleaseFile>? files,
-      this.rootPath,
-      this.executableExtensions = defaultExecutableExtensions})
-      : _zipBytes = zipBytes,
-        _files = files?.toSet() {
+  ReleaseBundleZip(
+    super.release, {
+    Uint8List? zipBytes,
+    Iterable<ReleaseFile>? files,
+    this.rootPath,
+    this.executableExtensions = defaultExecutableExtensions,
+  }) : _zipBytes = zipBytes,
+       _files = files?.toSet() {
     if (_files == null && _zipBytes == null) {
       throw ArgumentError(
-          "Can't define files! Null `zipBytes` and `files` parameters.");
+        "Can't define files! Null `zipBytes` and `files` parameters.",
+      );
     }
   }
 
-  static bool isExecutableFilePath(String filePath,
-      [List<String>? executableExtensions]) {
+  static bool isExecutableFilePath(
+    String filePath, [
+    List<String>? executableExtensions,
+  ]) {
     executableExtensions ??= defaultExecutableExtensions;
 
     return executableExtensions
@@ -144,8 +152,9 @@ class ReleaseBundleZip extends ReleaseBundle {
     final archive = ZipDecoder().decodeBytes(_zipBytes!);
     var files = archive.where((f) => f.isFile).map(_toReleaseFile).toSet();
 
-    var manifestJsonFile =
-        files.firstWhereOrNull((f) => f.filePath == releaseManifestFilePath);
+    var manifestJsonFile = files.firstWhereOrNull(
+      (f) => f.filePath == releaseManifestFilePath,
+    );
 
     if (manifestJsonFile != null) {
       files.remove(manifestJsonFile);
@@ -178,9 +187,12 @@ class ReleaseBundleZip extends ReleaseBundle {
 
     var executable = f.mode == 755 || isExecutable(filePath);
 
-    var releaseFile = ReleaseFile(filePath, f.content,
-        time: DateTime.fromMillisecondsSinceEpoch(f.lastModTime * 1000),
-        executable: executable);
+    var releaseFile = ReleaseFile(
+      filePath,
+      f.content,
+      time: DateTime.fromMillisecondsSinceEpoch(f.lastModTime * 1000),
+      executable: executable,
+    );
 
     return releaseFile;
   }
@@ -223,8 +235,11 @@ class ReleaseBundleZip extends ReleaseBundle {
     {
       var manifest = await buildManifest();
       var jsonBytes = manifest.toJsonEncodedBytes();
-      var archiveFile =
-          ArchiveFile(releaseManifestFilePath, jsonBytes.length, jsonBytes);
+      var archiveFile = ArchiveFile(
+        releaseManifestFilePath,
+        jsonBytes.length,
+        jsonBytes,
+      );
       archive.addFile(archiveFile);
     }
 
@@ -242,9 +257,11 @@ class ReleaseManifest {
   /// The [DateTime] of creation of the [ReleaseBundle].
   final DateTime date;
 
-  ReleaseManifest(this.release,
-      {Iterable<ReleaseManifestFile>? files, DateTime? date})
-      : date = date ?? DateTime.now() {
+  ReleaseManifest(
+    this.release, {
+    Iterable<ReleaseManifestFile>? files,
+    DateTime? date,
+  }) : date = date ?? DateTime.now() {
     if (files != null) {
       addFiles(files);
     }
@@ -283,8 +300,10 @@ class ReleaseManifest {
   /// This manifest as JSON.
   Map<String, Object> toJson() {
     var entries = _files.values
-        .map((e) =>
-            MapEntry(e.filePath, {'sha256': e.sha256Hex, 'length': e.length}))
+        .map(
+          (e) =>
+              MapEntry(e.filePath, {'sha256': e.sha256Hex, 'length': e.length}),
+        )
         .toList();
 
     entries.sort((a, b) => a.key.compareTo(b.key));
@@ -340,8 +359,13 @@ class ReleaseManifest {
 
     var date = dateStr != null ? DateTime.tryParse(dateStr) : null;
 
-    var files = filesMap.entries.map((e) => ReleaseManifestFile.fromSha256Hex(
-        e.key, e.value['length'], e.value['sha256']));
+    var files = filesMap.entries.map(
+      (e) => ReleaseManifestFile.fromSha256Hex(
+        e.key,
+        e.value['length'],
+        e.value['sha256'],
+      ),
+    );
 
     return ReleaseManifest(release, date: date, files: files);
   }
@@ -371,9 +395,12 @@ class ReleaseManifest {
 /// A [ReleaseManifest] file.
 class ReleaseManifestFile {
   static Future<List<ReleaseManifestFile>> toReleaseManifestFileList(
-          Iterable<ReleaseFile> releaseFiles) =>
-      Future.wait(releaseFiles.map(
-          (f) => Future.sync(() => ReleaseManifestFile.fromReleaseFile(f))));
+    Iterable<ReleaseFile> releaseFiles,
+  ) => Future.wait(
+    releaseFiles.map(
+      (f) => Future.sync(() => ReleaseManifestFile.fromReleaseFile(f)),
+    ),
+  );
 
   /// The file path.
   final String filePath;
@@ -385,22 +412,27 @@ class ReleaseManifestFile {
   final Uint8List sha256;
 
   ReleaseManifestFile(this.filePath, this.length, Uint8List sha256)
-      : sha256 = sha256.asUnmodifiableView();
+    : sha256 = sha256.asUnmodifiableView();
 
   ReleaseManifestFile.fromSha256Hex(String file, int length, String sha256Hex)
-      : this(file, length, base16.decode(sha256Hex));
+    : this(file, length, base16.decode(sha256Hex));
 
   static FutureOr<ReleaseManifestFile> fromReleaseFile(
-      ReleaseFile releaseFile) {
+    ReleaseFile releaseFile,
+  ) {
     var sha256 = releaseFile.dataSHA256;
     var length = releaseFile.length;
     if (sha256 is Uint8List && length is int) {
       return ReleaseManifestFile(releaseFile.filePath, length, sha256);
     } else {
       return Future.sync(() => sha256).then((sha256Value) {
-        return Future.sync(() => length).then((lengthValue) =>
-            ReleaseManifestFile(
-                releaseFile.filePath, lengthValue, sha256Value));
+        return Future.sync(() => length).then(
+          (lengthValue) => ReleaseManifestFile(
+            releaseFile.filePath,
+            lengthValue,
+            sha256Value,
+          ),
+        );
       });
     }
   }

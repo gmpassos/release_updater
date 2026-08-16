@@ -1,3 +1,17 @@
+## 1.1.13
+
+- sdk: '>=3.10.0 <4.0.0'
+- Code formatted with the new Dart formatter style.
+
+- data_serializer: ^1.2.3
+- googleapis_auth: ^2.3.3
+- crypto: ^3.0.7
+- archive: ^4.0.9
+
+- test: ^1.31.1
+- dependency_validator: ^5.0.5
+- coverage: ^1.15.1
+
 ## 1.1.12
 
 - gcloud: ^0.8.19

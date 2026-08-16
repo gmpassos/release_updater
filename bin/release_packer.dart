@@ -27,10 +27,12 @@ void main(List<String> args) async {
   if (args.length < 2) {
     print('USAGE:\n');
     print(
-        ' \$> release_packer release_packer.json build ./source-dir ./releases-dir -Puser=pass\n');
+      ' \$> release_packer release_packer.json build ./source-dir ./releases-dir -Puser=pass\n',
+    );
 
     print(
-        ' \$> release_packer release_packer.json info ./source-dir [generate]\n');
+      ' \$> release_packer release_packer.json info ./source-dir [generate]\n',
+    );
 
     exit(0);
   }
@@ -59,8 +61,10 @@ void main(List<String> args) async {
     _showReleasePacker(releasePacker, showFiles: true);
 
     if (generateBundle) {
-      ReleaseBundleZip releaseBundle =
-          await _buildReleaseBundle(releasePacker, sourcePath);
+      ReleaseBundleZip releaseBundle = await _buildReleaseBundle(
+        releasePacker,
+        sourcePath,
+      );
 
       await _showBundleFiles(releaseBundle);
     }
@@ -70,15 +74,22 @@ void main(List<String> args) async {
 
     _showReleasePacker(releasePacker);
 
-    ReleaseBundleZip releaseBundle =
-        await _buildReleaseBundle(releasePacker, sourcePath, releasesPath);
+    ReleaseBundleZip releaseBundle = await _buildReleaseBundle(
+      releasePacker,
+      sourcePath,
+      releasesPath,
+    );
 
     await _showBundleFiles(releaseBundle);
 
     var releasesDir = Directory(releasesPath).absolute;
 
-    var releaseZipPath = pack_path.normalize(pack_path.join(
-        releasesDir.path, '${releaseBundle.release.asFileName}.zip'));
+    var releaseZipPath = pack_path.normalize(
+      pack_path.join(
+        releasesDir.path,
+        '${releaseBundle.release.asFileName}.zip',
+      ),
+    );
 
     var releaseZipFile = File(releaseZipPath).absolute;
 
@@ -89,7 +100,8 @@ void main(List<String> args) async {
     print('»  Release Zip size: ${releaseZipFile.lengthSync()} bytes.');
 
     print(
-        '\n»  Release `${releaseBundle.release}` saved at:\n\n  ${releaseZipFile.path}\n');
+      '\n»  Release `${releaseBundle.release}` saved at:\n\n  ${releaseZipFile.path}\n',
+    );
   } else {
     print('▒  Unknown command: $cmd $args\n');
     exit(1);
@@ -130,19 +142,24 @@ void _showReleasePacker(ReleasePacker releasePacker, {bool showFiles = false}) {
 }
 
 Future<ReleaseBundleZip> _buildReleaseBundle(
-    ReleasePacker releasePacker, String sourcePath,
-    [String? releasesPath]) async {
+  ReleasePacker releasePacker,
+  String sourcePath, [
+  String? releasesPath,
+]) async {
   print('\n$_hr2');
 
   print('\n»»  Generating release bundle...\n');
 
   print(
-      '»  Building release from `$sourcePath`${releasesPath != null ? ' to `$releasesPath`' : ''}');
+    '»  Building release from `$sourcePath`${releasesPath != null ? ' to `$releasesPath`' : ''}',
+  );
 
   var platform = ReleasePlatform.platform;
 
   var releaseBundle = await releasePacker.buildFromDirectory(
-      sourcePath: sourcePath, platform: platform);
+    sourcePath: sourcePath,
+    platform: platform,
+  );
 
   print('»  Generated release: `${releaseBundle.release}`');
   return releaseBundle;

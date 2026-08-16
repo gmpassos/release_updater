@@ -68,7 +68,8 @@ class WindowsPEFile {
 
     if (peSignature != 0x50450000) {
       throw StateError(
-          "Invalid PE header signature: $peSignature != 0x50450000");
+        "Invalid PE header signature: $peSignature != 0x50450000",
+      );
     }
 
     var machineType = fileBuffer.readUint16(Endian.little);
@@ -99,7 +100,8 @@ class WindowsPEFile {
 
     if (optionalHeaderMagic != 0x010B && optionalHeaderMagic != 0x020B) {
       throw StateError(
-          "Not a normal executable or a PE32+ executable: ${file.path}");
+        "Not a normal executable or a PE32+ executable: ${file.path}",
+      );
     }
 
     // Jump to checkSum:
@@ -117,7 +119,8 @@ class WindowsPEFile {
 
     if (windowsSubsystemOffset != (peHeaderOffset + 0x5C)) {
       throw StateError(
-          "Invalid Windows Subsystem offset: ${fileBuffer.position} != ${peHeaderOffset + 0x5C}");
+        "Invalid Windows Subsystem offset: ${fileBuffer.position} != ${peHeaderOffset + 0x5C}",
+      );
     }
 
     info['windowsSubsystemOffset'] = windowsSubsystemOffset;
@@ -196,7 +199,8 @@ class WindowsPEFile {
     var currentSubsystem = readWindowsSubsystem();
     if (currentSubsystem != 2 && currentSubsystem != 3) {
       throw StateError(
-          "Current subsistem not compatible with `console/GUI` switch: $currentSubsystem");
+        "Current subsistem not compatible with `console/GUI` switch: $currentSubsystem",
+      );
     }
 
     var subsystem = gui ? 2 : 3;

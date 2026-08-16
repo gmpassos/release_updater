@@ -41,11 +41,13 @@ void main(List<String> args) async {
 
   if (uploadPassword != null && uploadPassword.length < 6) {
     print(
-        '▒  Upload password too short (length: ${uploadPassword.length} < 6)!');
+      '▒  Upload password too short (length: ${uploadPassword.length} < 6)!',
+    );
     uploadPassword = null;
   }
 
-  var allowUpload = uploadUsername != null &&
+  var allowUpload =
+      uploadUsername != null &&
       uploadUsername.isNotEmpty &&
       uploadPassword != null &&
       uploadPassword.isNotEmpty;
@@ -69,17 +71,26 @@ void main(List<String> args) async {
 
   showReleasesFile(releasesFile);
 
-  final uploadCredential =
-      allowUpload ? BasicCredential(uploadUsername, uploadPassword) : null;
+  final uploadCredential = allowUpload
+      ? BasicCredential(uploadUsername, uploadPassword)
+      : null;
 
-  var staticHandler =
-      createStaticHandler(releasesDir.path, defaultDocument: 'index.html');
+  var staticHandler = createStaticHandler(
+    releasesDir.path,
+    defaultDocument: 'index.html',
+  );
 
   runZonedGuarded(() async {
     var handler = const shelf.Pipeline()
         .addMiddleware(gzipMiddleware)
-        .addMiddleware((handler) => processServerRequest(
-            handler, releasesDir, uploadCredential, releasesFile))
+        .addMiddleware(
+          (handler) => processServerRequest(
+            handler,
+            releasesDir,
+            uploadCredential,
+            releasesFile,
+          ),
+        )
         .addHandler(staticHandler);
 
     await shelf_io.serve(handler, address, port);

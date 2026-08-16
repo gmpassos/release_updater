@@ -43,15 +43,20 @@ void main() {
           .map((p) => File(p))
           .firstWhere((f) => f.existsSync());
 
-      var file2 = File(pack_path.join(Directory.systemTemp.path,
-          'foo-windows64-cp${DateTime.now().millisecondsSinceEpoch}.exe'));
+      var file2 = File(
+        pack_path.join(
+          Directory.systemTemp.path,
+          'foo-windows64-cp${DateTime.now().millisecondsSinceEpoch}.exe',
+        ),
+      );
 
       file.copySync(file2.path);
 
       expect(file2.lengthSync(), equals(file.lengthSync()));
 
-      var file2Edited =
-          File('${pack_path.withoutExtension(file2.path)}-edited.exe');
+      var file2Edited = File(
+        '${pack_path.withoutExtension(file2.path)}-edited.exe',
+      );
 
       expect(file2Edited.existsSync(), isFalse);
 
@@ -87,8 +92,10 @@ void main() {
 
           expect(WindowsPEFile(file2Edited).readWindowsSubsystem(), 3);
 
-          expect(file2Edited.readAsBytesSync(),
-              equals(windowsPEFile.fileBuffer.toBytes()));
+          expect(
+            file2Edited.readAsBytesSync(),
+            equals(windowsPEFile.fileBuffer.toBytes()),
+          );
         }
 
         windowsPEFile.setWindowsSubsystem(gui: true);
@@ -107,8 +114,10 @@ void main() {
 
           expect(WindowsPEFile(file2Edited).readWindowsSubsystem(), 2);
 
-          expect(file2Edited.readAsBytesSync(),
-              equals(windowsPEFile.fileBuffer.toBytes()));
+          expect(
+            file2Edited.readAsBytesSync(),
+            equals(windowsPEFile.fileBuffer.toBytes()),
+          );
         }
       } finally {
         file2.deleteSync();

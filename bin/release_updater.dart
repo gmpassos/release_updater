@@ -13,8 +13,9 @@ Directory parseReleaseDirectory(Map<String, Object?> config) {
 
   var releasesDirPath = config.get<String>('releases-directory', 'releases')!;
 
-  var releasesDir =
-      Directory(pack_path.join(executableDir.path, releasesDirPath));
+  var releasesDir = Directory(
+    pack_path.join(executableDir.path, releasesDirPath),
+  );
 
   return releasesDir;
 }
@@ -60,7 +61,9 @@ void main(List<String> args) async {
 }
 
 Future<void> updateRelease(
-    ReleaseUpdater releaseUpdater, ReleaseStorageDirectory storage) async {
+  ReleaseUpdater releaseUpdater,
+  ReleaseStorageDirectory storage,
+) async {
   var name = releaseUpdater.name;
 
   print('\n»» [$name] Updating...');
@@ -95,7 +98,9 @@ Future<void> updateRelease(
 }
 
 Future<void> processCommand(
-    ReleaseUpdater releaseUpdater, List<String> args) async {
+  ReleaseUpdater releaseUpdater,
+  List<String> args,
+) async {
   var cmd = args.removeAt(0).toLowerCase().trim();
 
   print('');

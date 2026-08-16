@@ -44,8 +44,11 @@ abstract class ReleaseStorage implements Copiable<ReleaseStorage>, Spawnable {
   }
 
   /// Updates the current stored version to the [bundle].
-  FutureOr<ReleaseUpdateResult?> updateTo(ReleaseBundle bundle,
-      {bool force = false, bool verbose = false}) async {
+  FutureOr<ReleaseUpdateResult?> updateTo(
+    ReleaseBundle bundle, {
+    bool force = false,
+    bool verbose = false,
+  }) async {
     var currentRelease = await this.currentRelease;
     var release = bundle.release;
 
@@ -104,19 +107,27 @@ abstract class ReleaseStorage implements Copiable<ReleaseStorage>, Spawnable {
   }
 
   /// Saves a file to this storage implementation.
-  FutureOr<bool> saveFile(Release release, ReleaseFile file,
-      {bool verbose = false});
+  FutureOr<bool> saveFile(
+    Release release,
+    ReleaseFile file, {
+    bool verbose = false,
+  });
 
   /// Returns `true` if the stored [file] is equals to [manifestFile].
   FutureOr<bool> isFileEquals(
-      Release release, ReleaseFile file, ReleaseManifestFile manifestFile);
+    Release release,
+    ReleaseFile file,
+    ReleaseManifestFile manifestFile,
+  );
 
   /// Saves the current [release] to this storage implementation.
   FutureOr<bool> saveRelease(Release release);
 
   /// Checks the [manifest] with the stored files to this storage implementation.
-  FutureOr<bool> checkManifest(ReleaseManifest manifest,
-      {bool verbose = false});
+  FutureOr<bool> checkManifest(
+    ReleaseManifest manifest, {
+    bool verbose = false,
+  });
 
   /// Saves the current [manifest] to this storage implementation.
   FutureOr<bool> saveManifest(ReleaseManifest manifest);

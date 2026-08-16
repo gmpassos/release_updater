@@ -33,19 +33,24 @@ void main() {
         print('»  Deleted: $tmp');
         if (tmp.existsSync()) {
           print('▒  Files at: $tmp');
-          print(tmp
-              .listSync(recursive: true)
-              .map((e) => e.path)
-              .toList()
-              .join('\n'));
+          print(
+            tmp
+                .listSync(recursive: true)
+                .map((e) => e.path)
+                .toList()
+                .join('\n'),
+          );
         }
       }
     });
   });
 }
 
-Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
-    _MyProvider provider, String currentPlatform) async {
+Future<ReleaseUpdater> _testUpdater(
+  ReleaseStorage storage,
+  _MyProvider provider,
+  String currentPlatform,
+) async {
   final pathSeparator = getPathContext().separator;
 
   var releaseUpdater = ReleaseUpdater(storage, provider);
@@ -63,25 +68,29 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
 
   var listReleases = await releaseUpdater.listReleases();
   expect(
-      listReleases.map((e) => e.toString()),
-      equals([
-        'foo/1.0.0/$currentPlatform',
-        'foo/1.0.1/$currentPlatform',
-        'foo/1.0.2/$currentPlatform',
-      ]));
+    listReleases.map((e) => e.toString()),
+    equals([
+      'foo/1.0.0/$currentPlatform',
+      'foo/1.0.1/$currentPlatform',
+      'foo/1.0.2/$currentPlatform',
+    ]),
+  );
 
   var lastRelease = await releaseUpdater.checkForUpdate();
   expect(lastRelease.toString(), equals('foo/1.0.2/$currentPlatform'));
 
-  var updateResult =
-      await releaseUpdater.update(targetVersion: lastRelease!.version);
+  var updateResult = await releaseUpdater.update(
+    targetVersion: lastRelease!.version,
+  );
   print('»  Updated: $updateResult');
   for (var f in updateResult!.savedFiles) {
     print('   »  $f');
   }
 
-  expect(updateResult.release,
-      equals(Release('foo', lastRelease.version, platform: currentPlatform)));
+  expect(
+    updateResult.release,
+    equals(Release('foo', lastRelease.version, platform: currentPlatform)),
+  );
 
   expect(updateResult.savedFilesLength, equals(2));
 
@@ -92,11 +101,15 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
     var currentReleasePath = await releaseUpdater.currentReleasePath;
     expect(currentReleasePath, endsWith('foo--1.0.2'));
 
-    expect(await releaseUpdater.currentReleaseFilePath('README.md'),
-        endsWith('foo--1.0.2${pathSeparator}README.md'));
+    expect(
+      await releaseUpdater.currentReleaseFilePath('README.md'),
+      endsWith('foo--1.0.2${pathSeparator}README.md'),
+    );
 
-    expect((await storage.currentReleaseFile('README.md'))?.filePath,
-        endsWith('README.md'));
+    expect(
+      (await storage.currentReleaseFile('README.md'))?.filePath,
+      endsWith('README.md'),
+    );
 
     var files = (await storage.currentFiles).toList();
     files.sort();
@@ -107,15 +120,19 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
     expect(filesPaths, equals(['README.md', 'hello.txt']));
 
     expect(
-        List.generate(
-            filesPaths.length,
-            (i) => dart_convert.utf8
-                .decode(files[i].data as Uint8List)
-                .normalizeToPosixLines()).toList(),
-        equals(['#Foo/1.0.2\n\nA Foo project.\n', 'Hello World!']));
+      List.generate(
+        filesPaths.length,
+        (i) => dart_convert.utf8
+            .decode(files[i].data as Uint8List)
+            .normalizeToPosixLines(),
+      ).toList(),
+      equals(['#Foo/1.0.2\n\nA Foo project.\n', 'Hello World!']),
+    );
 
-    expect(List.generate(files.length, (i) => files[i].length).toList(),
-        equals([27, 12]));
+    expect(
+      List.generate(files.length, (i) => files[i].length).toList(),
+      equals([27, 12]),
+    );
   }
 
   var lastRelease2 = await releaseUpdater.checkForUpdate();
@@ -162,13 +179,17 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
   expect(lastRelease3.toString(), equals('foo/1.0.3/$currentPlatform'));
 
   {
-    var updatedReleaseError =
-        await releaseUpdater.update(platform: 'x', exactPlatform: true);
+    var updatedReleaseError = await releaseUpdater.update(
+      platform: 'x',
+      exactPlatform: true,
+    );
     expect(updatedReleaseError, isNull);
   }
 
   var updateResult2 = await releaseUpdater.update(
-      platform: currentPlatform, exactPlatform: true);
+    platform: currentPlatform,
+    exactPlatform: true,
+  );
 
   print('»  Updated: $updateResult2');
   for (var f in updateResult2!.savedFiles) {
@@ -176,11 +197,15 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
   }
 
   expect(
-      updateResult2.release.toString(), equals('foo/1.0.3/$currentPlatform'));
+    updateResult2.release.toString(),
+    equals('foo/1.0.3/$currentPlatform'),
+  );
   expect(updateResult2.savedFilesLength, equals(3));
 
-  expect((await releaseUpdater.storage.loadManifest())?.release,
-      equals(updateResult2.release));
+  expect(
+    (await releaseUpdater.storage.loadManifest())?.release,
+    equals(updateResult2.release),
+  );
 
   {
     var currentRelease = storage.currentRelease;
@@ -198,13 +223,14 @@ Future<ReleaseUpdater> _testUpdater(ReleaseStorage storage,
     expect(filesPaths, equals(['README.md', 'hello.txt', 'note.txt']));
 
     expect(
-        List.generate(
-            filesPaths.length,
-            (i) => dart_convert.utf8
-                .decode(files[i].data as Uint8List)
-                .normalizeToPosixLines()).toList(),
-        equals(
-            ['#Foo/1.0.3\n\nA Foo project.\n', 'Hello New World!', 'A note.']));
+      List.generate(
+        filesPaths.length,
+        (i) => dart_convert.utf8
+            .decode(files[i].data as Uint8List)
+            .normalizeToPosixLines(),
+      ).toList(),
+      equals(['#Foo/1.0.3\n\nA Foo project.\n', 'Hello New World!', 'A note.']),
+    );
   }
 
   return releaseUpdater;
@@ -244,7 +270,10 @@ class _MyStorageMemory extends ReleaseStorage {
 
   @override
   FutureOr<bool> isFileEquals(
-      Release release, ReleaseFile file, ReleaseManifestFile manifestFile) {
+    Release release,
+    ReleaseFile file,
+    ReleaseManifestFile manifestFile,
+  ) {
     var storedFile = _files[file.filePath];
     if (storedFile == null) return false;
 
@@ -261,8 +290,10 @@ class _MyStorageMemory extends ReleaseStorage {
   String? get platform => 'generic';
 
   @override
-  Future<bool> checkManifest(ReleaseManifest manifest,
-      {bool verbose = false}) async {
+  Future<bool> checkManifest(
+    ReleaseManifest manifest, {
+    bool verbose = false,
+  }) async {
     if (verbose) {
       print('»  Checking manifest (${manifest.release}):');
     }
@@ -336,14 +367,18 @@ class _MyProvider extends ReleaseProvider {
   FutureOr<List<Release>> listReleases() => _releases.toList();
 
   @override
-  FutureOr<ReleaseBundle?> getReleaseBundle(String name, Version targetVersion,
-      [String? platform]) {
+  FutureOr<ReleaseBundle?> getReleaseBundle(
+    String name,
+    Version targetVersion, [
+    String? platform,
+  ]) {
     if (name != 'foo' || platform == 'x') return null;
 
     var ver = targetVersion.toString();
 
     var release = Release.parse(
-        'foo/$ver${platform != null && platform.isNotEmpty ? '/$platform' : ''}');
+      'foo/$ver${platform != null && platform.isNotEmpty ? '/$platform' : ''}',
+    );
 
     switch (ver) {
       case '1.0.2':
