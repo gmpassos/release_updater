@@ -639,7 +639,8 @@ abstract class ReleasePackerCommandWithArgs extends ReleasePackerCommand {
   ReleasePackerCommandWithArgs(String command, [List<String>? args])
     : command = command.trim(),
       args = args?.toList() ?? <String>[] {
-    if (command.isEmpty) {
+    // NOTE: checks the trimmed field, not the parameter:
+    if (this.command.isEmpty) {
       throw ArgumentError("Empty command!");
     }
   }

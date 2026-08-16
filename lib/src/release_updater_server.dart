@@ -23,8 +23,37 @@ RequestInfo resolveAddressRequestInfo(InternetAddress remoteAddress) {
   var requestInfo = _requestsInfos[remoteAddress.address] ??= RequestInfo(
     remoteAddress,
   );
+
+  if (_requestsInfos.length > requestsInfosPurgeLimit) {
+    purgeRequestsInfos(keep: requestInfo);
+  }
+
   return requestInfo;
 }
+
+/// The [_requestsInfos] length that triggers a [purgeRequestsInfos] call.
+const int requestsInfosPurgeLimit = 1000;
+
+/// Removes the tracked [RequestInfo]s without any recent request or error,
+/// avoiding an unbounded growth of the tracked addresses.
+/// Returns the number of removed entries.
+int purgeRequestsInfos({DateTime? now, RequestInfo? keep}) {
+  now ??= DateTime.now();
+
+  var expired = _requestsInfos.entries
+      .where((e) => e.value != keep && e.value.isExpired(now: now))
+      .map((e) => e.key)
+      .toList();
+
+  for (var k in expired) {
+    _requestsInfos.remove(k);
+  }
+
+  return expired.length;
+}
+
+/// The number of tracked [RequestInfo]s. See [resolveAddressRequestInfo].
+int get requestsInfosLength => _requestsInfos.length;
 
 class RequestInfo {
   final InternetAddress address;
@@ -76,9 +105,15 @@ class RequestInfo {
     return false;
   }
 
+  /// Returns `true` if there's no request or error in the timeout windows.
+  bool isExpired({DateTime? now}) {
+    purge(now: now);
+    return _requestsTime.isEmpty && _errorsTime.isEmpty;
+  }
+
   @override
   String toString() {
-    return 'RequestInfo{address: $address, requests: ${_requestsTime.length}, errors: ${_errorsTime.length}';
+    return 'RequestInfo{address: $address, requests: ${_requestsTime.length}, errors: ${_errorsTime.length}}';
   }
 }
 

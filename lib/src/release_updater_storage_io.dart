@@ -39,7 +39,12 @@ class ReleaseStorageDirectory extends ReleaseStorage {
   }) : overwriteFiles = overwriteFiles && !selfReleaseDirectory;
 
   @override
-  ReleaseStorageDirectory copy() => ReleaseStorageDirectory(name, directory);
+  ReleaseStorageDirectory copy() => ReleaseStorageDirectory(
+    name,
+    directory,
+    overwriteFiles: overwriteFiles,
+    selfReleaseDirectory: selfReleaseDirectory,
+  );
 
   @override
   String? get platform {

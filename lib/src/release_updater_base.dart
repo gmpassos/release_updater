@@ -26,7 +26,7 @@ typedef OnRelease = void Function(Release release);
 /// A [Release] updater from [releaseProvider] to [storage].
 class ReleaseUpdater implements Copiable<ReleaseUpdater>, Spawnable {
   // ignore: constant_identifier_names
-  static const String VERSION = '1.1.12';
+  static const String VERSION = '1.1.13';
 
   /// The [Release] storage.
   final ReleaseStorage storage;
@@ -66,7 +66,7 @@ class ReleaseUpdater implements Copiable<ReleaseUpdater>, Spawnable {
       return returns.map((e) => e as bool).where((r) => r == false).isEmpty;
     } else {
       return Future.wait(returns.map((e) => Future.sync(() => e))).then((oks) {
-        return returns.where((r) => r == false).isEmpty;
+        return oks.where((r) => r == false).isEmpty;
       });
     }
   }
@@ -262,6 +262,10 @@ class Release implements Comparable<Release> {
 
   factory Release.parse(String s) {
     var parts = s.trim().split('/');
+    if (parts.length < 2) {
+      throw FormatException("Invalid `Release`: expected `name/version`", s);
+    }
+
     var name = parts[0].trim();
     var ver = parts[1].trim();
     var platform = parts.length > 2 ? parts[2] : null;
@@ -368,7 +372,7 @@ class ReleaseFile implements Comparable<ReleaseFile> {
 
     var path3 = parts[1];
 
-    if (startsWithDriver(path3)) {
+    if (startsWithDriver(path3) || startsWithDriver(path)) {
       throw StateError("Can't normalize path: $path -> $path3");
     }
 
@@ -376,8 +380,15 @@ class ReleaseFile implements Comparable<ReleaseFile> {
       path3 = path3.substring(1);
     }
 
-    if (path3.isEmpty) {
+    if (path3.isEmpty || path3 == '.') {
       throw StateError("Can't normalize path: $path");
+    }
+
+    // The path is already normalized, so a `..` can only be at the start.
+    // Reject it to avoid writing files outside of the release
+    // directory (`Zip Slip`):
+    if (path3 == '..' || path3.startsWith('../')) {
+      throw StateError("Path outside of the release directory: $path");
     }
 
     return path3;

@@ -31,7 +31,11 @@ class ReleaseProviderHttp extends ReleaseProvider {
   }) : _httpClient = null;
 
   @override
-  ReleaseProviderHttp copy() => ReleaseProviderHttp.baseURL(baseURL);
+  ReleaseProviderHttp copy() => ReleaseProviderHttp.baseURL(
+    baseURL,
+    releasesFile: releasesFile,
+    releasesBundleFileFormat: releasesBundleFileFormat,
+  );
 
   HttpClient get httpClient => _httpClient ??= HttpClient(baseURL);
 
@@ -40,8 +44,13 @@ class ReleaseProviderHttp extends ReleaseProvider {
       try {
         var response = await httpClient.get(path);
         return response.isOK ? response.body : null;
-      } catch (_) {
-        await Future.delayed(Duration(seconds: 1));
+      } catch (e) {
+        var lastRetry = i == maxRetries - 1;
+        if (lastRetry) {
+          print('▒  Error requesting `$path` from `$baseURL`: $e');
+        } else {
+          await Future.delayed(Duration(seconds: 1));
+        }
       }
     }
 

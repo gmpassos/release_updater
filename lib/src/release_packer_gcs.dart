@@ -118,7 +118,6 @@ class ReleasePackerCommandGCS extends ReleasePackerCommand {
         release = parameters?['release'] as String?;
         if (release != null && release.toLowerCase() == '%release%') {
           release = releaseBundle.release.toString();
-          release = release;
         }
       }
 

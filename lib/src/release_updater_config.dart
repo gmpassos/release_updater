@@ -190,7 +190,7 @@ Directory parseReleaseDirectory(Map<String, Object?> config) {
       config.get<String>('release-directory') ??
       'releases';
 
-  if (releasesDirPath.startsWith('/')) {
+  if (isRootRelativePath(releasesDirPath)) {
     return Directory(releasesDirPath);
   } else {
     var executableFile = File(Platform.script.toFilePath());

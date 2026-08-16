@@ -56,7 +56,8 @@ class WindowsPEFile {
 
     var info = <String, int>{};
 
-    var peHeaderOffset = fileBuffer.readUint16(Endian.little);
+    // `e_lfanew` (offset to the PE header) is a 4 bytes little-endian field:
+    var peHeaderOffset = fileBuffer.readUint32(Endian.little);
     info['peHeaderOffset'] = peHeaderOffset;
     _logEntry('peHeaderOffset', peHeaderOffset);
 
@@ -86,8 +87,9 @@ class WindowsPEFile {
     info['characteristics'] = characteristics;
     _logEntry('characteristics', characteristics, flag: true);
 
-    var isExecutable = (characteristics & 2) == 0;
-    if (isExecutable) {
+    // `IMAGE_FILE_EXECUTABLE_IMAGE` (0x0002):
+    var isExecutable = (characteristics & 2) != 0;
+    if (!isExecutable) {
       throw StateError("Not an executable binary: ${file.path}");
     }
 
