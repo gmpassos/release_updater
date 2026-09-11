@@ -37,6 +37,26 @@ void main(List<String> args) async {
     exit(0);
   }
 
+  try {
+    await _run(args);
+  } catch (e, s) {
+    print('\n$_hr1');
+    print('\n▒▒  BUILD ERROR:\n');
+    print(e);
+    print('');
+    print(s);
+    print('\n$_hr1');
+
+    // Abort with an error, to avoid a silent error while
+    // building/releasing an artifact:
+    exit(1);
+  }
+
+  print(_hr1);
+  exit(0);
+}
+
+Future<void> _run(List<String> args) async {
   args = args.toList();
 
   var releasePackerJsonPath = args.removeAt(0);
@@ -106,9 +126,6 @@ void main(List<String> args) async {
     print('▒  Unknown command: $cmd $args\n');
     exit(1);
   }
-
-  print(_hr1);
-  exit(0);
 }
 
 void _showReleasePacker(ReleasePacker releasePacker, {bool showFiles = false}) {

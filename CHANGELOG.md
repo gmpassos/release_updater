@@ -1,3 +1,40 @@
+## 1.2.0
+
+- `release_packer`: a command error now aborts the build with an error,
+  avoiding a silent error while building/releasing a package/artifact.
+  - Before, a failed command (like a `dart compile exe` error) was only
+    logged, and the build continued and generated/uploaded an incomplete
+    release bundle.
+- `ReleasePackerCommandStatus`: new `enum` with the status of a command
+  execution: `ok`, `ignored` (not applicable, does NOT abort the build)
+  or `error` (aborts the build).
+- `ReleasePackerError`: new `Error` thrown when a build fails. Exposes the
+  `failedCommands`.
+- `ReleasePackerCommand`:
+  - `executeStatus`: new method, returning the `ReleasePackerCommandStatus`
+    of the execution. Defaults to `execute`, mapping `true` to `ok` and
+    `false` to `error`.
+  - `executeCommands`: now stops at the 1st failed command and throws a
+    `ReleasePackerError`. Returns a `Map` of `ReleasePackerCommandStatus`
+    (was a `Map` of `bool`). Accepts a `context` to identify the failure.
+  - `checkCommandsResults`: new helper that throws a `ReleasePackerError`
+    for failed commands.
+- `ReleasePacker`:
+  - `prepare`, `finalize` and `ReleasePackerOperation.executeCommands`:
+    now return a `Map` of `ReleasePackerCommandStatus` and throw a
+    `ReleasePackerError` if a command fails.
+- `ReleasePackerCommandDelete`:
+  - A missing file is now `ignored` (the desired state), not an error.
+- `ReleasePackerWindowsSubsystemCommand`:
+  - An input that is not a Windows executable (the usual case when building
+    on another platform) is now `ignored`, not an error.
+  - Added `resolveInputPath` and `isNotAWindowsExecutable`.
+- `release_packer` CLI:
+  - Now catches build errors, logs them and exits with code `1`.
+- Tests: increased the coverage from `94.6%` to `97.1%`, adding tests for
+  the build abort, the directory tree bundling, the command `from` variants
+  and the `ReleaseStorage.updateTo` error paths.
+
 ## 1.1.13
 
 - sdk: '>=3.10.0 <4.0.0'

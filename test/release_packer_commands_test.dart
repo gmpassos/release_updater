@@ -536,4 +536,128 @@ void main() {
       );
     });
   });
+
+  group('ReleasePackerCommand.from (List)', () {
+    test('dart compile kernel', () {
+      var cmd = ReleasePackerCommand.from([
+        'dart',
+        'compile',
+        'kernel',
+        'bin/foo.dart',
+      ]);
+
+      expect(cmd, isA<ReleasePackerDartCompileKernel>());
+      expect(
+        (cmd as ReleasePackerDartCompileKernel).args,
+        equals(['kernel', 'bin/foo.dart']),
+      );
+    });
+
+    test('dart compile exe', () {
+      var cmd = ReleasePackerCommand.from([
+        'dart',
+        'compile',
+        'exe',
+        'bin/foo.dart',
+      ]);
+
+      expect(cmd, isA<ReleasePackerDartCompileExe>());
+    });
+  });
+
+  group('ReleasePackerCommand.from (Object)', () {
+    test('ReleasePackerProcessCommand', () {
+      var cmd = ReleasePackerProcessCommand.from([
+        'ls',
+        '-l',
+      ], stdoutFilePath: 'ls.out');
+
+      expect(cmd.command, equals('ls'));
+      expect(cmd.args, equals(['-l']));
+      expect(cmd.stdoutFilePath, equals('ls.out'));
+    });
+
+    test('ReleasePackerDartCommand', () {
+      var cmd = ReleasePackerDartCommand.from(['compile', 'exe', 'a.dart']);
+
+      expect(cmd.command, equals('compile'));
+      expect(cmd.args, equals(['exe', 'a.dart']));
+    });
+
+    test('ReleasePackerWindowsSubsystemCommand', () {
+      var cmd = ReleasePackerWindowsSubsystemCommand.from([
+        '--windows-gui',
+        'in.exe',
+        'out.exe',
+      ]);
+
+      expect(cmd.args, equals(['--windows-gui', 'in.exe', 'out.exe']));
+    });
+  });
+
+  group('ReleasePackerDartCommand', () {
+    test('execute with an error exit code', () {
+      var packer = ReleasePacker(
+        'foo',
+        SemanticVersioning.parse('1.0.0'),
+        <ReleasePackerFile>[],
+      );
+
+      var cmd = ReleasePackerDartCommand('compile', [
+        'exe',
+        '__unknown_script__.dart',
+      ]);
+
+      expect(cmd.execute(packer, Directory.systemTemp), isFalse);
+    });
+  });
+
+  group('ReleasePackerCommandURL (GET)', () {
+    test('execute (connection error)', () async {
+      var cmd = ReleasePackerCommandURL('http://localhost:1/unknown');
+
+      var packer = ReleasePacker(
+        'foo',
+        SemanticVersioning.parse('1.0.0'),
+        <ReleasePackerFile>[],
+      );
+
+      expect(await cmd.execute(packer, Directory.systemTemp), isFalse);
+    });
+
+    test('execute without a body', () async {
+      var server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+
+      var requests = <String>[];
+
+      server.listen((request) async {
+        requests.add('${request.method} ${request.uri}');
+
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.text;
+        request.response.write('OK');
+        await request.response.close();
+      });
+
+      try {
+        var url = 'http://${server.address.host}:${server.port}/notify';
+
+        var cmd = ReleasePackerCommandURL(url, parameters: {'a': '1'});
+
+        var packer = ReleasePacker(
+          'foo',
+          SemanticVersioning.parse('1.0.0'),
+          <ReleasePackerFile>[],
+        );
+
+        expect(await cmd.execute(packer, Directory.systemTemp), isTrue);
+
+        expect(requests.length, equals(1));
+        expect(requests[0], startsWith('GET /notify'));
+        expect(requests[0], contains('a=1'));
+      } finally {
+        await server.close(force: true);
+      }
+    });
+  });
 }
