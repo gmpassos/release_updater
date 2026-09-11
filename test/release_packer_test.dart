@@ -464,6 +464,71 @@ void main() {
       await _checkBundle(bundle2, platform);
     });
   });
+
+  group('ReleasePacker.buildFromDirectory', () {
+    late Directory tmpDir;
+
+    setUp(() {
+      tmpDir = Directory.systemTemp.createTempSync('release-packer-dir--');
+    });
+
+    tearDown(() => tmpDir.deleteSync(recursive: true));
+
+    test('directory tree', () async {
+      Directory('${tmpDir.path}/res/sub').createSync(recursive: true);
+
+      File('${tmpDir.path}/res/a.txt').writeAsStringSync('A');
+      File('${tmpDir.path}/res/sub/b.txt').writeAsStringSync('B');
+
+      // A file outside of the packed directory tree, NOT in `files`:
+      File('${tmpDir.path}/ignored.txt').writeAsStringSync('X');
+
+      var packer = ReleasePacker(
+        'foo',
+        SemanticVersioning.parse('1.0.0'),
+        <ReleasePackerFile>[ReleasePackerFile('res/', 'resources/')],
+      );
+
+      var bundle = await packer.buildFromDirectory(rootDirectory: tmpDir);
+
+      var files = (await bundle.files).toList()..sort();
+
+      expect(
+        files.map((e) => e.filePath),
+        equals(['resources/a.txt', 'resources/sub/b.txt']),
+      );
+
+      expect(await files[0].dataAsString, equals('A'));
+      expect(await files[1].dataAsString, equals('B'));
+    });
+
+    test('no `rootDirectory`', () {
+      var packer = ReleasePacker(
+        'foo',
+        SemanticVersioning.parse('1.0.0'),
+        <ReleasePackerFile>[],
+      );
+
+      expect(() => packer.buildFromDirectory(), throwsArgumentError);
+    });
+  });
+
+  group('ReleasePacker.fromFile', () {
+    late Directory tmpDir;
+
+    setUp(() {
+      tmpDir = Directory.systemTemp.createTempSync('release-packer-json--');
+    });
+
+    tearDown(() => tmpDir.deleteSync(recursive: true));
+
+    test('null JSON', () {
+      var file = File('${tmpDir.path}/packer.json');
+      file.writeAsStringSync('null');
+
+      expect(() => ReleasePacker.fromFile(file), throwsStateError);
+    });
+  });
 }
 
 Future<void> _checkBundle(ReleaseBundleZip bundle, String platform) async {

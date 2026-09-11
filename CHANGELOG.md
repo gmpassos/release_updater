@@ -31,6 +31,9 @@
   - Added `resolveInputPath` and `isNotAWindowsExecutable`.
 - `release_packer` CLI:
   - Now catches build errors, logs them and exits with code `1`.
+- Tests: increased the coverage from `94.6%` to `97.1%`, adding tests for
+  the build abort, the directory tree bundling, the command `from` variants
+  and the `ReleaseStorage.updateTo` error paths.
 
 ## 1.1.13
 

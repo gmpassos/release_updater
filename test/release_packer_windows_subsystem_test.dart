@@ -133,6 +133,19 @@ void main() {
       expect(WindowsPEFile(inFile).readWindowsSubsystem(), equals(3));
     });
 
+    test("execute (can't save the output file)", () {
+      copyTestExe('in.exe');
+
+      // The output directory does not exist:
+      var cmd = ReleasePackerWindowsSubsystemCommand(
+        true,
+        'in.exe',
+        'no-dir/out.exe',
+      );
+
+      expect(cmd.execute(packer, tmpDir), isFalse);
+    });
+
     test('execute (ambiguous parameters)', () {
       copyTestExe('in.exe');
 

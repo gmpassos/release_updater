@@ -173,6 +173,14 @@ void main() {
         throwsA(anything),
       );
     });
+
+    test('createGCSClient (invalid JSON String credential)', () {
+      // Not `metadata`: parsed as a service account JSON.
+      expect(
+        () => ReleasePackerCommandGCS.createGCSClient('{"type": "invalid"}'),
+        throwsA(anything),
+      );
+    });
   });
 
   group('ReleasePackerCommandUploadReleaseBundle', () {

@@ -138,7 +138,11 @@ void main() {
       expect(await storage.updateTo(bundle('1.0.0')), isNull);
 
       // Forced: updates but skips the unchanged files.
-      var forced = await storage.updateTo(bundle('1.0.0'), force: true);
+      var forced = await storage.updateTo(
+        bundle('1.0.0'),
+        force: true,
+        verbose: true,
+      );
       expect(forced!.savedFilesLength, equals(0));
     });
 

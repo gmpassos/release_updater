@@ -21,6 +21,16 @@ void main() {
     });
   });
 
+  group('ReleasePackerError', () {
+    test('defaults', () {
+      var error = ReleasePackerError('some error');
+
+      expect(error.message, equals('some error'));
+      expect(error.failedCommands, isEmpty);
+      expect(error.toString(), equals('ReleasePackerError: some error'));
+    });
+  });
+
   group('ReleasePackerCommand.executeCommands', () {
     late Directory tmpDir;
     late ReleasePacker packer;
