@@ -169,7 +169,10 @@ class ReleasePacker {
   ReleasePackerFile? getFileMatching(RegExp filePathRegexp) =>
       files.firstWhereOrNull((e) => filePathRegexp.hasMatch(e.sourcePath));
 
-  Future<Map<ReleasePackerCommand, bool>> prepare(
+  /// Runs the [prepareCommands].
+  ///
+  /// Throws a [ReleasePackerError] if a command fails.
+  Future<Map<ReleasePackerCommand, ReleasePackerCommandStatus>> prepare(
     Directory rootDirectory, {
     String? platform,
   }) {
@@ -183,10 +186,14 @@ class ReleasePacker {
       prepareCommands,
       rootDirectory,
       platform: platform,
+      context: 'prepare',
     );
   }
 
-  Future<Map<ReleasePackerCommand, bool>> finalize(
+  /// Runs the [finalizeCommands].
+  ///
+  /// Throws a [ReleasePackerError] if a command fails.
+  Future<Map<ReleasePackerCommand, ReleasePackerCommandStatus>> finalize(
     Directory rootDirectory, {
     ReleaseBundle? releaseBundle,
     String? platform,
@@ -202,6 +209,7 @@ class ReleasePacker {
       rootDirectory,
       releaseBundle: releaseBundle,
       platform: platform,
+      context: 'finalize',
     );
   }
 
@@ -233,7 +241,12 @@ class ReleasePacker {
     if (filesWithCommand.isNotEmpty) {
       print('»  Running files commands (${filesWithCommand.length}):');
       for (var f in filesWithCommand) {
-        await f.executeCommands(this, rootDirectory, platform: platform);
+        await f.executeCommands(
+          this,
+          rootDirectory,
+          platform: platform,
+          context: 'file: ${f.sourcePath}',
+        );
       }
     }
 
@@ -363,6 +376,47 @@ abstract class ReleasePackerEntry {
 
     return false;
   }
+}
+
+/// The status of a [ReleasePackerCommand] execution.
+enum ReleasePackerCommandStatus {
+  /// The command was executed successfully.
+  ok,
+
+  /// The command was not applicable in the current context and was skipped.
+  /// NOT an error: it does not abort the build.
+  ignored,
+
+  /// The command failed: it aborts the build.
+  error;
+
+  bool get isOK => this == ok;
+
+  bool get isIgnored => this == ignored;
+
+  bool get isError => this == error;
+
+  /// `true` if it does NOT abort the build ([ok] or [ignored]).
+  bool get isSuccessful => this != error;
+}
+
+/// Error thrown when a `release_packer` build fails.
+///
+/// A failed command aborts the build instead of generating an incomplete
+/// release bundle, avoiding a silent error while building/releasing an
+/// artifact.
+class ReleasePackerError extends Error {
+  /// The error message.
+  final String message;
+
+  /// The commands that returned [ReleasePackerCommandStatus.error].
+  final List<ReleasePackerCommand> failedCommands;
+
+  ReleasePackerError(this.message, {List<ReleasePackerCommand>? failedCommands})
+    : failedCommands = failedCommands ?? <ReleasePackerCommand>[];
+
+  @override
+  String toString() => 'ReleasePackerError: $message';
 }
 
 abstract class ReleasePackerCommand extends ReleasePackerEntry {
@@ -602,32 +656,93 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
     ReleaseBundle? releaseBundle,
   });
 
-  static Future<Map<ReleasePackerCommand, bool>> executeCommands(
+  /// Executes this command returning its [ReleasePackerCommandStatus].
+  ///
+  /// The default implementation maps [execute]: `true` to
+  /// [ReleasePackerCommandStatus.ok] and `false` to
+  /// [ReleasePackerCommandStatus.error]. Commands that can be skipped
+  /// without failing the build override this to return
+  /// [ReleasePackerCommandStatus.ignored].
+  FutureOr<ReleasePackerCommandStatus> executeStatus(
+    ReleasePacker releasePacker,
+    Directory rootDirectory, {
+    ReleaseBundle? releaseBundle,
+  }) {
+    var ok = execute(
+      releasePacker,
+      rootDirectory,
+      releaseBundle: releaseBundle,
+    );
+
+    return ok is Future<bool> ? ok.then(_toStatus) : _toStatus(ok);
+  }
+
+  static ReleasePackerCommandStatus _toStatus(bool ok) =>
+      ok ? ReleasePackerCommandStatus.ok : ReleasePackerCommandStatus.error;
+
+  /// Executes [commands] that match [platform].
+  ///
+  /// Stops at the 1st command that fails and throws a [ReleasePackerError],
+  /// to avoid running the remaining commands over a broken build and
+  /// generating an incomplete release bundle.
+  static Future<Map<ReleasePackerCommand, ReleasePackerCommandStatus>>
+  executeCommands(
     ReleasePacker releasePacker,
     List<ReleasePackerCommand>? commands,
     Directory rootDirectory, {
     ReleaseBundle? releaseBundle,
     String? platform,
+    String? context,
   }) async {
-    var results = <ReleasePackerCommand, bool>{};
+    var results = <ReleasePackerCommand, ReleasePackerCommandStatus>{};
     if (commands == null || commands.isEmpty) return results;
 
     for (var c in commands.where((e) => e.matchesPlatform(platform))) {
-      var ok = await c.execute(
+      var status = await c.executeStatus(
         releasePacker,
         rootDirectory,
         releaseBundle: releaseBundle,
       );
-      results[c] = ok;
+
+      results[c] = status;
+
+      if (status.isError) break;
     }
 
     print('   »  Commands results:');
     for (var e in results.entries) {
-      print('     -  ${e.key} »  ${e.value}');
+      print('     -  ${e.key} »  ${e.value.name}');
     }
     print('');
 
+    checkCommandsResults(results, context: context);
+
     return results;
+  }
+
+  /// Throws a [ReleasePackerError] if any command in [results] has failed.
+  static void checkCommandsResults(
+    Map<ReleasePackerCommand, ReleasePackerCommandStatus> results, {
+    String? context,
+  }) {
+    var failedCommands = results.entries
+        .where((e) => e.value.isError)
+        .map((e) => e.key)
+        .toList();
+
+    if (failedCommands.isEmpty) return;
+
+    var at = context != null && context.isNotEmpty ? ' at `$context`' : '';
+
+    for (var c in failedCommands) {
+      print('  ▒▒  FAILED COMMAND$at: $c');
+    }
+    print('');
+
+    throw ReleasePackerError(
+      'Command error$at: ${failedCommands.join(' ; ')}',
+      failedCommands: failedCommands,
+    );
   }
 }
 
@@ -671,6 +786,27 @@ class ReleasePackerCommandDelete extends ReleasePackerCommand {
     }
 
     return false;
+  }
+
+  @override
+  FutureOr<ReleasePackerCommandStatus> executeStatus(
+    ReleasePacker releasePacker,
+    Directory rootDirectory, {
+    ReleaseBundle? releaseBundle,
+  }) {
+    var filePath = joinPaths(rootDirectory.path, path);
+
+    // Nothing to delete is already the desired state, NOT an error:
+    if (!File(filePath).existsSync()) {
+      print('   »  IGNORING delete command> File not found: $filePath');
+      return ReleasePackerCommandStatus.ignored;
+    }
+
+    return super.executeStatus(
+      releasePacker,
+      rootDirectory,
+      releaseBundle: releaseBundle,
+    );
   }
 
   @override
@@ -1262,12 +1398,9 @@ class ReleasePackerWindowsSubsystemCommand
     ReleaseBundle? releaseBundle,
     int expectedExitCode = 0,
   }) {
-    var executablePath = args[args.length - 2];
     var executableOutputPath = args.last;
 
-    var inputPath = pack_path.normalize(
-      pack_path.join(rootDirectory.path, executablePath),
-    );
+    var inputPath = resolveInputPath(rootDirectory);
 
     var outputPath = pack_path.normalize(
       pack_path.join(rootDirectory.path, executableOutputPath),
@@ -1378,6 +1511,49 @@ class ReleasePackerWindowsSubsystemCommand
     return true;
   }
 
+  /// Resolves the input executable path at [rootDirectory].
+  String resolveInputPath(Directory rootDirectory) => pack_path.normalize(
+    pack_path.join(rootDirectory.path, args[args.length - 2]),
+  );
+
+  /// Returns `true` if the input file exists but is NOT a Windows executable.
+  ///
+  /// This is the usual case when building on another platform: there's no
+  /// Windows Subsystem to set, and it's not a build error.
+  bool isNotAWindowsExecutable(Directory rootDirectory) {
+    var inputFile = File(resolveInputPath(rootDirectory));
+
+    // A missing or unreadable input file IS an error, reported by `execute`:
+    if (!inputFile.existsSync()) return false;
+
+    try {
+      return !WindowsPEFile(inputFile).isValidExecutable;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  FutureOr<ReleasePackerCommandStatus> executeStatus(
+    ReleasePacker releasePacker,
+    Directory rootDirectory, {
+    ReleaseBundle? releaseBundle,
+  }) {
+    if (isNotAWindowsExecutable(rootDirectory)) {
+      print(
+        "   »  IGNORING Windows Subsystem command> "
+        "Not a valid Windows Executable: ${resolveInputPath(rootDirectory)}",
+      );
+      return ReleasePackerCommandStatus.ignored;
+    }
+
+    return super.executeStatus(
+      releasePacker,
+      rootDirectory,
+      releaseBundle: releaseBundle,
+    );
+  }
+
   File? _resolveInputFileCopy(File inputFile) {
     var inputFileName = pack_path.withoutExtension(inputFile.path);
     var inputFileExt = pack_path.extension(inputFile.path);
@@ -1409,17 +1585,22 @@ abstract class ReleasePackerOperation extends ReleasePackerEntry {
   bool hasCommandOfType<T extends ReleasePackerCommand>() =>
       hasCommands && commands!.whereType<T>().isNotEmpty;
 
-  Future<Map<ReleasePackerCommand, bool>> executeCommands(
+  /// Runs the [commands] of this operation.
+  ///
+  /// Throws a [ReleasePackerError] if a command fails.
+  Future<Map<ReleasePackerCommand, ReleasePackerCommandStatus>> executeCommands(
     ReleasePacker releasePacker,
     Directory rootDirectory, {
     ReleaseBundle? releaseBundle,
     String? platform,
+    String? context,
   }) => ReleasePackerCommand.executeCommands(
     releasePacker,
     commands,
     rootDirectory,
     releaseBundle: releaseBundle,
     platform: platform,
+    context: context,
   );
 }
 

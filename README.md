@@ -148,6 +148,17 @@ Example of a `release_packer.json` file:
       - `username`: authentication username.
       - `password`: authentication password.
 
+- Command errors:
+  - A command that fails aborts the build: the error is logged, the
+    remaining commands are NOT executed, and the `release_packer` CLI
+    exits with code `1`. This avoids a silent error generating and
+    releasing an incomplete package/artifact.
+  - Some commands are just *ignored* (skipped) when not applicable, and do
+    NOT abort the build:
+    - `rm` of a file that doesn't exist.
+    - `windows_gui` over a file that is not a Windows executable (the usual
+      case when building on another platform).
+
 - `files`: each entry of `files` can be:
   - A `String` with a file path:
     ```JSON
