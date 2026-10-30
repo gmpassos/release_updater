@@ -138,6 +138,23 @@ Example of a `release_packer.json` file:
 - Command types:
   - `dart_pub_get`: performs a `dart pub get`.
   - `dart_compile_exe`: performs a `dart compile exe %dart_script`.
+    - NOT supported when a dependency has build hooks (native assets, like
+      `sqlite3` 3): use `dart_build_cli`. The build is aborted before the
+      `prepare` commands when the packages are already resolved, and again
+      after them.
+  - `dart_build_cli`: performs a `dart build cli`, building a bundle at
+    `%output/bundle/` with `bin/%name` (`bin/%name.exe` on Windows) and
+    `lib/` (the dynamic libraries of the build hooks).
+    - The value is the Dart script (`"bin/foo.dart"`) or a `Map`:
+      - `target`: the Dart script.
+      - `output`: the output directory. Default: `build/cli/%name`.
+      - `args`: extra `dart build cli` arguments (`String` or `List`).
+      - `launcher`: if `true`, writes a script at the bundle root (`%name`,
+        or `%name.cmd` on Windows) that runs `bin/%name`.
+    - The executable loads the dynamic libraries from `../lib/`, relative
+      to itself: keep the `bin/` and `lib/` layout in the release.
+  - `dart_build_%subcommand`: performs a `dart build %subcommand %args`,
+    with the arguments as is (`String` or `List`).
   - `dart`: performs a `dart %command`.
   - `windows_gui`: Changes an executable Windows Subsistem to `GUI`.
   - `command`: performs a shell `%command`.
@@ -177,10 +194,25 @@ Example of a `release_packer.json` file:
       ```JSON
       {"lib/resources/": "packages/pack_name/resources/"}
       ```
+    - A directory tree at the release root (`/`):
+      ```JSON
+      {"build/web/": "/"}
+      ```
     - A file from a `dart_compile_exe` command:
       ```JSON
       {"bin/client.exe": "client.exe", "dart_compile_exe": "bin/client.dart"}
       ```
+    - The bundle of a `dart_build_cli` command, at the release root
+      (`bin/client`, `lib/...` and the `client` launcher):
+      ```JSON
+      {"dart_build_cli": {"target": "bin/client.dart", "launcher": true}}
+      ```
+      Or with an explicit mapping:
+      ```JSON
+      {"build/cli/client/bundle/": "/", "dart_build_cli": "bin/client.dart"}
+      ```
+      Files with the same release path (like the `lib/` of two bundles) are
+      merged if identical; different contents abort the build.
     - A Windows executable file with the Windows Subsistem set to `GUI`:
       ```JSON
       {"bin/client.exe": "client.exe", "windows_gui": true}

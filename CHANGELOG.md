@@ -1,3 +1,46 @@
+## 1.3.0
+
+- `release_packer`: `dart build` commands, for dependencies with build hooks
+  (native assets, like `sqlite3` 3), that `dart compile exe` does NOT
+  support.
+  - `dart_build_cli`: performs a `dart build cli`, building a bundle with
+    `bin/<name>` and `lib/` (the dynamic libraries). Accepts a `target`,
+    `output` (default `build/cli/<name>`), `args` and `launcher`.
+  - `dart_build_<subcommand>`: performs a `dart build <subcommand>`, with
+    the arguments as is.
+  - A `files` entry with only a `dart_build_cli` maps its bundle to the
+    release root.
+- `ReleasePackerDartBuild`: new command for `dart build <subcommand>`, also
+  from the `String`/`List` forms (`dart build ...`).
+- `ReleasePackerDartBuildCli`: new command for `dart build cli`:
+  - Always passes `--output`: the `dart build cli` default
+    (`build/cli/<os>_<arch>/`) is shared by all the targets.
+  - `launcher`: writes a script at the bundle root (`<name>`, or
+    `<name>.cmd` on Windows) that runs `bin/<name>`, keeping the path of a
+    release that had the executable at its root.
+  - With `windows_gui: true`, sets the subsystem of the executable inside
+    the bundle.
+- `ReleasePacker`:
+  - `checkBuildHooks`: aborts the build with a `ReleasePackerError` when a
+    `dart compile exe`/`aot-snapshot` meets packages with build hooks,
+    suggesting `dart_build_cli`. Called by `buildFromDirectory` before the
+    `prepare` commands (if the packages are resolved), to fail fast, and
+    after them. A `dart compile kernel` only logs a warning.
+  - `packagesWithBuildHooks`: the packages with a `hook/build.dart` in
+    `.dart_tool/package_config.json`.
+  - `mergeDuplicatedFiles`: files with the same release path are merged if
+    identical (like the `lib/` of two bundles), and abort the build if not.
+    Before, both were added to the bundle.
+  - `allCommands`: the `prepare`, `files` and `finalize` commands.
+- `ReleasePackerFile`:
+  - The destiny path `/` (or `./`) is the release root, to map a directory
+    tree to it. A single file keeps its name.
+  - `fromJson`: `dart_build_*` keys are commands, not the file mapping. A
+    `Map` without a file path now throws an `ArgumentError` (was a
+    `StateError`).
+- `ReleasePackerDartCommand`: a failure caused by build hooks logs a hint
+  to use `dart_build_cli`.
+
 ## 1.2.0
 
 - `release_packer`: a command error now aborts the build with an error,
