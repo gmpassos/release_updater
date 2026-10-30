@@ -233,9 +233,11 @@ class ReleasePacker {
       throw ArgumentError("Can't define `rootDirectory`!");
     }
 
-    // Before `prepare` (if the packages are resolved), to fail fast, and
+    // Before `prepare` (if the resolution is up to date), to fail fast, and
     // after it, as `prepare` can resolve or change the dependencies:
-    checkBuildHooks(rootDirectory, platform: platform);
+    if (isPackageResolutionUpToDate(rootDirectory)) {
+      checkBuildHooks(rootDirectory, platform: platform);
+    }
 
     await prepare(rootDirectory, platform: platform);
 
@@ -309,7 +311,7 @@ class ReleasePacker {
               var time = f.lastModifiedSync();
               var exec =
                   f.hasExecutablePermission ||
-                  ReleaseBundleZip.isExecutableFilePath(destinyPath);
+                  ReleaseBundleZip.isExecutableFilePath(fileDestinyPath);
 
               var releaseFile = ReleaseFile(
                 fileDestinyPath,
@@ -365,6 +367,8 @@ class ReleasePacker {
   /// Merges the [files] with the same path, like the `lib/` of two
   /// `dart build cli` bundles of the same project.
   ///
+  /// A merged file is executable if any of its copies is.
+  ///
   /// Throws a [ReleasePackerError] if files with the same path have
   /// different contents.
   static Future<List<ReleaseFile>> mergeDuplicatedFiles(
@@ -379,12 +383,20 @@ class ReleasePacker {
         continue;
       }
 
-      var prevSHA256 = await prev.dataSHA256;
-      var sha256 = await f.dataSHA256;
+      var prevData = await prev.data;
 
-      if (!const ListEquality<int>().equals(prevSHA256, sha256)) {
+      if (!const ListEquality<int>().equals(prevData, await f.data)) {
         throw ReleasePackerError(
           "Different files for the same release path: ${f.filePath}",
+        );
+      }
+
+      if (f.executable && !prev.executable) {
+        byPath[f.filePath] = ReleaseFile(
+          prev.filePath,
+          prevData,
+          time: prev.time,
+          executable: true,
         );
       }
     }
@@ -400,28 +412,51 @@ class ReleasePacker {
     ...?finalizeCommands,
   ].where((c) => c.matchesPlatform(platform)).toList();
 
+  /// Returns `true` if the `.dart_tool/package_config.json` of
+  /// [rootDirectory] exists and is NOT older than its `pubspec.yaml` and
+  /// `pubspec.lock`: a stale resolution (like one restored from a cache)
+  /// may NOT reflect the current dependencies.
+  static bool isPackageResolutionUpToDate(Directory rootDirectory) {
+    var configFile = File(
+      pack_path.join(rootDirectory.path, '.dart_tool', 'package_config.json'),
+    );
+    if (!configFile.existsSync()) return false;
+
+    var configTime = configFile.lastModifiedSync();
+
+    for (var name in ['pubspec.yaml', 'pubspec.lock']) {
+      var file = File(pack_path.join(rootDirectory.path, name));
+      if (file.existsSync() && file.lastModifiedSync().isAfter(configTime)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   /// The packages with build hooks (`hook/build.dart`) in the
   /// `.dart_tool/package_config.json` of [rootDirectory].
+  ///
+  /// Only the runtime dependencies count, as for `dart compile exe`: if there
+  /// is a `.dart_tool/package_graph.json`, the `devDependencies` of the root
+  /// packages (and the packages only they use) are ignored.
   ///
   /// Returns `null` if the packages are not resolved yet.
   static List<String>? packagesWithBuildHooks(Directory rootDirectory) {
     var dartToolDir = Directory(
       pack_path.join(rootDirectory.path, '.dart_tool'),
     );
-    var configFile = File(
-      pack_path.join(dartToolDir.path, 'package_config.json'),
-    );
-    if (!configFile.existsSync()) return null;
 
-    Object? config;
-    try {
-      config = dart_convert.json.decode(configFile.readAsStringSync());
-    } catch (_) {
-      return null;
-    }
+    var config = _readJson(
+      File(pack_path.join(dartToolDir.path, 'package_config.json')),
+    );
 
     var packages = config is Map ? config['packages'] : null;
     if (packages is! List) return null;
+
+    var runtimePackages = _runtimePackages(
+      _readJson(File(pack_path.join(dartToolDir.path, 'package_graph.json'))),
+    );
 
     var configDirUri = Uri.directory(dartToolDir.absolute.path);
 
@@ -431,6 +466,10 @@ class ReleasePacker {
       var name = p['name'];
       var rootUri = p['rootUri'];
       if (name is! String || rootUri is! String) continue;
+
+      if (runtimePackages != null && !runtimePackages.contains(name)) {
+        continue;
+      }
 
       var packageUri = configDirUri.resolve(
         rootUri.endsWith('/') ? rootUri : '$rootUri/',
@@ -443,6 +482,47 @@ class ReleasePacker {
     }
 
     return withHooks;
+  }
+
+  static Object? _readJson(File file) {
+    if (!file.existsSync()) return null;
+    try {
+      return dart_convert.json.decode(file.readAsStringSync());
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// The runtime packages of a `package_graph.json`: the `roots` and their
+  /// `dependencies`, transitively (the `devDependencies` are NOT followed).
+  ///
+  /// Returns `null` for an invalid graph.
+  static Set<String>? _runtimePackages(Object? graph) {
+    if (graph is! Map) return null;
+
+    var roots = graph['roots'];
+    var packages = graph['packages'];
+    if (roots is! List || packages is! List) return null;
+
+    var dependencies = <String, List<String>>{
+      for (var p in packages.whereType<Map>())
+        if (p['name'] is String)
+          p['name'] as String: [
+            ...((p['dependencies'] as List?) ?? const []).whereType<String>(),
+          ],
+    };
+
+    var runtime = <String>{};
+    var pending = roots.whereType<String>().toList();
+
+    while (pending.isNotEmpty) {
+      var name = pending.removeLast();
+      if (runtime.add(name)) {
+        pending.addAll(dependencies[name] ?? const []);
+      }
+    }
+
+    return runtime;
   }
 
   /// Checks that the commands for [platform] support the build hooks of the
@@ -583,9 +663,7 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
       commands.addAll(dartBuilds);
     }
 
-    var dartBuildCli = dartBuilds
-        ?.whereType<ReleasePackerDartBuildCli>()
-        .firstOrNull;
+    var dartBuildCli = ReleasePackerDartBuildCli.firstOf(dartBuilds);
 
     if (windowsGUI != null) {
       String? inputFile;
@@ -703,9 +781,13 @@ abstract class ReleasePackerCommand extends ReleasePackerEntry {
         return ReleasePackerDartCompileKernel(dartCompileKernel);
       }
 
-      var dartBuild = ReleasePackerDartBuild.fromJsonMap(map).firstOrNull;
-      if (dartBuild != null) {
-        return dartBuild;
+      var dartBuilds = ReleasePackerDartBuild.fromJsonMap(map);
+      if (dartBuilds.length > 1) {
+        throw ArgumentError(
+          "Only one `dart_build_*` per command entry: ${map.keys}",
+        );
+      } else if (dartBuilds.isNotEmpty) {
+        return dartBuilds.first;
       }
 
       var dartPubGet = map.get<String>('dart_pub_get');
@@ -1608,19 +1690,68 @@ class ReleasePackerDartBuildCli extends ReleasePackerDartBuild {
   /// If `true` generates a launcher script at the bundle root.
   final bool launcher;
 
-  ReleasePackerDartBuildCli(
-    this.target, {
+  /// The [output] must be relative to the root directory: the bundle is
+  /// mapped from it. The [args] can't set the target or the output: use
+  /// [target] and [output].
+  factory ReleasePackerDartBuildCli(
+    String target, {
     String? output,
     List<String>? args,
-    this.launcher = false,
-  }) : output = output ?? defaultOutput(target),
-       super('cli', [
-         '--target',
-         target,
-         '--output',
-         output ?? defaultOutput(target),
-         ...?args,
-       ]);
+    bool launcher = false,
+  }) {
+    var outputPath = normalizeOutput(output ?? defaultOutput(target));
+
+    var reserved = args?.firstWhereOrNull(_isReservedArg);
+    if (reserved != null) {
+      throw ArgumentError(
+        "`dart_build_cli` arguments can't set the target or the output "
+        "(use `target` and `output`): $reserved",
+      );
+    }
+
+    return ReleasePackerDartBuildCli._(target, outputPath, args, launcher);
+  }
+
+  ReleasePackerDartBuildCli._(
+    this.target,
+    this.output,
+    List<String>? args,
+    this.launcher,
+  ) : super('cli', ['--target', target, '--output', output, ...?args]);
+
+  static bool _isReservedArg(String a) =>
+      a == '--target' ||
+      a == '--output' ||
+      a.startsWith('--target=') ||
+      a.startsWith('--output=') ||
+      a.startsWith('-t') ||
+      a.startsWith('-o');
+
+  /// Normalizes an [output] path (`./build/out` -> `build/out`).
+  ///
+  /// Throws an [ArgumentError] if it's absolute or outside the root
+  /// directory: the bundle couldn't be mapped into the release.
+  static String normalizeOutput(String output) {
+    var normalized = pack_path.posix.normalize(output.replaceAll(r'\', '/'));
+
+    if (pack_path.posix.isAbsolute(normalized) ||
+        pack_path.windows.isAbsolute(output) ||
+        normalized == '.' ||
+        normalized == '..' ||
+        normalized.startsWith('../')) {
+      throw ArgumentError(
+        "`dart_build_cli` output must be a directory inside the root "
+        "directory: $output",
+      );
+    }
+
+    return normalized;
+  }
+
+  /// The first [ReleasePackerDartBuildCli] in [commands], or `null`.
+  static ReleasePackerDartBuildCli? firstOf(
+    Iterable<ReleasePackerCommand>? commands,
+  ) => commands?.whereType<ReleasePackerDartBuildCli>().firstOrNull;
 
   /// Creates a command from a `dart_build_cli` JSON value: the [target]
   /// (`String`) or a `Map` with `target`, and the optional `output`, `args`
@@ -1658,11 +1789,14 @@ class ReleasePackerDartBuildCli extends ReleasePackerDartBuild {
   ///
   /// Always passed to `dart build cli`: its own default
   /// (`build/cli/<os>_<arch>/`) is shared by all the targets.
-  static String defaultOutput(String target) =>
-      'build/cli/${pack_path.basenameWithoutExtension(target)}';
+  static String defaultOutput(String target) => 'build/cli/${nameOf(target)}';
+
+  /// The executable name of a [target]: its file name without extension.
+  static String nameOf(String target) =>
+      pack_path.basenameWithoutExtension(target);
 
   /// The executable name: the [target] file name without extension.
-  String get name => pack_path.basenameWithoutExtension(target);
+  String get name => nameOf(target);
 
   /// The path of the built bundle: `<output>/bundle`.
   String get bundlePath => pack_path.posix.join(output, 'bundle');
@@ -1693,9 +1827,21 @@ class ReleasePackerDartBuildCli extends ReleasePackerDartBuild {
       pack_path.posix.join(bundlePath, targetsWindows ? '$name.cmd' : name);
 
   /// The [launcher] script content.
+  ///
+  /// The POSIX script resolves symbolic links to itself (like one in
+  /// `/usr/local/bin`), to find the bundle directory.
   String get launcherScript => targetsWindows
       ? '@echo off\r\n"%~dp0bin\\$name.exe" %*\r\n'
-      : '#!/bin/sh\nexec "\$(dirname "\$0")/bin/$name" "\$@"\n';
+      : '#!/bin/sh\n'
+            'p="\$0"\n'
+            'while [ -L "\$p" ]; do\n'
+            '  t="\$(readlink "\$p")"\n'
+            '  case "\$t" in\n'
+            '    /*) p="\$t" ;;\n'
+            '    *) p="\$(dirname "\$p")/\$t" ;;\n'
+            '  esac\n'
+            'done\n'
+            'exec "\$(dirname "\$p")/bin/$name" "\$@"\n';
 
   @override
   bool execute(
@@ -2056,9 +2202,7 @@ class ReleasePackerFile extends ReleasePackerOperation {
       var dartBuilds = ReleasePackerDartBuild.fromJsonMap(json);
       var windowsGUI = json['windows_gui'];
 
-      var dartBuildCli = dartBuilds
-          .whereType<ReleasePackerDartBuildCli>()
-          .firstOrNull;
+      var dartBuildCli = ReleasePackerDartBuildCli.firstOf(dartBuilds);
 
       var entry = json.entries
           .where(

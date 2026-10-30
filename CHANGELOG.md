@@ -15,23 +15,36 @@
 - `ReleasePackerDartBuildCli`: new command for `dart build cli`:
   - Always passes `--output`: the `dart build cli` default
     (`build/cli/<os>_<arch>/`) is shared by all the targets.
+  - The `output` is normalized (`./out/` -> `out`) and must be inside the
+    root directory, where the bundle is mapped from. The `args` can't set
+    the target or the output (`-t`, `--target`, `-o`, `--output`).
   - `launcher`: writes a script at the bundle root (`<name>`, or
     `<name>.cmd` on Windows) that runs `bin/<name>`, keeping the path of a
-    release that had the executable at its root.
+    release that had the executable at its root. The POSIX script resolves
+    symbolic links to itself (like one in `/usr/local/bin`).
   - With `windows_gui: true`, sets the subsystem of the executable inside
     the bundle.
+- `ReleasePackerCommand.from`: only one `dart_build_*` per command entry
+  (`ArgumentError`).
 - `ReleasePacker`:
   - `checkBuildHooks`: aborts the build with a `ReleasePackerError` when a
     `dart compile exe`/`aot-snapshot` meets packages with build hooks,
     suggesting `dart_build_cli`. Called by `buildFromDirectory` before the
-    `prepare` commands (if the packages are resolved), to fail fast, and
-    after them. A `dart compile kernel` only logs a warning.
+    `prepare` commands (if the package resolution is up to date), to fail
+    fast, and after them. A `dart compile kernel` only logs a warning.
   - `packagesWithBuildHooks`: the packages with a `hook/build.dart` in
-    `.dart_tool/package_config.json`.
+    `.dart_tool/package_config.json`. Only the runtime dependencies count
+    (from `.dart_tool/package_graph.json`), as for `dart compile exe`: a
+    dev dependency with build hooks does NOT block it.
+  - `isPackageResolutionUpToDate`: `package_config.json` is NOT older than
+    `pubspec.yaml` and `pubspec.lock`.
   - `mergeDuplicatedFiles`: files with the same release path are merged if
-    identical (like the `lib/` of two bundles), and abort the build if not.
-    Before, both were added to the bundle.
+    identical (like the `lib/` of two bundles), keeping the executable flag
+    of any copy, and abort the build if not. Before, both were added to the
+    bundle.
   - `allCommands`: the `prepare`, `files` and `finalize` commands.
+  - `buildFromDirectory`: a file in a directory tree is executable by its
+    own extension (like `.exe`), not by the directory destiny path.
 - `ReleasePackerFile`:
   - The destiny path `/` (or `./`) is the release root, to map a directory
     tree to it. A single file keeps its name.
@@ -40,6 +53,19 @@
     `StateError`).
 - `ReleasePackerDartCommand`: a failure caused by build hooks logs a hint
   to use `dart_build_cli`.
+
+- Tests: coverage from 97.1% to 97.4%.
+
+- mercury_client: ^2.4.0
+- shelf: ^1.4.3
+- shelf_static: ^1.2.0
+- googleapis_auth: ^2.3.5
+- crypto: ^3.0.8
+- archive: ^4.5.2
+
+- test: ^1.33.0
+- dependency_validator: ^5.1.0
+- coverage: ^1.16.0
 
 ## 1.2.0
 

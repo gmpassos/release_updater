@@ -108,6 +108,66 @@ void main() {
       );
     });
 
+    test('output: normalized, inside the root directory', () {
+      expect(
+        ReleasePackerDartBuildCli('bin/foo.dart', output: './out//x/').output,
+        equals('out/x'),
+      );
+      expect(
+        ReleasePackerDartBuildCli('bin/foo.dart', output: r'out\x').bundlePath,
+        equals('out/x/bundle'),
+      );
+
+      for (var output in [
+        '/abs/out',
+        r'C:\out',
+        '.',
+        '..',
+        '../out',
+        'a/../..',
+      ]) {
+        expect(
+          () => ReleasePackerDartBuildCli('bin/foo.dart', output: output),
+          throwsArgumentError,
+          reason: output,
+        );
+      }
+    });
+
+    test('args: no target/output', () {
+      for (var arg in [
+        '-o',
+        '-odist',
+        '--output',
+        '--output=dist',
+        '-t',
+        '--target',
+        '--target=bin/x.dart',
+      ]) {
+        expect(
+          () => ReleasePackerDartBuildCli('bin/foo.dart', args: [arg, 'x']),
+          throwsArgumentError,
+          reason: arg,
+        );
+      }
+
+      // Not reserved:
+      ReleasePackerDartBuildCli(
+        'bin/foo.dart',
+        args: ['--target-os=linux', '--target-arch', 'x64'],
+      );
+    });
+
+    test('Map (2 `dart_build_*` in a command entry)', () {
+      expect(
+        () => ReleasePackerCommand.from({
+          'dart_build_cli': 'bin/a.dart',
+          'dart_build_foo': true,
+        }),
+        throwsArgumentError,
+      );
+    });
+
     test('Map (other subcommand)', () {
       var cmd = ReleasePackerCommand.from({'dart_build_foo': '-a "b c"'});
 
@@ -287,6 +347,20 @@ void main() {
       expect(merged.map((e) => e.filePath), equals(['lib/libfoo.so', 'bin/a']));
     });
 
+    test('keeps the executable flag of any copy', () async {
+      var time = DateTime.utc(2026, 1, 2);
+
+      var merged = await ReleasePacker.mergeDuplicatedFiles([
+        ReleaseFile('bin/a', [1, 2], time: time),
+        ReleaseFile('bin/a', [1, 2], executable: true),
+      ]);
+
+      expect(merged, hasLength(1));
+      expect(merged.single.executable, isTrue);
+      expect(merged.single.time, equals(time));
+      expect(await merged.single.data, equals([1, 2]));
+    });
+
     test('different files with the same path', () async {
       await expectLater(
         ReleasePacker.mergeDuplicatedFiles([
@@ -358,6 +432,108 @@ void main() {
       writePackages(withHook: true);
       expect(ReleasePacker.packagesWithBuildHooks(tmpDir), equals(['hooked']));
     });
+
+    test('packagesWithBuildHooks: only the runtime dependencies', () {
+      writePackages(withHook: true);
+
+      var graphFile = File(
+        pack_path.join(tmpDir.path, '.dart_tool', 'package_graph.json'),
+      );
+
+      void writeGraph({required bool devOnly}) => graphFile.writeAsStringSync(
+        dart_convert.json.encode({
+          'roots': ['app'],
+          'packages': [
+            {
+              'name': 'app',
+              'dependencies': devOnly ? ['plain'] : ['plain', 'hooked'],
+              'devDependencies': devOnly ? ['hooked'] : <String>[],
+            },
+            {'name': 'plain', 'dependencies': <String>[]},
+            {'name': 'hooked', 'dependencies': <String>[]},
+          ],
+        }),
+      );
+
+      // A dev dependency with hooks is fine for `dart compile exe`:
+      writeGraph(devOnly: true);
+      expect(ReleasePacker.packagesWithBuildHooks(tmpDir), isEmpty);
+
+      writeGraph(devOnly: false);
+      expect(ReleasePacker.packagesWithBuildHooks(tmpDir), equals(['hooked']));
+
+      // An invalid graph: all the packages count.
+      graphFile.writeAsStringSync('{"roots": 1}');
+      expect(ReleasePacker.packagesWithBuildHooks(tmpDir), equals(['hooked']));
+    });
+
+    test('isPackageResolutionUpToDate', () {
+      expect(ReleasePacker.isPackageResolutionUpToDate(tmpDir), isFalse);
+
+      writePackages(withHook: true);
+      var config = File(
+        pack_path.join(tmpDir.path, '.dart_tool', 'package_config.json'),
+      );
+      var configTime = DateTime.utc(2026, 1, 1, 12);
+      config.setLastModifiedSync(configTime);
+
+      expect(ReleasePacker.isPackageResolutionUpToDate(tmpDir), isTrue);
+
+      var lock = File(pack_path.join(tmpDir.path, 'pubspec.lock'))
+        ..writeAsStringSync('')
+        ..setLastModifiedSync(configTime.subtract(const Duration(hours: 1)));
+      expect(ReleasePacker.isPackageResolutionUpToDate(tmpDir), isTrue);
+
+      // A `pubspec.lock` newer than the resolution: stale.
+      lock.setLastModifiedSync(configTime.add(const Duration(hours: 1)));
+      expect(ReleasePacker.isPackageResolutionUpToDate(tmpDir), isFalse);
+    });
+
+    test(
+      'buildFromDirectory: a stale resolution is checked after `prepare`',
+      () async {
+        writePackages(withHook: true);
+        var config = File(
+          pack_path.join(tmpDir.path, '.dart_tool', 'package_config.json'),
+        );
+        config.setLastModifiedSync(DateTime.utc(2026, 1, 1));
+        File(pack_path.join(tmpDir.path, 'pubspec.yaml'))
+          ..writeAsStringSync('name: app')
+          ..setLastModifiedSync(DateTime.utc(2026, 1, 2));
+
+        // `prepare` resolves again, without the hooks:
+        var marker = File(pack_path.join(tmpDir.path, 'prepared.txt'));
+        var p = ReleasePacker(
+          'foo',
+          SemanticVersioning.parse('1.0.0'),
+          [
+            ReleasePackerFile.fromJson({
+              'bin/foo.exe': 'foo',
+              'dart_compile_exe': 'bin/foo.dart',
+            }),
+          ],
+          prepareCommands: [
+            _MarkerCommand(marker),
+            ReleasePackerCommandDelete('packages/hooked/hook/build.dart'),
+          ],
+        );
+
+        // The `dart compile exe` itself fails (no `bin/foo.dart`), but only
+        // after `prepare`:
+        await expectLater(
+          p.buildFromDirectory(rootDirectory: tmpDir),
+          throwsA(
+            isA<ReleasePackerError>().having(
+              (e) => e.message,
+              'message',
+              isNot(contains('build hooks')),
+            ),
+          ),
+        );
+
+        expect(marker.existsSync(), isTrue);
+      },
+    );
 
     test('packagesWithBuildHooks (invalid config)', () {
       var dartTool = Directory(pack_path.join(tmpDir.path, '.dart_tool'))
@@ -506,32 +682,65 @@ void main() {
         var result = Process.runSync(launcher, []);
         expect(result.exitCode, equals(0));
         expect('${result.stdout}'.trim(), equals('Foo!'));
+
+        // Through symbolic links (absolute, and relative to another link),
+        // from another directory:
+        var linksDir = Directory(pack_path.join(tmpDir.path, 'links'))
+          ..createSync();
+        Link(pack_path.join(linksDir.path, 'foo-abs')).createSync(launcher);
+        Link(pack_path.join(linksDir.path, 'foo-rel')).createSync('foo-abs');
+
+        for (var link in ['foo-abs', 'foo-rel']) {
+          var result = Process.runSync(
+            pack_path.join(linksDir.path, link),
+            [],
+            workingDirectory: Directory.systemTemp.path,
+          );
+          expect(result.exitCode, equals(0), reason: '${result.stderr}');
+          expect('${result.stdout}'.trim(), equals('Foo!'));
+        }
       }
     }, timeout: const Timeout(Duration(minutes: 3)));
 
-    test('missing built executable', () async {
+    test('a normalized `output` maps the bundle', () async {
+      var packer = ReleasePacker.fromJson({
+        'name': 'foo',
+        'version': '1.2.3',
+        'prepare': ['dart_pub_get'],
+        'files': [
+          {
+            'dart_build_cli': {'target': 'bin/foo.dart', 'output': './out/x/'},
+          },
+        ],
+      });
+
+      var bundle = await packer.buildFromDirectory(rootDirectory: tmpDir);
+
+      var exeName = Platform.isWindows ? 'foo.exe' : 'foo';
       expect(
-        Process.runSync('dart', [
-          'pub',
-          'get',
-        ], workingDirectory: tmpDir.path).exitCode,
-        equals(0),
+        (await bundle.files).map((e) => e.filePath),
+        contains('bin/$exeName'),
       );
-
-      // The last `--output` wins: the bundle is NOT where it's expected.
-      var cmd = ReleasePackerDartBuildCli(
-        'bin/foo.dart',
-        args: ['--output', 'build/other'],
-      );
-
-      var packer = ReleasePacker(
-        'foo',
-        SemanticVersioning.parse('1.0.0'),
-        <ReleasePackerFile>[],
-      );
-
-      expect(cmd.execute(packer, tmpDir), isFalse);
     }, timeout: const Timeout(Duration(minutes: 3)));
+
+    test('a directory tree: executable by the file extension', () async {
+      var dist = Directory(pack_path.join(tmpDir.path, 'dist', 'bin'))
+        ..createSync(recursive: true);
+      // Without the executable permission (as on Windows):
+      File(pack_path.join(dist.path, 'run.exe')).writeAsStringSync('exe');
+      File(pack_path.join(dist.path, 'data.txt')).writeAsStringSync('txt');
+
+      var packer = ReleasePacker('foo', SemanticVersioning.parse('1.0.0'), [
+        ReleasePackerFile('dist/', '/'),
+      ]);
+
+      var bundle = await packer.buildFromDirectory(rootDirectory: tmpDir);
+      var files = {for (var f in await bundle.files) f.filePath: f};
+
+      expect(files.keys, unorderedEquals(['bin/run.exe', 'bin/data.txt']));
+      expect(files['bin/run.exe']!.executable, isTrue);
+      expect(files['bin/data.txt']!.executable, isFalse);
+    });
 
     test('a single file mapped to the release root', () async {
       Directory(pack_path.join(tmpDir.path, 'docs')).createSync();

@@ -139,18 +139,22 @@ Example of a `release_packer.json` file:
   - `dart_pub_get`: performs a `dart pub get`.
   - `dart_compile_exe`: performs a `dart compile exe %dart_script`.
     - NOT supported when a dependency has build hooks (native assets, like
-      `sqlite3` 3): use `dart_build_cli`. The build is aborted before the
-      `prepare` commands when the packages are already resolved, and again
-      after them.
+      `sqlite3` 3) at runtime: use `dart_build_cli`. The build is aborted
+      before the `prepare` commands when the package resolution is up to
+      date, and again after them. Dev dependencies with build hooks don't
+      count.
   - `dart_build_cli`: performs a `dart build cli`, building a bundle at
     `%output/bundle/` with `bin/%name` (`bin/%name.exe` on Windows) and
     `lib/` (the dynamic libraries of the build hooks).
     - The value is the Dart script (`"bin/foo.dart"`) or a `Map`:
       - `target`: the Dart script.
-      - `output`: the output directory. Default: `build/cli/%name`.
-      - `args`: extra `dart build cli` arguments (`String` or `List`).
+      - `output`: the output directory, inside the root directory.
+        Default: `build/cli/%name`.
+      - `args`: extra `dart build cli` arguments (`String` or `List`), like
+        `--target-os`. Not the target or the output: use `target`/`output`.
       - `launcher`: if `true`, writes a script at the bundle root (`%name`,
-        or `%name.cmd` on Windows) that runs `bin/%name`.
+        or `%name.cmd` on Windows) that runs `bin/%name`. It works through
+        symbolic links to it (like one in `/usr/local/bin`).
     - The executable loads the dynamic libraries from `../lib/`, relative
       to itself: keep the `bin/` and `lib/` layout in the release.
   - `dart_build_%subcommand`: performs a `dart build %subcommand %args`,
