@@ -319,6 +319,55 @@ void main() {
       );
     });
 
+    test('ReleasePacker.fromFile: not a Map', () {
+      var tmpDir = Directory.systemTemp.createTempSync('release-packer-cfg--');
+      addTearDown(() => tmpDir.deleteSync(recursive: true));
+
+      var file = File(pack_path.join(tmpDir.path, 'release_packer.json'))
+        ..writeAsStringSync('[1, 2]');
+
+      expect(() => ReleasePacker.fromFile(file), throwsStateError);
+    });
+
+    test('ReleasePacker.fromJson with properties/env (the CLI)', () {
+      // `release_packer ... --allow-env` resolves the properties of the
+      // whole JSON: `bool` values were turned into `null`.
+      for (var allowEnv in [true, false]) {
+        var packer = ReleasePacker.fromJson(
+          {
+            'name': 'foo',
+            'prepare': [
+              {'dart_pub_get': true},
+            ],
+            'files': [
+              {
+                'dart_build_cli': {
+                  'target': '%TARGET%',
+                  'launcher': true,
+                  'args': ['--target-os=windows'],
+                },
+                'windows_gui': true,
+              },
+            ],
+          },
+          properties: {'TARGET': 'bin/foo.dart'},
+          allowPropertiesFromEnv: allowEnv,
+        );
+
+        expect(
+          packer.prepareCommands!.single,
+          isA<ReleasePackerDartPubGet>(),
+          reason: 'allowEnv: $allowEnv',
+        );
+
+        var cmds = packer.files.single.commands!;
+        var cli = cmds[0] as ReleasePackerDartBuildCli;
+        expect(cli.target, equals('bin/foo.dart'));
+        expect(cli.launcher, isTrue, reason: 'allowEnv: $allowEnv');
+        expect(cmds[1], isA<ReleasePackerWindowsSubsystemCommand>());
+      }
+    });
+
     test('fromJson (no file path)', () {
       expect(
         () => ReleasePackerFile.fromJson({'platform': 'linux'}),
@@ -592,13 +641,27 @@ void main() {
     test('checkBuildHooks: `dart build cli` and kernel with hooks', () {
       writePackages(withHook: true);
 
-      packer([
+      var p = packer([
         ReleasePackerFile.fromJson({'dart_build_cli': 'bin/foo.dart'}),
         ReleasePackerFile.fromJson({
           'bin/foo.dill': 'foo.dill',
           'dart_compile_kernel': 'bin/foo.dart',
         }),
-      ]).checkBuildHooks(tmpDir);
+      ]);
+
+      List<String> output({required bool warnings}) {
+        var lines = <String>[];
+        runZoned(
+          () => p.checkBuildHooks(tmpDir, warnings: warnings),
+          zoneSpecification: ZoneSpecification(
+            print: (self, parent, zone, line) => lines.add(line),
+          ),
+        );
+        return lines;
+      }
+
+      expect(output(warnings: true), [contains('dart compile kernel')]);
+      expect(output(warnings: false), isEmpty);
     });
 
     test('buildFromDirectory: aborts before `prepare`', () async {
@@ -644,6 +707,51 @@ void main() {
     });
 
     tearDown(() => tmpDir.deleteSync(recursive: true));
+
+    test('`release_packer` CLI with `--allow-env`', () async {
+      File(
+        pack_path.join(tmpDir.path, 'release_packer.json'),
+      ).writeAsStringSync(
+        dart_convert.json.encode({
+          'name': 'foo',
+          'version': '1.0.0',
+          'prepare': ['dart_pub_get'],
+          'files': [
+            {
+              'dart_build_cli': {'target': '%FOO_TARGET%', 'launcher': true},
+            },
+          ],
+        }),
+      );
+
+      var releasesDir = pack_path.join(tmpDir.path, 'releases');
+
+      var result = await Process.run(Platform.resolvedExecutable, [
+        'run',
+        pack_path.join(Directory.current.path, 'bin', 'release_packer.dart'),
+        pack_path.join(tmpDir.path, 'release_packer.json'),
+        'build',
+        '.',
+        releasesDir,
+        '--allow-env',
+        '-PFOO_TARGET=bin/foo.dart',
+      ], workingDirectory: Directory.current.path);
+      expect(result.exitCode, equals(0), reason: '${result.stdout}');
+
+      var zip = Directory(releasesDir).listSync().whereType<File>().singleWhere(
+        (f) => f.path.endsWith('.zip'),
+      );
+
+      var bundle = ReleaseBundleZip(
+        Release.parse('foo/1.0.0'),
+        zipBytes: zip.readAsBytesSync(),
+      );
+      var paths = (await bundle.files).map((e) => e.filePath).toSet();
+
+      var exe = Platform.isWindows ? '.exe' : '';
+      var launcher = Platform.isWindows ? 'foo.cmd' : 'foo';
+      expect(paths, containsAll(['bin/foo$exe', launcher]));
+    }, timeout: const Timeout(Duration(minutes: 3)));
 
     test('bundle with launcher', () async {
       var packer = ReleasePacker.fromJson({

@@ -63,7 +63,9 @@ Object? resolveJsonProperties(
   } else if (json is Map) {
     return resolveJsonMapProperties(json, properties, allowEnv: allowEnv);
   } else {
-    return null;
+    // No placeholders in a `bool` or `num`: kept as is (like
+    // `"launcher": true`).
+    return json;
   }
 }
 

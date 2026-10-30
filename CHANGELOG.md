@@ -1,3 +1,20 @@
+## 1.3.1
+
+- `resolveJsonProperties`: `bool` and `num` values are kept. Before, with
+  properties or `--allow-env` (the `release_packer` CLI), they became `null`:
+  `"launcher": true`, `"windows_gui": true` and `{"dart_pub_get": true}`
+  were silently ignored. A `dart_build_cli` release had no launchers.
+- `release_packer` CLI: creates the releases directory if missing.
+- `ReleasePacker.fromFile`: a file that is not a JSON/YAML `Map` throws a
+  `StateError` with a clear message.
+- `ReleasePacker.checkBuildHooks`: `warnings` parameter. The check before
+  `prepare` doesn't log the `dart compile kernel` warning, logged once by
+  the check after it.
+
+- gcloud: ^0.9.0
+
+- lints: ^6.1.0
+
 ## 1.3.0
 
 - `release_packer`: `dart build` commands, for dependencies with build hooks

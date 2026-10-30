@@ -325,7 +325,7 @@ class ReleaseManifest {
       'release': '$release',
       'name': release.name,
       'version': '${release.version}',
-      if (platform != null) 'platform': platform,
+      'platform': ?platform,
       'date': '${date.toUtc()}',
       'files': filesMap,
     };

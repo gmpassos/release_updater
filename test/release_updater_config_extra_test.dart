@@ -153,9 +153,38 @@ void main() {
   });
 
   group('resolveJsonProperties', () {
-    test('null and unsupported types', () {
+    test('null, bool and num are kept', () {
       expect(resolveJsonProperties(null, {'K': 'v'}), isNull);
-      expect(resolveJsonProperties(123, {'K': 'v'}), isNull);
+      expect(resolveJsonProperties(123, {'K': 'v'}), equals(123));
+      expect(resolveJsonProperties(1.5, {'K': 'v'}), equals(1.5));
+      expect(resolveJsonProperties(true, {'K': 'v'}), isTrue);
+      expect(resolveJsonProperties(false, {'K': 'v'}, allowEnv: true), isFalse);
+    });
+
+    test('nested bool and num are kept', () {
+      expect(
+        resolveJsonProperties(
+          {
+            'files': [
+              {
+                'dart_build_cli': {'target': '%K%', 'launcher': true},
+                'windows_gui': true,
+              },
+              {'n': 2, 'x': null},
+            ],
+          },
+          {'K': 'bin/foo.dart'},
+        ),
+        equals({
+          'files': [
+            {
+              'dart_build_cli': {'target': 'bin/foo.dart', 'launcher': true},
+              'windows_gui': true,
+            },
+            {'n': 2, 'x': null},
+          ],
+        }),
+      );
     });
 
     test('without properties the JSON is returned as is', () {

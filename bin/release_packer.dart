@@ -103,6 +103,7 @@ Future<void> _run(List<String> args) async {
     await _showBundleFiles(releaseBundle);
 
     var releasesDir = Directory(releasesPath).absolute;
+    releasesDir.createSync(recursive: true);
 
     var releaseZipPath = pack_path.normalize(
       pack_path.join(
