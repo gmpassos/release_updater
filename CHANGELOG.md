@@ -1,3 +1,9 @@
+## 1.3.2
+
+- gcloud: `>=0.8.19 <0.10.0` (was `^0.9.0` in 1.3.1). The `^0.9.0` of 1.3.1
+  conflicted with packages still on `gcloud` 0.8 (like `bones_api` 1.29.1),
+  and the storage API used here is the same in both.
+
 ## 1.3.1
 
 - `resolveJsonProperties`: `bool` and `num` values are kept. Before, with
