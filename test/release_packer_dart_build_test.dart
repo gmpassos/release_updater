@@ -1,4 +1,5 @@
 @TestOn('vm')
+import 'dart:async';
 import 'dart:convert' as dart_convert;
 import 'dart:io';
 
@@ -507,5 +508,224 @@ void main() {
         expect('${result.stdout}'.trim(), equals('Foo!'));
       }
     }, timeout: const Timeout(Duration(minutes: 3)));
+
+    test('missing built executable', () async {
+      expect(
+        Process.runSync('dart', [
+          'pub',
+          'get',
+        ], workingDirectory: tmpDir.path).exitCode,
+        equals(0),
+      );
+
+      // The last `--output` wins: the bundle is NOT where it's expected.
+      var cmd = ReleasePackerDartBuildCli(
+        'bin/foo.dart',
+        args: ['--output', 'build/other'],
+      );
+
+      var packer = ReleasePacker(
+        'foo',
+        SemanticVersioning.parse('1.0.0'),
+        <ReleasePackerFile>[],
+      );
+
+      expect(cmd.execute(packer, tmpDir), isFalse);
+    }, timeout: const Timeout(Duration(minutes: 3)));
+
+    test('a single file mapped to the release root', () async {
+      Directory(pack_path.join(tmpDir.path, 'docs')).createSync();
+      File(
+        pack_path.join(tmpDir.path, 'docs', 'note.txt'),
+      ).writeAsStringSync('note');
+
+      var packer = ReleasePacker('foo', SemanticVersioning.parse('1.0.0'), [
+        ReleasePackerFile('docs/note.txt', '/'),
+      ]);
+
+      var bundle = await packer.buildFromDirectory(rootDirectory: tmpDir);
+
+      expect((await bundle.files).map((e) => e.filePath), equals(['note.txt']));
+    });
   });
+
+  /// A real project with a dependency with build hooks (`hook/build.dart`),
+  /// that `dart compile exe` does NOT support.
+  group('build hooks (dart SDK)', () {
+    late Directory tmpDir;
+    late Directory appDir;
+
+    setUpAll(() {
+      tmpDir = Directory.systemTemp.createTempSync(
+        'release-packer-hooks-sdk--',
+      );
+
+      void write(String path, String content) {
+        var file = File(pack_path.joinAll([tmpDir.path, ...path.split('/')]));
+        file.parent.createSync(recursive: true);
+        file.writeAsStringSync(content);
+      }
+
+      write('hooked/pubspec.yaml', '''
+name: hooked
+publish_to: none
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+dependencies:
+  hooks: ^2.0.0
+''');
+      write('hooked/lib/hooked.dart', "const hooked = 'Hooked!';\n");
+      write('hooked/hook/build.dart', '''
+import 'package:hooks/hooks.dart';
+
+void main(List<String> args) async {
+  await build(args, (input, output) async {});
+}
+''');
+
+      write('app/pubspec.yaml', '''
+name: app
+publish_to: none
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+dependencies:
+  hooked:
+    path: ../hooked
+''');
+      write('app/bin/app.dart', '''
+import 'package:hooked/hooked.dart';
+
+void main() => print('app: \$hooked');
+''');
+      write('app/bin/app2.dart', '''
+import 'package:hooked/hooked.dart';
+
+void main() => print('app2: \$hooked');
+''');
+
+      appDir = Directory(pack_path.join(tmpDir.path, 'app'));
+
+      var pubGet = Process.runSync('dart', [
+        'pub',
+        'get',
+      ], workingDirectory: appDir.path);
+      if (pubGet.exitCode != 0) {
+        throw StateError('`dart pub get` error: ${pubGet.stderr}');
+      }
+    });
+
+    tearDownAll(() => tmpDir.deleteSync(recursive: true));
+
+    ReleasePacker packer(
+      List<Object> files, {
+      List<ReleasePackerCommand>? prepare,
+    }) => ReleasePacker(
+      'app',
+      SemanticVersioning.parse('1.0.0'),
+      files.map(ReleasePackerFile.fromJson).toList(),
+      prepareCommands: prepare,
+    );
+
+    test('packagesWithBuildHooks', () {
+      expect(ReleasePacker.packagesWithBuildHooks(appDir), equals(['hooked']));
+    });
+
+    test('`dart compile exe` fails with a hint', () {
+      var output = <String>[];
+
+      var ok = runZoned(
+        () => ReleasePackerDartCompileExe(
+          'bin/app.dart',
+        ).execute(packer([]), appDir),
+        zoneSpecification: ZoneSpecification(
+          print: (self, parent, zone, line) => output.add(line),
+        ),
+      );
+
+      expect(ok, isFalse);
+      expect(output.join('\n'), contains('use `dart_build_cli`'));
+    }, timeout: const Timeout(Duration(minutes: 3)));
+
+    test('`dart_compile_exe` aborts before `prepare`', () async {
+      var marker = File(pack_path.join(appDir.path, 'prepared.txt'));
+
+      var p = packer(
+        [
+          {'bin/app.exe': 'app', 'dart_compile_exe': 'bin/app.dart'},
+        ],
+        prepare: [_MarkerCommand(marker)],
+      );
+
+      await expectLater(
+        p.buildFromDirectory(rootDirectory: appDir),
+        throwsA(
+          isA<ReleasePackerError>().having(
+            (e) => e.message,
+            'message',
+            allOf(contains('hooked'), contains('dart_build_cli')),
+          ),
+        ),
+      );
+
+      expect(marker.existsSync(), isFalse);
+    });
+
+    test('`dart_build_cli`: 2 targets with launchers', () async {
+      var p = packer([
+        {
+          'dart_build_cli': {'target': 'bin/app.dart', 'launcher': true},
+        },
+        {
+          'dart_build_cli': {'target': 'bin/app2.dart', 'launcher': true},
+        },
+      ]);
+
+      var bundle = await p.buildFromDirectory(rootDirectory: appDir);
+
+      var exe = Platform.isWindows ? '.exe' : '';
+      var launcher = Platform.isWindows ? '.cmd' : '';
+
+      var paths = (await bundle.files).map((e) => e.filePath).toSet();
+      expect(
+        paths,
+        containsAll([
+          'bin/app$exe',
+          'bin/app2$exe',
+          'app$launcher',
+          'app2$launcher',
+        ]),
+      );
+
+      if (!Platform.isWindows) {
+        for (var name in ['app', 'app2']) {
+          var result = Process.runSync(
+            pack_path.join(appDir.path, 'build', 'cli', name, 'bundle', name),
+            [],
+          );
+          expect(result.exitCode, equals(0));
+          expect('${result.stdout}'.trim(), equals('$name: Hooked!'));
+        }
+      }
+    }, timeout: const Timeout(Duration(minutes: 5)));
+  });
+}
+
+/// A [ReleasePackerCommand] that creates a [marker] file when executed.
+class _MarkerCommand extends ReleasePackerCommand {
+  final File marker;
+
+  _MarkerCommand(this.marker);
+
+  @override
+  bool execute(
+    ReleasePacker releasePacker,
+    Directory rootDirectory, {
+    ReleaseBundle? releaseBundle,
+  }) {
+    marker.writeAsStringSync('prepared');
+    return true;
+  }
+
+  @override
+  String toString() => '_MarkerCommand[${marker.path}]';
 }
