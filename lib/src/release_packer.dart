@@ -103,11 +103,11 @@ class ReleasePacker {
     bool allowPropertiesFromEnv = false,
   }) {
     var json = _readFile(file, expected: true);
-    if (json == null) {
-      throw StateError("Can't read JSON from file: $file");
+    if (json is! Map) {
+      throw StateError("Can't read a JSON/YAML `Map` from file: $file");
     }
     return ReleasePacker.fromJson(
-      json,
+      json.asJsonMap,
       properties: properties,
       rootDirectory: rootDirectory ?? file.parent,
       allowPropertiesFromEnv: allowPropertiesFromEnv,
@@ -124,7 +124,7 @@ class ReleasePacker {
     return _readFile(file);
   }
 
-  static _readFile(File file, {bool expected = false}) {
+  static Object? _readFile(File file, {bool expected = false}) {
     if (!file.existsSync()) {
       if (expected) {
         throw StateError("File does NOT exists: ${file.path}");
@@ -236,7 +236,7 @@ class ReleasePacker {
     // Before `prepare` (if the resolution is up to date), to fail fast, and
     // after it, as `prepare` can resolve or change the dependencies:
     if (isPackageResolutionUpToDate(rootDirectory)) {
-      checkBuildHooks(rootDirectory, platform: platform);
+      checkBuildHooks(rootDirectory, platform: platform, warnings: false);
     }
 
     await prepare(rootDirectory, platform: platform);
@@ -531,8 +531,13 @@ class ReleasePacker {
   /// `dart compile exe` (and `aot-snapshot`) does NOT support build hooks,
   /// so a [ReleasePackerError] is thrown, suggesting `dart_build_cli`, before
   /// running a build that will fail. A `dart compile kernel` builds, but
-  /// can't find the dynamic libraries of the hooks: only a warning.
-  void checkBuildHooks(Directory rootDirectory, {String? platform}) {
+  /// can't find the dynamic libraries of the hooks: only a warning, if
+  /// [warnings] (the check before `prepare` doesn't repeat it).
+  void checkBuildHooks(
+    Directory rootDirectory, {
+    String? platform,
+    bool warnings = true,
+  }) {
     var withHooks = packagesWithBuildHooks(rootDirectory);
     if (withHooks == null || withHooks.isEmpty) return;
 
@@ -544,7 +549,9 @@ class ReleasePacker {
         c.args.isNotEmpty &&
         kinds.contains(c.args.first);
 
-    var kernelCommands = commands.where((c) => isCompile(c, ['kernel']));
+    var kernelCommands = warnings
+        ? commands.where((c) => isCompile(c, ['kernel']))
+        : const <ReleasePackerCommand>[];
     for (var c in kernelCommands) {
       print(
         '  ▒  WARNING: packages with build hooks (${withHooks.join(', ')}): '
@@ -585,7 +592,7 @@ abstract class ReleasePackerEntry {
                 ? platform.where((e) => e != null).map(_toRegExp).toList()
                 : <RegExp>[_toRegExp(platform)]);
 
-  static RegExp _toRegExp(e) => e is RegExp ? e : RegExp('$e');
+  static RegExp _toRegExp(Object? e) => e is RegExp ? e : RegExp('$e');
 
   bool matchesPlatform(String? platform) {
     if (platforms.isEmpty || platform == null || platform.isEmpty) return true;
