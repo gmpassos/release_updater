@@ -1,3 +1,18 @@
+## 1.3.3
+
+- `ReleasePacker.buildFromDirectory`: aborts (before `finalize`, so nothing
+  is uploaded) when a release file is a `dart build cli` executable
+  (`<bundle>/bin/<name>`) whose program library is NOT in the release at
+  `../lib/`, relative to the executable, with the same content.
+  - Since Dart 3.14, on Linux, `bin/<name>` is only a launcher (the same for
+    every program): the compiled program is `lib/libdartaot<name>.so`. Without
+    it the launcher silently runs as a bare `dartvm` and only prints its
+    usage. A release with just `bin/<name>` (enough before Dart 3.14, and
+    still on macOS) couldn't run. See dart-lang/sdk#64915.
+  - Added `ReleasePacker.checkDartBuildCliLibraries` and
+    `ReleasePacker.dartBuildCliProgramLibrary`.
+- README: the `dart build cli` bundle layout on Linux since Dart 3.14.
+
 ## 1.3.2
 
 - gcloud: `>=0.8.19 <0.10.0` (was `^0.9.0` in 1.3.1). The `^0.9.0` of 1.3.1

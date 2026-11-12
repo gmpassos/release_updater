@@ -265,6 +265,10 @@ class ReleasePacker {
 
     print('»  Loading release bundle files from: $rootPath');
 
+    // The source file of each release file, for
+    // `checkDartBuildCliLibraries`:
+    var sources = <({File source, String releasePath})>[];
+
     var list = files
         .map((e) {
           var sourcePath = e.path;
@@ -321,6 +325,7 @@ class ReleasePacker {
               );
 
               releaseFiles.add(releaseFile);
+              sources.add((source: f, releasePath: releaseFile.filePath));
             }
           } else {
             // A single file mapped to the release root keeps its name:
@@ -342,6 +347,7 @@ class ReleasePacker {
             );
 
             releaseFiles.add(releaseFile);
+            sources.add((source: file, releasePath: releaseFile.filePath));
           }
 
           return releaseFiles;
@@ -351,6 +357,10 @@ class ReleasePacker {
         .toList();
 
     list = await mergeDuplicatedFiles(list);
+
+    // Before `finalize` (the upload): a release that can't run must not be
+    // published.
+    await checkDartBuildCliLibraries(sources, list);
 
     var release = Release(name, version, platform: platform);
     var releaseBundle = ReleaseBundleZip(release, files: list);
@@ -362,6 +372,115 @@ class ReleasePacker {
     );
 
     return releaseBundle;
+  }
+
+  /// Throws a [ReleasePackerError] if a release file is a `dart build cli`
+  /// executable (`<bundle>/bin/<name>`) whose program library
+  /// ([dartBuildCliProgramLibrary]) is NOT in the release at `../lib/`,
+  /// relative to the executable, with the same content.
+  ///
+  /// Since Dart 3.14, on Linux, `bin/<name>` is only a launcher (the same for
+  /// every program): the compiled program is `lib/libdartaot<name>.so`,
+  /// loaded from `../lib/` relative to the executable. Without it the
+  /// launcher silently runs as a bare `dartvm`, printing only its usage. So
+  /// a release with just `bin/<name>` (enough before Dart 3.14, and still on
+  /// macOS) can't run: map the whole bundle (`bin/` and `lib/`), or use
+  /// `dart_build_cli`.
+  ///
+  /// - [sources]: the source file of each release path.
+  /// - [releaseFiles]: the release files (merged).
+  static Future<void> checkDartBuildCliLibraries(
+    Iterable<({File source, String releasePath})> sources,
+    List<ReleaseFile> releaseFiles,
+  ) async {
+    var releaseByPath = {for (var f in releaseFiles) f.filePath: f};
+    var checked = <String>{};
+    var errors = <String>[];
+
+    for (var s in sources) {
+      if (!checked.add(s.releasePath)) continue;
+
+      var library = dartBuildCliProgramLibrary(s.source);
+      if (library == null) continue;
+
+      var libraryName = pack_path.basename(library.path);
+
+      // `../lib/<library>` relative to the executable in the release. At the
+      // release root it would be outside the release (`../lib/`):
+      var requiredPath = pack_path.posix.normalize(
+        pack_path.posix.join(
+          pack_path.posix.dirname(s.releasePath),
+          '..',
+          'lib',
+          libraryName,
+        ),
+      );
+
+      var releaseLibrary = releaseByPath[requiredPath];
+
+      var ok =
+          releaseLibrary != null &&
+          const ListEquality<int>().equals(
+            await releaseLibrary.data,
+            library.readAsBytesSync(),
+          );
+
+      if (!ok) {
+        errors.add(
+          '`${s.releasePath}` is a `dart build cli` executable that loads its '
+          'program from `../lib/$libraryName`, but the release has '
+          '${releaseLibrary == null ? 'no' : 'a different'} `$requiredPath`',
+        );
+      }
+    }
+
+    if (errors.isNotEmpty) {
+      throw ReleasePackerError(
+        '${errors.join(';\n')}.\n'
+        'Since Dart 3.14 (on Linux) `bin/<name>` of a `dart build cli` bundle '
+        'is only a launcher for `lib/libdartaot<name>.so`: include the whole '
+        'bundle (`bin/` and `lib/`), or use `dart_build_cli`.',
+      );
+    }
+  }
+
+  /// The extensions of a `dart build cli` program library, by platform.
+  static const _programLibraryExtensions = ['so', 'dylib', 'dll'];
+
+  /// The program library of a `dart build cli` [executable]
+  /// (`<bundle>/bin/<name>`, or `<name>.exe`), if it exists:
+  /// `<bundle>/lib/libdartaot<name>.so` (Dart 3.14+ on Linux; `.dylib` and
+  /// `dartaot<name>.dll` are also accepted). Returns `null` for any other
+  /// file, or a self-contained executable (Dart < 3.14, or macOS).
+  ///
+  /// Used by [checkDartBuildCliLibraries].
+  static File? dartBuildCliProgramLibrary(File executable) {
+    var binDir = executable.parent;
+    var bundleDir = binDir.parent;
+
+    if (pack_path.basename(binDir.path) != 'bin' ||
+        pack_path.basename(bundleDir.path) != 'bundle') {
+      return null;
+    }
+
+    var fileName = pack_path.basename(executable.path);
+    var name = fileName.toLowerCase().endsWith('.exe')
+        ? fileName.substring(0, fileName.length - 4)
+        : fileName;
+    if (name.isEmpty) return null;
+
+    var libDir = pack_path.join(bundleDir.path, 'lib');
+
+    for (var ext in _programLibraryExtensions) {
+      for (var prefix in const ['lib', '']) {
+        var library = File(
+          pack_path.join(libDir, '${prefix}dartaot$name.$ext'),
+        );
+        if (library.existsSync()) return library;
+      }
+    }
+
+    return null;
   }
 
   /// Merges the [files] with the same path, like the `lib/` of two

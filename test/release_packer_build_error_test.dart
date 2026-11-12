@@ -288,6 +288,163 @@ void main() {
       );
     });
   });
+
+  // A `dart build cli` bundle as built by Dart 3.14 on Linux: `bin/<name>` is
+  // only a launcher for `lib/libdartaot<name>.so`.
+  group('ReleasePacker.checkDartBuildCliLibraries', () {
+    late Directory tmpDir;
+
+    setUp(() {
+      tmpDir = Directory.systemTemp.createTempSync('release-packer-aot-lib--');
+    });
+
+    tearDown(() => tmpDir.deleteSync(recursive: true));
+
+    /// Writes a fake bundle at `build/cli/<name>/bundle/`, with the program
+    /// library (`lib/libdartaot<name>.so`) if [programLibrary].
+    void writeBundle(String name, {bool programLibrary = true}) {
+      var bundle = '${tmpDir.path}/build/cli/$name/bundle';
+      File('$bundle/bin/$name')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('launcher');
+      File('$bundle/lib/libsqlite3.so')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('sqlite3');
+      if (programLibrary) {
+        File(
+          '$bundle/lib/libdartaot$name.so',
+        ).writeAsStringSync('program $name');
+      }
+    }
+
+    Future<List<String>> buildPaths(List<ReleasePackerFile> files) async {
+      var packer = ReleasePacker(
+        'foo',
+        SemanticVersioning.parse('1.0.0'),
+        files,
+      );
+      var bundle = await packer.buildFromDirectory(rootDirectory: tmpDir);
+      return (await bundle.files).map((f) => f.filePath).toList()..sort();
+    }
+
+    Matcher throwsMissingLibrary(String library) => throwsA(
+      isA<ReleasePackerError>().having(
+        (e) => e.message,
+        'message',
+        allOf(contains(library), contains('dart build cli')),
+      ),
+    );
+
+    test('only `bin/<name>`: aborts', () async {
+      writeBundle('app');
+
+      await expectLater(
+        buildPaths([ReleasePackerFile('build/cli/app/bundle/bin/app', 'app')]),
+        throwsMissingLibrary('libdartaotapp.so'),
+      );
+    });
+
+    test('`bin/<name>` and `lib/` mapped apart: aborts', () async {
+      writeBundle('app');
+
+      // The executable at the root would load `../lib/`, outside the release:
+      await expectLater(
+        buildPaths([
+          ReleasePackerFile('build/cli/app/bundle/bin/app', 'app'),
+          ReleasePackerFile('build/cli/app/bundle/lib/', 'lib/'),
+        ]),
+        throwsMissingLibrary('libdartaotapp.so'),
+      );
+    });
+
+    test('the whole bundle: OK', () async {
+      writeBundle('app');
+
+      expect(
+        await buildPaths([ReleasePackerFile('build/cli/app/bundle/', '/')]),
+        equals(['bin/app', 'lib/libdartaotapp.so', 'lib/libsqlite3.so']),
+      );
+    });
+
+    test('two bundles at the release root: OK', () async {
+      writeBundle('app');
+      writeBundle('other');
+
+      expect(
+        await buildPaths([
+          ReleasePackerFile('build/cli/app/bundle/', '/'),
+          ReleasePackerFile('build/cli/other/bundle/', '/'),
+        ]),
+        equals([
+          'bin/app',
+          'bin/other',
+          'lib/libdartaotapp.so',
+          'lib/libdartaotother.so',
+          'lib/libsqlite3.so',
+        ]),
+      );
+    });
+
+    test('a different program library: aborts', () async {
+      writeBundle('app');
+      File(
+        '${tmpDir.path}/other-libdartaotapp.so',
+      ).writeAsStringSync('another program');
+
+      await expectLater(
+        buildPaths([
+          ReleasePackerFile('build/cli/app/bundle/bin/', 'bin/'),
+          ReleasePackerFile('other-libdartaotapp.so', 'lib/libdartaotapp.so'),
+        ]),
+        throwsMissingLibrary('a different'),
+      );
+    });
+
+    test('a self-contained executable (macOS, Dart < 3.14): OK', () async {
+      writeBundle('app', programLibrary: false);
+
+      expect(
+        await buildPaths([
+          ReleasePackerFile('build/cli/app/bundle/bin/app', 'app'),
+        ]),
+        equals(['app']),
+      );
+    });
+
+    test('dartBuildCliProgramLibrary', () {
+      writeBundle('app');
+      var bundle = '${tmpDir.path}/build/cli/app/bundle';
+
+      expect(
+        ReleasePacker.dartBuildCliProgramLibrary(File('$bundle/bin/app'))?.path,
+        endsWith('libdartaotapp.so'),
+      );
+
+      // `.exe` (Windows) has the same name:
+      File('$bundle/bin/app.exe').writeAsStringSync('launcher');
+      expect(
+        ReleasePacker.dartBuildCliProgramLibrary(
+          File('$bundle/bin/app.exe'),
+        )?.path,
+        endsWith('libdartaotapp.so'),
+      );
+
+      // Not in a `bundle/bin/`:
+      expect(
+        ReleasePacker.dartBuildCliProgramLibrary(
+          File('$bundle/lib/libsqlite3.so'),
+        ),
+        isNull,
+      );
+
+      // Another name, without a program library:
+      File('$bundle/bin/tool').writeAsStringSync('tool');
+      expect(
+        ReleasePacker.dartBuildCliProgramLibrary(File('$bundle/bin/tool')),
+        isNull,
+      );
+    });
+  });
 }
 
 /// A [ReleasePackerCommand] with a fixed result, to test the build abort.
