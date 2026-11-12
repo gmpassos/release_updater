@@ -157,6 +157,12 @@ Example of a `release_packer.json` file:
         symbolic links to it (like one in `/usr/local/bin`).
     - The executable loads the dynamic libraries from `../lib/`, relative
       to itself: keep the `bin/` and `lib/` layout in the release.
+    - Since Dart 3.14, on Linux, `bin/%name` is only a launcher: the compiled
+      program is `lib/libdartaot%name.so` (on macOS `bin/%name` is still
+      self-contained). Two bundles can share `bin/` and `lib/` (the program
+      libraries have different names). A release with a `bin/%name` but
+      without its `../lib/libdartaot%name.so` aborts the build: it couldn't
+      run.
   - `dart_build_%subcommand`: performs a `dart build %subcommand %args`,
     with the arguments as is (`String` or `List`).
   - `dart`: performs a `dart %command`.
