@@ -1,3 +1,14 @@
+## 1.3.4
+
+- `release_packer` CLI: `--no-finalize`. `build` saves the release zip
+  without running the `finalize` commands (like `upload_release`): to test a
+  release (for example, a CI smoke test of its executables) without
+  publishing it. The `finalize` placeholders (like credentials) don't need to
+  be set.
+- `ReleasePacker.buildFromDirectory`: `finalize` parameter (default `true`).
+  With `false` the release is still built and checked (like
+  `checkDartBuildCliLibraries`).
+
 ## 1.3.3
 
 - `ReleasePacker.buildFromDirectory`: aborts (before `finalize`, so nothing

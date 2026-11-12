@@ -89,6 +89,12 @@ $> release_packer release_packer.json build ./source-dir ./releases-dir -Pupload
 ```
 
 - The `-P` arguments are properties to the JSON configuration file (see `%UPLOAD_URL%` below).
+- `--no-finalize`: builds and saves the release zip (with all its checks)
+  without running the `finalize` commands, so nothing is uploaded. Useful to
+  test the generated release in CI, like a smoke test running its executables:
+  ```shell
+  $> release_packer release_packer.json build ./source-dir ./releases-dir --no-finalize
+  ```
 
 Example of a `release_packer.json` file:
 
