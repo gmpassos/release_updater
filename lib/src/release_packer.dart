@@ -214,10 +214,18 @@ class ReleasePacker {
     );
   }
 
+  /// Builds the release bundle from [rootDirectory] (or [sourcePath]): runs
+  /// the `prepare` commands, the files commands and, if [finalize] is `true`
+  /// (the default), the `finalize` commands (like `upload_release`).
+  ///
+  /// With [finalize] `false` the release is built and checked the same way,
+  /// but nothing is uploaded: useful to test a release in CI (a smoke test of
+  /// the generated release) without publishing it.
   Future<ReleaseBundleZip> buildFromDirectory({
     Directory? rootDirectory,
     String? sourcePath,
     String? platform,
+    bool finalize = true,
   }) async {
     var configDirectory = this.configDirectory;
 
@@ -365,11 +373,18 @@ class ReleasePacker {
     var release = Release(name, version, platform: platform);
     var releaseBundle = ReleaseBundleZip(release, files: list);
 
-    await finalize(
-      rootDirectory,
-      releaseBundle: releaseBundle,
-      platform: platform,
-    );
+    if (finalize) {
+      await this.finalize(
+        rootDirectory,
+        releaseBundle: releaseBundle,
+        platform: platform,
+      );
+    } else if (finalizeCommands?.isNotEmpty ?? false) {
+      print(
+        '»  Skipping the finalize commands (${finalizeCommands!.length}): '
+        '`finalize: false`',
+      );
+    }
 
     return releaseBundle;
   }

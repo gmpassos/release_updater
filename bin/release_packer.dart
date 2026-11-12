@@ -31,6 +31,10 @@ void main(List<String> args) async {
     );
 
     print(
+      '   --no-finalize: builds the release zip without running the `finalize` commands (no upload).\n',
+    );
+
+    print(
       ' \$> release_packer release_packer.json info ./source-dir [generate]\n',
     );
 
@@ -61,6 +65,9 @@ Future<void> _run(List<String> args) async {
 
   var releasePackerJsonPath = args.removeAt(0);
   var allowEnv = args.remove('--allow-env');
+  // Builds the release without the `finalize` commands (like the upload):
+  // to test the generated release (for example, in CI) without publishing it.
+  var noFinalize = args.remove('--no-finalize');
   var properties = parseProperties(args);
 
   var cmd = args.removeAt(0).toLowerCase();
@@ -97,7 +104,8 @@ Future<void> _run(List<String> args) async {
     ReleaseBundleZip releaseBundle = await _buildReleaseBundle(
       releasePacker,
       sourcePath,
-      releasesPath,
+      releasesPath: releasesPath,
+      finalize: !noFinalize,
     );
 
     await _showBundleFiles(releaseBundle);
@@ -161,9 +169,10 @@ void _showReleasePacker(ReleasePacker releasePacker, {bool showFiles = false}) {
 
 Future<ReleaseBundleZip> _buildReleaseBundle(
   ReleasePacker releasePacker,
-  String sourcePath, [
+  String sourcePath, {
   String? releasesPath,
-]) async {
+  bool finalize = true,
+}) async {
   print('\n$_hr2');
 
   print('\n»»  Generating release bundle...\n');
@@ -177,6 +186,7 @@ Future<ReleaseBundleZip> _buildReleaseBundle(
   var releaseBundle = await releasePacker.buildFromDirectory(
     sourcePath: sourcePath,
     platform: platform,
+    finalize: finalize,
   );
 
   print('»  Generated release: `${releaseBundle.release}`');

@@ -287,6 +287,64 @@ void main() {
         ),
       );
     });
+
+    test('`finalize: false` skips the `finalize` commands', () async {
+      // Would abort the build if executed:
+      var finalizeCommand = _FakeCommand(false);
+
+      var packer = ReleasePacker(
+        'foo',
+        SemanticVersioning.parse('1.0.0'),
+        <ReleasePackerFile>[ReleasePackerFile('a.txt', 'a.txt')],
+        finalizeCommands: [finalizeCommand],
+      );
+
+      var bundle = await packer.buildFromDirectory(
+        rootDirectory: tmpDir,
+        finalize: false,
+      );
+
+      expect(finalizeCommand.executed, isFalse);
+      expect(
+        (await bundle.files).map((f) => f.filePath).toList(),
+        equals(['a.txt']),
+      );
+    });
+
+    test('`finalize` (default) runs the `finalize` commands', () async {
+      var finalizeCommand = _FakeCommand(true);
+
+      var packer = ReleasePacker(
+        'foo',
+        SemanticVersioning.parse('1.0.0'),
+        <ReleasePackerFile>[ReleasePackerFile('a.txt', 'a.txt')],
+        finalizeCommands: [finalizeCommand],
+      );
+
+      await packer.buildFromDirectory(rootDirectory: tmpDir);
+
+      expect(finalizeCommand.executed, isTrue);
+    });
+
+    test('`finalize: false` still checks the release', () async {
+      // A Dart 3.14 Linux `dart build cli` bundle, shipping only `bin/app`:
+      var bundle = '${tmpDir.path}/build/cli/app/bundle';
+      File('$bundle/bin/app')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('launcher');
+      File('$bundle/lib/libdartaotapp.so')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('program');
+
+      var packer = ReleasePacker('foo', SemanticVersioning.parse('1.0.0'), [
+        ReleasePackerFile('build/cli/app/bundle/bin/app', 'app'),
+      ]);
+
+      await expectLater(
+        packer.buildFromDirectory(rootDirectory: tmpDir, finalize: false),
+        throwsA(isA<ReleasePackerError>()),
+      );
+    });
   });
 
   // A `dart build cli` bundle as built by Dart 3.14 on Linux: `bin/<name>` is
